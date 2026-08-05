@@ -1,0 +1,18 @@
+{
+  "name": "TriviaDuel",
+  "short_name": "TriviaDuel",
+  "description": "Battle strangers live, 1v1. 10 questions, 15 seconds each, bragging rights.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0b14",
+  "theme_color": "#0b0b14",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+# ---- build artifacts (rebuild with: cd backend && mingw32-make) ----
+backend/app.exe
+backend/*.o
+backend/*.dll
+
+# ---- secrets — NEVER commit real Supabase keys ----
+# Copy backend/config.example.ini -> backend/config.ini and paste your keys
+backend/config.ini
+.env
+*.env
+
+# ---- logs ----
+*.log
+
+# ---- OS junk ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- safety ----
+node_modules/
+dist/
+build/

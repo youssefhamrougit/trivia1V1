@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b0b14" />
+  <title>TriviaDuel</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <!-- ================================================================
+         SCREEN: SETUP (shown when Supabase keys are missing)
+    ================================================================= -->
+    <section id="screen-setup" class="screen">
+      <div class="card center">
+        <img class="logo" src="assets/icon.svg" alt="TriviaDuel" />
+        <h1>Almost ready</h1>
+        <p class="muted">
+          TriviaDuel runs on a <b>C++ backend</b> which talks to a free database called <b>Supabase</b>.
+          You just need to paste 2 keys into <code>backend/config.ini</code>.
+        </p>
+        <ol class="steps">
+          <li>Create a free project at <b>supabase.com</b></li>
+          <li>Open the SQL Editor and run <code>database/schema.sql</code>, then <code>database/seed.sql</code></li>
+          <li>Copy your <b>Project URL</b> and <b>anon key</b> into <code>backend/config.ini</code></li>
+          <li>Restart the backend (<code>backend/app.exe</code>) and refresh this page</li>
+        </ol>
+        <button class="btn" onclick="location.reload()">I added the keys — reload</button>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         SCREEN: AUTH (log in / sign up / guest)
+    ================================================================= -->
+    <section id="screen-auth" class="screen">
+      <div class="card center">
+        <img class="logo" src="assets/icon.svg" alt="TriviaDuel" />
+        <h1>Welcome to TriviaDuel</h1>
+        <p class="muted">Battle strangers live, 1v1. 10 questions, 15 seconds each, bragging rights.</p>
+
+        <input id="auth-email" type="email" placeholder="you@email.com" autocomplete="email" />
+        <input id="auth-password" type="password" placeholder="password (at least 6 characters)" />
+
+        <button class="btn" onclick="authSignUp()">Create account</button>
+        <button class="btn ghost" onclick="authLogIn()">Log in</button>
+
+        <div class="divider">or</div>
+        <button class="btn subtle" onclick="authGuest()"><img class="btn-icon" src="assets/icons/gamepad.svg" alt="" /> Continue as guest</button>
+
+        <p id="auth-error" class="error"></p>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         SCREEN: TRIVIA HOME
+    ================================================================= -->
+    <section id="screen-trivia-home" class="screen">
+      <div class="topbar">
+        <div>
+          <p class="muted small">Logged in as</p>
+          <b id="trivia-username">…</b>
+        </div>
+        <button class="chip" onclick="authSignOut()">Sign out</button>
+      </div>
+
+      <h1 class="screen-title">Trivia<span class="accent">Duel</span></h1>
+      <p class="muted">Answer fast. Beat strangers. Climb the arenas.</p>
+
+      <div class="arena-banner">
+        <div class="arena-emoji" id="arena-emoji"></div>
+        <div class="arena-info">
+          <span class="arena-label">CURRENT ARENA</span>
+          <b id="arena-name">Training Grounds</b>
+          <div class="arena-progress"><div id="arena-fill"></div></div>
+          <span class="muted small" id="arena-next"></span>
+        </div>
+      </div>
+
+      <button class="btn big" onclick="triviaFindMatch()"><img class="btn-icon" src="assets/icons/bolt.svg" alt="" /> FIND A MATCH</button>
+      <button class="btn ghost" onclick="triviaStartBot()"><img class="btn-icon" src="assets/arenas/arena-1.svg" alt="" /> Practice vs. QuizBot (no rank change)</button>
+
+      <div class="stats-row">
+        <div class="stat"><b id="trivia-trophies">0</b><span>Trophies</span></div>
+        <div class="stat"><b id="trivia-wins">0</b><span>Wins</span></div>
+        <div class="stat"><b id="trivia-losses">0</b><span>Losses</span></div>
+      </div>
+      <button class="chip" style="margin-top: 16px;" onclick="go('screen-leaderboard')"><img class="chip-icon" src="assets/icons/trophy.svg" alt="" /> Leaderboard</button>
+      <p id="trivia-error" class="error"></p>
+    </section>
+
+    <!-- ================================================================
+         SCREEN: TRIVIA QUEUE (searching for an opponent)
+    ================================================================= -->
+    <section id="screen-trivia-queue" class="screen">
+      <div class="center">
+        <div class="spinner"></div>
+        <h1>Finding opponent…</h1>
+        <p class="muted">Someone, somewhere, is tapping the same button.</p>
+        <div class="queue-opponent">
+          <div class="avatar">?</div>
+          <div>
+            <b>Waiting…</b>
+            <p class="muted small">First match can take a few seconds</p>
+          </div>
+        </div>
+        <button class="btn ghost" onclick="triviaCancelQueue()">Cancel</button>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         SCREEN: TRIVIA MATCH (the live battle)
+    ================================================================= -->
+    <section id="screen-trivia-match" class="screen">
+      <div class="match-scoreboard">
+        <div class="player">
+          <div class="avatar" id="match-my-avatar">U</div>
+          <b id="match-my-name">You</b>
+          <span class="score" id="match-my-score">0</span>
+        </div>
+        <div class="vs">VS</div>
+        <div class="player right">
+          <div class="avatar" id="match-opp-avatar">?</div>
+          <b id="match-opp-name">…</b>
+          <span class="score" id="match-opp-score">0</span>
+        </div>
+      </div>
+
+      <div class="question-meta">
+        <span class="pill" id="match-arena"></span>
+        <span class="pill" id="match-category">—</span>
+        <span class="pill" id="match-streak">🔥 0 streak</span>
+      </div>
+
+      <div class="timer-bar"><div id="match-timer-fill"></div></div>
+
+      <div class="question-card">
+        <p id="match-question">Loading question…</p>
+        <div id="match-answers"></div>
+      </div>
+
+      <p class="muted small center-text" id="match-status"></p>
+    </section>
+
+    <!-- ================================================================
+         SCREEN: TRIVIA RESULT
+    ================================================================= -->
+    <section id="screen-trivia-result" class="screen">
+      <div class="center">
+        <div id="result-emoji" class="result-emoji"></div>
+        <h1 id="result-title">You win!</h1>
+        <p class="muted" id="result-trophy-line">+1 trophy</p>
+        <p class="muted small" id="result-arena-msg" style="min-height:18px;"></p>
+
+        <div class="stats-row">
+          <div class="stat"><b id="result-my-score">0</b><span>You</span></div>
+          <div class="stat"><b id="result-opp-score">0</b><span id="result-opp-name">Opponent</span></div>
+        </div>
+
+        <button class="btn" onclick="shareResult()"><img class="btn-icon" src="assets/icons/share.svg" alt="" /> Challenge a friend</button>
+        <button class="btn ghost" onclick="triviaRematch()"><img class="btn-icon" src="assets/icons/repeat.svg" alt="" /> Rematch</button>
+        <button class="btn subtle" onclick="go('screen-trivia-home')">Home</button>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         SCREEN: LEADERBOARD
+    ================================================================= -->
+    <section id="screen-leaderboard" class="screen">
+      <div class="topbar">
+        <button class="chip" onclick="go('screen-trivia-home')">← Back</button>
+      </div>
+      <h1 class="screen-title"><img class="title-icon" src="assets/icons/trophy.svg" alt="" /> Leaderboard</h1>
+      <p class="muted">Top players by trophies</p>
+      <div id="leaderboard-list" class="leaderboard"></div>
+    </section>
+
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/arenas.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/trivia.js"></script>
+  <script>appInit();</script>
+</body>
+</html>

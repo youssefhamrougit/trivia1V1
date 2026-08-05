@@ -1,0 +1,311 @@
+/* ============================================================================
+   style.css — TriviaDuel design system
+   Dark + neon purple. Mobile-first: it looks like a phone app even on desktop.
+============================================================================ */
+
+:root {
+  --bg: #0b0b14;
+  --bg-soft: #12121f;
+  --card: #171726;
+  --card-2: #1d1d31;
+  --text: #f2f2fa;
+  --muted: #9a9ab0;
+  --line: #26263c;
+
+  --duel: #a855f7;        /* TriviaDuel purple */
+  --duel-2: #ec4899;      /* TriviaDuel pink */
+  --good: #34d399;
+  --bad: #f87171;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 20px 16px 40px;
+  background:
+    radial-gradient(600px 300px at 80% -10%, var(--arena-glow, rgba(168, 85, 247, 0.14)), transparent 60%),
+    radial-gradient(600px 300px at 10% 110%, var(--arena-glow, rgba(236, 72, 153, 0.08)), transparent 60%),
+    var(--bg);
+  transition: background 0.5s ease;
+}
+
+/* ---------- screens ---------- */
+.screen { display: none; animation: fadeIn 0.25s ease; }
+.screen.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.center { text-align: center; padding-top: 40px; }
+.center-text { text-align: center; }
+
+/* ---------- typography ---------- */
+h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -0.02em; }
+h1 { font-size: 30px; }
+.screen-title { font-size: 34px; margin-bottom: 2px; }
+.muted { color: var(--muted); line-height: 1.5; }
+.small { font-size: 12px; }
+.accent { background: linear-gradient(90deg, var(--duel), var(--duel-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.error { color: var(--bad); min-height: 20px; margin-top: 10px; font-size: 13px; }
+
+/* ---------- top bar ---------- */
+.topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 8px; }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 15px;
+  margin-top: 12px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--duel), var(--duel-2));
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.2s ease, filter 0.2s;
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35);
+}
+.btn:active { transform: scale(0.97); }
+.btn:hover { filter: brightness(1.1); }
+
+.btn.big { padding: 18px; font-size: 18px; border-radius: 18px; margin-top: 22px; }
+.btn.ghost { background: var(--card-2); color: var(--text); box-shadow: none; border: 1px solid var(--line); }
+.btn.subtle { background: transparent; color: var(--muted); box-shadow: none; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------- inputs ---------- */
+input {
+  width: 100%;
+  padding: 14px 16px;
+  margin-top: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+}
+input:focus { border-color: var(--duel); }
+input::placeholder { color: var(--muted); }
+
+/* ---------- cards ---------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 18px;
+  margin-top: 16px;
+}
+.card h3 { margin-bottom: 6px; font-size: 17px; }
+.card.center { margin-top: 60px; }
+
+/* ---------- logo / steps ---------- */
+.logo {
+  width: 96px; height: 96px;
+  display: block;
+  margin: 0 auto 10px;
+  filter: drop-shadow(0 10px 26px rgba(168, 85, 247, 0.45));
+}
+.steps { text-align: left; margin: 16px 0 8px; padding-left: 20px; color: var(--muted); line-height: 1.9; }
+.steps code, p code { background: var(--card-2); padding: 2px 6px; border-radius: 6px; color: var(--duel); font-size: 12px; }
+.divider { color: var(--muted); margin: 18px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+
+/* ---------- chips & pills ---------- */
+.chip {
+  border: 1px solid var(--line);
+  background: var(--card-2);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.2s;
+}
+.chip:active { transform: scale(0.95); }
+
+.pill {
+  display: inline-block;
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--duel);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.pill-icon, .inline-icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 4px; }
+
+/* ---------- icons in buttons / titles ---------- */
+.btn-icon, .chip-icon { vertical-align: -3px; margin-right: 6px; }
+.btn-icon { width: 18px; height: 18px; }
+.chip-icon { width: 15px; height: 15px; }
+.title-icon { width: 26px; height: 26px; vertical-align: -5px; margin-right: 4px; }
+.lb-medal { width: 18px; height: 18px; vertical-align: -3px; }
+.avatar-img { width: 24px; height: 24px; }
+.result-emoji img { width: 68px; height: 68px; }
+
+/* ---------- arena banner (home) ---------- */
+.arena-banner {
+  display: flex; gap: 14px; align-items: center;
+  background: linear-gradient(135deg, var(--card), var(--card-2));
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 16px;
+  margin-top: 18px;
+  position: relative; overflow: hidden;
+}
+.arena-banner::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(300px 120px at 0% 0%, var(--arena-glow, rgba(168, 85, 247, 0.18)), transparent 70%);
+  pointer-events: none;
+}
+.arena-emoji {
+  width: 58px; height: 58px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--arena-c1, var(--duel)), var(--arena-c2, var(--duel-2)));
+  border-radius: 16px;
+  box-shadow: 0 6px 18px var(--arena-glow, rgba(168, 85, 247, 0.35));
+}
+.arena-emoji img { width: 32px; height: 32px; }
+.arena-info { flex: 1; min-width: 0; position: relative; }
+.arena-label {
+  display: block; font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; color: var(--muted);
+  text-transform: uppercase;
+}
+.arena-info b { display: block; font-family: 'Space Grotesk', sans-serif; font-size: 19px; margin-top: 2px; }
+.arena-progress {
+  height: 6px; border-radius: 99px; background: var(--line);
+  margin-top: 8px; overflow: hidden;
+}
+.arena-progress > div {
+  height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--arena-c1, var(--duel)), var(--arena-c2, var(--duel-2)));
+  transition: width 0.5s ease;
+}
+#arena-next { display: block; margin-top: 6px; }
+
+/* ---------- stats row ---------- */
+.stats-row { display: flex; gap: 10px; margin-top: 20px; }
+.stat {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 14px;
+  text-align: center;
+}
+.stat b { display: block; font-size: 24px; font-family: 'Space Grotesk', sans-serif; }
+.stat span { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ---------- spinner (queue) ---------- */
+.spinner {
+  width: 64px; height: 64px;
+  margin: 20px auto;
+  border-radius: 50%;
+  border: 4px solid var(--line);
+  border-top-color: var(--duel);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.queue-opponent {
+  display: flex; gap: 12px; align-items: center;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 16px; padding: 14px; margin: 24px 0;
+  text-align: left;
+}
+
+/* ---------- avatars ---------- */
+.avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--duel), var(--duel-2));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 16px; color: #fff;
+  flex-shrink: 0;
+}
+
+/* ---------- match ---------- */
+.match-scoreboard {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 18px; padding: 14px; margin-top: 6px;
+}
+.player { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; }
+.player .score { font-size: 26px; font-family: 'Space Grotesk', sans-serif; color: var(--duel); }
+.player.right .score { color: var(--duel-2); }
+.vs { color: var(--muted); font-weight: 800; font-size: 13px; }
+
+.question-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin: 16px 4px 8px; }
+#match-arena { background: rgba(255, 255, 255, 0.06); border-color: var(--line); color: var(--text); }
+
+.timer-bar {
+  height: 8px; border-radius: 99px; background: var(--line);
+  overflow: hidden; margin-bottom: 18px;
+}
+.timer-bar > div {
+  height: 100%; width: 100%;
+  background: linear-gradient(90deg, var(--duel), var(--duel-2));
+  transition: width 0.2s linear;
+}
+
+.question-card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 20px; padding: 18px;
+}
+.question-card p { font-size: 19px; font-weight: 600; line-height: 1.45; font-family: 'Space Grotesk', sans-serif; }
+
+.answer {
+  width: 100%;
+  text-align: left;
+  padding: 14px 16px;
+  margin-top: 10px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--card-2);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+.answer:active { transform: scale(0.98); }
+.answer.correct { background: rgba(52, 211, 153, 0.2); border-color: var(--good); }
+.answer.wrong { background: rgba(248, 113, 113, 0.15); border-color: var(--bad); }
+.answer:disabled { cursor: default; }
+
+/* ---------- result ---------- */
+.result-emoji { margin-bottom: 6px; animation: pop 0.5s ease; }
+@keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+/* ---------- leaderboard ---------- */
+.leaderboard { margin-top: 16px; }
+.lb-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 14px; padding: 12px 14px; margin-top: 8px;
+}
+.lb-rank { width: 34px; font-weight: 800; color: var(--muted); font-family: 'Space Grotesk', sans-serif; }
+.lb-rank.top { color: #fbbf24; }
+.lb-name { flex: 1; font-weight: 600; }
+.lb-elo { font-weight: 800; color: var(--duel); font-family: 'Space Grotesk', sans-serif; }
+.lb-row.me { border-color: var(--duel); background: rgba(168, 85, 247, 0.08); }
