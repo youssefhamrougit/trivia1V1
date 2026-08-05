@@ -24,18 +24,18 @@
     <section id="screen-setup" class="screen">
       <div class="card center">
         <img class="logo" src="assets/icon.svg" alt="TriviaDuel" />
-        <h1>Almost ready</h1>
-        <p class="muted">
+        <h1 id="setup-title">Almost ready</h1>
+        <p class="muted" id="setup-desc">
           TriviaDuel runs on a <b>C++ backend</b> which talks to a free database called <b>Supabase</b>.
           You just need to paste 2 keys into <code>backend/config.ini</code>.
         </p>
-        <ol class="steps">
+        <ol class="steps" id="setup-steps">
           <li>Create a free project at <b>supabase.com</b></li>
           <li>Open the SQL Editor and run <code>database/schema.sql</code>, then <code>database/seed.sql</code></li>
           <li>Copy your <b>Project URL</b> and <b>anon key</b> into <code>backend/config.ini</code></li>
           <li>Restart the backend (<code>backend/app.exe</code>) and refresh this page</li>
         </ol>
-        <button class="btn" onclick="location.reload()">I added the keys — reload</button>
+        <button class="btn" id="setup-reload" onclick="location.reload()">I added the keys — reload</button>
       </div>
     </section>
 
