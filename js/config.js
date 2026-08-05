@@ -16,6 +16,6 @@
 // ============================================================================
 
 const TRIVIADUEL_CONFIG = {
-  SUPABASE_URL: "https://test.supabase.co",
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlc3QiLCJyb2xlIjoiYWNvbiIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoyMDAwMDAwMDAwfQ.testkey",
+  SUPABASE_URL: "https://ajtwoiohwjzobnpenghb.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqdHdvaW9od2p6b2JucGVuZ2hiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NjkxNDYsImV4cCI6MjEwMTQ0NTE0Nn0.AgD-eArh4CuNnTRE2l3inwxfV59OeyVlw72oapv-6AM",
 };
