@@ -4,6 +4,13 @@ A live 1v1 trivia battle game that runs in any browser. It's a **static site** (
 
 Find a stranger, get the same 10 questions, 15 seconds each. Winner takes **+1 trophy**. Climb 7 arenas, Clash Royale style.
 
+
+##⚠️ Active development 
+
+
+— the current build ships a complete 1v1 game , yet to be fully developed.
+
+
 ## What is this?
 
 TriviaDuel is a real-time 1v1 trivia game — no frameworks, no build step. The browser talks to Supabase directly: GoTrue for auth, PostgREST for data, Postgres functions (`join_matchmaking`, `finish_match`) for game logic, and Supabase Realtime for live scores. A Windows C++ backend used to proxy all of this — it's still in `backend/` as a reference, but the web app no longer needs it.
