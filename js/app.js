@@ -2,9 +2,9 @@
 //  app.js — the "main" file for TriviaDuel
 //
 //  What it does:
-//    1. On startup: check that the C++ backend is configured, then check
+//    1. On startup: check the Supabase keys in js/config.js, then check
 //       whether you are already logged in.
-//    2. Login / signup / guest / sign-out (all proxied through the C++ server).
+//    2. Login / signup / guest / sign-out (all through Supabase directly).
 //    3. Show and hide screens (the router).
 //    4. Shared little helpers.
 // ============================================================================
@@ -117,101 +117,29 @@ function authSignOut() {
 
 // ---- app startup -----------------------------------------------------------
 //
-// The "Almost ready" screen used to appear for THREE different problems, which
-// is why it looked stuck:
-//   1. the page is opened straight from disk (file://) — the browser can't
-//      reach /api/status at all, no matter what you paste into config.ini
-//   2. the C++ backend isn't running (or is on another port)
-//   3. the backend is up, but the Supabase keys are missing
-// Each case now gets its own explanation and the right fix.
-
-let setupRetryTimer = null;
-
-function stopSetupRetry() {
-  if (setupRetryTimer) { clearInterval(setupRetryTimer); setupRetryTimer = null; }
-}
-
-// flavour: "config" (keys missing) | "offline" (backend down, auto-retry) | "file" (opened from disk)
-function showSetup(flavour) {
-  stopSetupRetry();
-  resetArenaTheme();
-
-  const title = document.getElementById("setup-title");
-  const desc = document.getElementById("setup-desc");
-  const steps = document.getElementById("setup-steps");
-  const btn = document.getElementById("setup-reload");
-
-  if (flavour === "config") {
-    title.textContent = "Almost ready";
-    desc.innerHTML =
-      "TriviaDuel runs on a <b>C++ backend</b> which talks to a free database called <b>Supabase</b>. " +
-      "You just need to paste 2 keys into <code>backend/config.ini</code>.";
-    steps.innerHTML =
-      "<li>Create a free project at <b>supabase.com</b></li>" +
-      "<li>Open the SQL Editor and run <code>database/schema.sql</code>, then <code>database/seed.sql</code></li>" +
-      "<li>Copy your <b>Project URL</b> and <b>anon key</b> into <code>backend/config.ini</code></li>" +
-      "<li>Restart the backend (<code>backend/app.exe</code>) and refresh this page</li>";
-    btn.textContent = "I added the keys — reload";
-    btn.onclick = function () { location.reload(); };
-  } else if (flavour === "offline") {
-    title.textContent = "Backend not running";
-    desc.innerHTML =
-      "This page can't reach the <b>C++ backend</b> — the little server that serves the app " +
-      "and talks to Supabase. Start it, and this screen will refresh itself.";
-    steps.innerHTML =
-      "<li>Build it (first time only): <code>cd backend && make</code></li>" +
-      "<li>Run it from the project root: <code>./backend/app.exe</code></li>" +
-      "<li>You should see: <code>C++ backend listening on http://localhost:3000</code></li>" +
-      "<li>Keep this tab open — it will move on automatically</li>";
-    btn.textContent = "Retry now";
-    btn.onclick = function () { appInit(); };
-    startSetupRetry();
-  } else { // "file"
-    title.textContent = "Open it from the backend";
-    desc.innerHTML =
-      "You opened <code>index.html</code> straight from disk (a <code>file://</code> page). " +
-      "The browser can't reach the backend's <code>/api/status</code> from a file, so the app " +
-      "will never move past this screen here.";
-    steps.innerHTML =
-      "<li>Start the backend: <code>./backend/app.exe</code> from the project root</li>" +
-      "<li>Then open this address in your browser instead of the file:</li>";
-    btn.textContent = "Open http://localhost:3000";
-    btn.onclick = function () { location.href = "http://localhost:3000"; };
-  }
-
-  go("screen-setup");
-}
-
-// while stuck on the "offline" screen, keep pinging /api/status every few
-// seconds; the moment the backend answers, finish startup with no reload
-function startSetupRetry() {
-  stopSetupRetry();
-  setupRetryTimer = setInterval(async function () {
-    let status = null;
-    try { status = await API.call("/api/status"); } catch (e) { status = null; }
-    if (!status) return;                            // still down — keep waiting
-    if (!status.configured) showSetup("config");   // up, but needs keys
-    else await afterBoot();                         // up + configured — carry on
-  }, 3000);
-}
+// The app is a static site that talks to Supabase directly, so the ONLY thing
+// that can hold us at the "Almost ready" screen is missing keys in
+// js/config.js. No backend to wait for, nothing else to configure.
 
 async function appInit() {
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   }
 
-  let status = null;
-  try { status = await API.call("/api/status"); } catch (e) { status = null; }
+  // connect to Supabase and restore the saved session (if any)
+  try { await API.init(); } catch (e) { console.error("API.init:", e.message); }
 
-  if (location.protocol === "file:") { showSetup("file"); return; }
-  if (!status) { showSetup("offline"); return; }        // backend down — auto-retry
-  if (!status.configured) { showSetup("config"); return; }  // keys missing
+  if (!API.configured) {
+    resetArenaTheme();
+    go("screen-setup");
+    return;
+  }
+
   await afterBoot();
 }
 
-// the normal post-boot path: logged in → home, otherwise → auth
+// logged in → home, otherwise → the auth screen
 async function afterBoot() {
-  stopSetupRetry();
   if (API.token) {
     const me = await loadMyProfile();
     if (me && me.profile) {

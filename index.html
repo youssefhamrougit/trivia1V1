@@ -24,18 +24,19 @@
     <section id="screen-setup" class="screen">
       <div class="card center">
         <img class="logo" src="assets/icon.svg" alt="TriviaDuel" />
-        <h1 id="setup-title">Almost ready</h1>
-        <p class="muted" id="setup-desc">
-          TriviaDuel runs on a <b>C++ backend</b> which talks to a free database called <b>Supabase</b>.
-          You just need to paste 2 keys into <code>backend/config.ini</code>.
+        <h1>Almost ready</h1>
+        <p class="muted">
+          TriviaDuel is a static site that stores everything in a free database called <b>Supabase</b>.
+          You just need to paste 2 keys into <code>js/config.js</code>.
         </p>
-        <ol class="steps" id="setup-steps">
+        <ol class="steps">
           <li>Create a free project at <b>supabase.com</b></li>
           <li>Open the SQL Editor and run <code>database/schema.sql</code>, then <code>database/seed.sql</code></li>
-          <li>Copy your <b>Project URL</b> and <b>anon key</b> into <code>backend/config.ini</code></li>
-          <li>Restart the backend (<code>backend/app.exe</code>) and refresh this page</li>
+          <li>In <b>Authentication → Sign In / Providers</b>: turn <b>OFF</b> “Confirm email”, turn <b>ON</b> “Allow anonymous sign-ins”</li>
+          <li>Copy your <b>Project URL</b> and <b>anon key</b> into <code>js/config.js</code></li>
+          <li>Refresh this page — or push to Vercel and refresh the live site</li>
         </ol>
-        <button class="btn" id="setup-reload" onclick="location.reload()">I added the keys — reload</button>
+        <button class="btn" onclick="location.reload()">I added the keys — reload</button>
       </div>
     </section>
 
@@ -186,6 +187,8 @@
 
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/arenas.js"></script>
   <script src="js/app.js"></script>

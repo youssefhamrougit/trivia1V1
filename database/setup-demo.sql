@@ -155,6 +155,10 @@ declare
   found_id uuid;
   picked   bigint[];
 begin
+  -- never trust the client: derive the identity from the JWT instead
+  me := auth.uid();
+  if me is null then return null; end if;
+
   select m.id into found_id
   from public.matches m
   where m.status = 'waiting' and m.player1 <> me
@@ -216,6 +220,10 @@ declare
   m         public.matches%rowtype;
   winner_id uuid;
 begin
+  -- never trust the client: derive the identity from the JWT instead
+  me := auth.uid();
+  if me is null then return; end if;
+
   select * into m from public.matches where id = match_id;
   if not found then return; end if;
 
