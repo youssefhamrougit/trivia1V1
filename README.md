@@ -5,8 +5,7 @@ A live 1v1 trivia battle game that runs in any browser. It's a **static site** (
 Find a stranger, get the same 10 questions, 15 seconds each. Winner takes **+1 trophy**. Climb 7 arenas, Clash Royale style.
 
 
-##⚠️ Active development 
-
+⚠️ Active development 
 
 — the current build ships a complete 1v1 game , yet to be fully developed.
 
