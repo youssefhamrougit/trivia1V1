@@ -157,6 +157,18 @@ const API = {
       return { match_id: data };
     }
 
+    // ---- cancel: atomically remove an abandoned waiting match (left the
+    // queue, or the 7-second human-search window ran out). If a human JUST
+    // joined it in that instant, the RPC hands the match back instead and
+    // we play that human. Returns { match_id } or { match_id: null }.
+    if (path === "/api/trivia/cancel") {
+      const uid = await this._uid();
+      if (!uid) throw new Error("Not logged in");
+      const { data, error } = await sup.rpc("cancel_matchmaking", { me: uid });
+      if (error) throw new Error(error.message);
+      return { match_id: data };
+    }
+
     // ---- match detail: row + opponent + the 10 questions --------------------
     const m = path.match(/^\/api\/trivia\/match\/([^?]+)/);
     if (m) {
@@ -397,6 +409,13 @@ const API = {
             } else if (row.status === "finished" && old.status === "challenged") {
               onEvent({ type: "match_declined", match_id: matchId });
             }
+            return;
+          }
+
+          // match listener: the match just ended (one player finished) —
+          // end it for BOTH players at the same moment
+          if (row.status === "finished" && old.status !== "finished") {
+            onEvent({ type: "match_finished", match_id: matchId });
             return;
           }
 

@@ -165,6 +165,55 @@ $$;
 
 
 -- ============================================================================
+--  FUNCTION: cancel_matchmaking
+--  Called when a player leaves the queue (pressing Cancel, or after the
+--  7-second human-search window when they fall back to QuizBot).
+--
+--  Atomically removes the player's waiting match. One race matters: a
+--  human may join in the exact millisecond we give up. So we lock the
+--  waiting row first — if a joiner got there before us (status flipped
+--  to 'active'), we hand that match back and the client plays the human
+--  instead of QuizBot. Returns the match id, or null if cancelled.
+-- ============================================================================
+create or replace function public.cancel_matchmaking(me uuid)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+  found_id uuid;
+begin
+  -- never trust the client: derive the identity from the JWT instead
+  me := auth.uid();
+  if me is null then return null; end if;
+
+  -- lock our waiting match (if any) so the decision below is race-free
+  select id into found_id
+  from public.matches
+  where player1 = me and status = 'waiting' and player2 is null
+  order by created_at
+  limit 1
+  for update;
+
+  if found_id is not null then
+    -- no human joined: remove the empty seat
+    delete from public.matches where id = found_id;
+    return null;
+  end if;
+
+  -- our waiting match is gone — a human just joined it. Tell the client
+  -- to play that human instead of QuizBot.
+  select id into found_id
+  from public.matches
+  where player1 = me and status = 'active' and player2 is not null
+  limit 1;
+
+  return found_id;
+end;
+$$;
+
+
+-- ============================================================================
 --  FUNCTION: finish_match
 --  Called by each player when the match ends.
 --  Decides the winner and moves trophies (+1 / -1, 1:1 ratio).
@@ -191,12 +240,15 @@ begin
   if not found then return; end if;
 
   if me not in (m.player1, m.player2) then return; end if;
-  if m.status = 'finished' then return; end if;
 
+  -- merge scores first so the second finisher's last answer still counts
+  -- (with "ends for both", the first finisher ends the match for everyone)
   update public.matches
   set score1 = greatest(m.score1, s1),
       score2 = greatest(m.score2, s2)
   where id = match_id;
+
+  if m.status = 'finished' then return; end if;
 
   select * into m from public.matches where id = match_id;
 

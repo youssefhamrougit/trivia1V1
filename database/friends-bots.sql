@@ -228,12 +228,15 @@ begin
   if not found then return; end if;
 
   if me not in (m.player1, m.player2) then return; end if;
-  if m.status = 'finished' then return; end if;
 
+  -- merge scores first so the second finisher's last answer still counts
+  -- (with "ends for both", the first finisher ends the match for everyone)
   update public.matches
   set score1 = greatest(m.score1, s1),
       score2 = greatest(m.score2, s2)
   where id = match_id;
+
+  if m.status = 'finished' then return; end if;
 
   select * into m from public.matches where id = match_id;
 

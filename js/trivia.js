@@ -18,6 +18,9 @@ const QUESTION_SECONDS = 15;
 const QUESTIONS_PER_MATCH = 10;
 const MEDAL_ICONS = ["assets/icons/medal-1.svg", "assets/icons/medal-2.svg", "assets/icons/medal-3.svg"];
 
+// how long we wait for a human opponent before switching to QuizBot
+const HUMAN_SEARCH_SECONDS = 7;
+
 // all of the game's variables live in one object (like a struct)
 let triviaState = {
   mode: null,        // 'online' = real match | 'bot' = practice
@@ -40,6 +43,11 @@ let triviaState = {
   starting: false,   // guard so the match can't start twice (concurrency)
   started: false,    // true once the match has begun — stops the queue poller
                      // from re-triggering and wiping the score back to question 1
+  opponentFound: false, // a human joined our queue — never fall back to QuizBot
+  fallbackTimer: null,  // the 7-second human-search timer (queue)
+  queueTimer: null,     // the per-second countdown tick on the queue screen
+  ending: false,        // guard so the match ends exactly once (for BOTH players)
+  botFallback: false,   // this game started because no human was found
   lastWinner: null,  // for the result screen
   lastDelta: 0,
   lastOnline: false,
@@ -48,7 +56,46 @@ let triviaState = {
 
 // ============================================================================
 //  MATCHMAKING  (tap "Find Match")
+//
+//  Humans get HUMAN_SEARCH_SECONDS to queue up at the same time as us. If
+//  nobody joins in that window, we play QuizBot instead of sitting in the
+//  queue forever.
 // ============================================================================
+
+function setQueueStatus(text) {
+  const el = document.getElementById("queue-status");
+  if (el) el.textContent = text;
+}
+
+function clearQueueCountdown() {
+  if (triviaState.queueTimer) {
+    clearInterval(triviaState.queueTimer);
+    triviaState.queueTimer = null;
+  }
+}
+
+function clearQueueTimers() {
+  if (triviaState.fallbackTimer) {
+    clearTimeout(triviaState.fallbackTimer);
+    triviaState.fallbackTimer = null;
+  }
+  clearQueueCountdown();
+}
+
+// count the search window down on the queue screen
+function startQueueCountdown() {
+  clearQueueCountdown();
+  let left = HUMAN_SEARCH_SECONDS;
+  setQueueStatus("Searching for a human opponent… (" + left + "s)");
+  triviaState.queueTimer = setInterval(function () {
+    left -= 1;
+    if (left > 0) setQueueStatus("Searching for a human opponent… (" + left + "s)");
+    else {
+      clearQueueCountdown();
+      setQueueStatus("No humans online right now — matching you with QuizBot!");
+    }
+  }, 1000);
+}
 
 function triviaFindMatch() {
   setError("trivia-error", "");
@@ -56,6 +103,11 @@ function triviaFindMatch() {
   triviaState.mode = "online";
   triviaState.casual = false;
   triviaState.started = false;
+  triviaState.ending = false;
+  triviaState.botFallback = false;
+  triviaState.opponentFound = false;
+  clearQueueTimers();
+  startQueueCountdown();
 
   // ask Supabase: join an existing waiting match, or create a new one.
   // the database also picks the 10 questions (so both players get the same ones)
@@ -71,8 +123,15 @@ function triviaFindMatch() {
 
       // safety net: also poll the match row in case the stream hiccups
       triviaPollForOpponent(0);
+
+      // no human in the window? fall back to QuizBot
+      triviaState.fallbackTimer = setTimeout(function () {
+        if (triviaState.opponentFound || triviaState.started) return;
+        triviaFallbackToBot();
+      }, HUMAN_SEARCH_SECONDS * 1000);
     })
     .catch(function (err) {
+      clearQueueTimers();
       setError("trivia-error", "Could not join matchmaking: " + err.message);
       go("screen-trivia-home");
     });
@@ -99,8 +158,70 @@ function triviaPollForOpponent(attempt) {
   }, 1500);
 }
 
+// no human joined within the search window — play QuizBot instead, reusing
+// the questions the queue match already picked (so it feels like a real game)
+async function triviaFallbackToBot() {
+  if (triviaState.opponentFound || triviaState.started || triviaState.mode !== "online") return;
+  const matchId = triviaState.matchId;
+
+  // grab the questions first (we may delete the match row in a moment)
+  let reuseQuestions = null;
+  if (matchId) {
+    try {
+      const data = await API.call("/api/trivia/match/" + matchId);
+      if (triviaState.mode !== "online") return; // cancelled while we looked
+      if (data.match && data.match.status === "active") {
+        triviaStartMatch(matchId); // a human is there after all
+        return;
+      }
+      if (Array.isArray(data.questions) && data.questions.length) reuseQuestions = data.questions;
+    } catch (e) { /* the row may already be gone — fall through */ }
+  }
+
+  // atomically remove the waiting match — unless a human JUST joined it,
+  // in which case the database hands it back and we play that human
+  if (matchId) {
+    try {
+      const res = await API.call("/api/trivia/cancel", { method: "POST", body: {} });
+      if (triviaState.mode !== "online") return; // cancelled while we looked
+      if (res && res.match_id) {
+        triviaStartMatch(res.match_id);
+        return;
+      }
+    } catch (e) { /* leave the row; it ages out on its own */ }
+  }
+
+  // a human match may have started through the stream while we were
+  // deciding — don't stomp on it
+  if (triviaState.mode !== "online" || triviaState.started || triviaState.opponentFound) return;
+
+  if (reuseQuestions) {
+    startBotFallbackGame(reuseQuestions);
+    return;
+  }
+
+  // last resort: a brand-new random set, exactly like practice mode
+  triviaStartBot("medium", true);
+}
+
+// launch the QuizBot game with the queue match's questions
+function startBotFallbackGame(questions) {
+  setQueueStatus("No humans online right now — matching you with QuizBot!");
+  triviaState.botFallback = true;
+  closeStream(); // stop listening for queue updates — we've given up on humans
+  prepareBotGame("medium");
+  applyBotDifficulty("medium").then(function () {
+    showToast("No humans found — playing QuizBot instead", "gold");
+    triviaStartBotGame(questions);
+  });
+}
+
 function triviaCancelQueue() {
+  clearQueueTimers();
   closeStream();
+  triviaState.mode = null; // the search is over — stop any in-flight fallback
+  // don't leave a waiting match behind that someone could join into empty
+  API.call("/api/trivia/cancel", { method: "POST", body: {} }).catch(function () {});
   triviaState.matchId = null;
   go("screen-trivia-home");
 }
@@ -111,8 +232,12 @@ function triviaCancelQueue() {
 
 async function triviaStartMatch(matchId) {
   if (triviaState.starting || triviaState.started) return;
+  if (triviaState.mode !== "online") return; // a QuizBot fallback already took over
   triviaState.starting = true;
   triviaState.started = true;
+  triviaState.opponentFound = true; // a human joined — never fall back to QuizBot
+  triviaState.ending = false;
+  clearQueueTimers(); // stop the 7-second fallback + countdown
 
   closeStream(); // stop the queue listener
 
@@ -141,6 +266,9 @@ async function triviaStartMatch(matchId) {
     if (ev.type === "answer" && ev.from !== currentUser.id) {
       triviaState.oppScore = ev.score;
       updateScoreboard();
+    } else if (ev.type === "match_finished") {
+      // the opponent finished first — the match ends for BOTH of us now
+      endMatch();
     }
   });
 
@@ -162,36 +290,48 @@ async function triviaStartMatch(matchId) {
 // The difficulty settings come from Supabase's bot_config table; if that
 // table hasn't been created yet (see database/friends-bots.sql) we fall
 // back to sensible built-in defaults.
-async function triviaStartBot(diff) {
+async function triviaStartBot(diff, fromFallback) {
   setError("trivia-error", "");
   // close the difficulty picker once a match starts
   const botRow = document.getElementById("bot-diff-row");
   if (botRow) botRow.hidden = true;
   diff = diff || "medium";
-  triviaState.mode = "bot";
-  triviaState.casual = false;
-  triviaState.started = false;
-  triviaState.botDiff = diff;
-  triviaState.oppName = "QuizBot";
-  triviaState.oppAvatar = '<img class="avatar-img" src="assets/icons/robot.svg" alt="QuizBot">';
+  prepareBotGame(diff);
+  triviaState.botFallback = !!fromFallback;
 
   await applyBotDifficulty(diff);
 
   // grab all questions from Supabase and pick 10 random ones
   try {
     const allQs = await API.call("/api/questions?limit=200");
-    triviaState.questions = [];
     const pool = allQs.slice();
+    const questions = [];
     for (let i = 0; i < QUESTIONS_PER_MATCH && pool.length > 0; i++) {
       const idx = randomInt(pool.length);
-      triviaState.questions.push(pool.splice(idx, 1)[0]);
+      questions.push(pool.splice(idx, 1)[0]);
     }
+    triviaStartBotGame(questions);
   } catch (err) {
     setError("trivia-error", "Could not load questions: " + err.message);
     go("screen-trivia-home");
-    return;
   }
+}
 
+// shared bot setup: mode, difficulty, opponent identity (QuizBot)
+function prepareBotGame(diff) {
+  triviaState.mode = "bot";
+  triviaState.casual = false;
+  triviaState.started = false;
+  triviaState.ending = false;
+  triviaState.botDiff = diff || "medium";
+  triviaState.oppName = "QuizBot";
+  triviaState.oppAvatar = '<img class="avatar-img" src="assets/icons/robot.svg" alt="QuizBot">';
+  triviaState.matchId = null; // the online queue is over — don't touch it again
+}
+
+// shared tail: actually begin a QuizBot game with the given questions
+function triviaStartBotGame(questions) {
+  triviaState.questions = questions || [];
   triviaState.qIndex = 0;
   triviaState.myScore = 0;
   triviaState.oppScore = 0;
@@ -382,6 +522,7 @@ function finishQuestion(correct, chosenBtn) {
 }
 
 function triviaNext() {
+  if (triviaState.ending) return; // the match already ended (e.g. match_finished)
   triviaState.qIndex++;
   if (triviaState.qIndex >= triviaState.questions.length) {
     endMatch();
@@ -395,7 +536,10 @@ function triviaNext() {
 // ============================================================================
 
 async function endMatch() {
+  if (triviaState.ending) return; // the match can only end once (for both players)
+  triviaState.ending = true;
   clearInterval(triviaState.timer);
+  clearQueueTimers();
   closeStream();
 
   const online = triviaState.mode === "online";
@@ -455,7 +599,9 @@ async function endMatch() {
       : triviaState.casual
         ? "Friendly duel — no rank change"
         : "Couldn't reach the network — no rank change"
-    : "Practice game — no rank change";
+    : triviaState.botFallback
+      ? "No humans found — played QuizBot (no rank change)"
+      : "Practice game — no rank change";
   deltaEl.classList.remove("up", "down", "flat");
   deltaEl.classList.add(delta > 0 ? "up" : delta < 0 ? "down" : "flat");
 
@@ -522,6 +668,8 @@ function triviaRematch() {
 function triviaCleanup() {
   clearInterval(triviaState.timer);
   closeStream();
+  clearQueueTimers();
+  triviaState.mode = null; // stop any in-flight fallback from starting a match
   triviaState.matchId = null;
   triviaState.started = false;
 }
