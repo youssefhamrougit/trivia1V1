@@ -10,7 +10,7 @@ insert into auth.users (
   confirmation_token, recovery_token, email_change_token_current, email_change
 ) values (
   '00000000-0000-0000-0000-000000000001',
-  'bot@triviaDuel.local',
+  'bot@triviaduel.local',
   '$2a$10$xJwKqQjQjQjQjQjQjQjQjOe8e8e8e8e8e8e8e8e8e8e8e8e8e8e',
   now(), now(), now(),
   '', '', '', ''

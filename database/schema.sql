@@ -100,10 +100,7 @@ create policy "create match"
 
 create policy "update matches"
   on public.matches for update
-  using (
-    (auth.uid() in (player1, player2))
-    or (status = 'waiting' and player2 is null)
-  );
+  using (auth.uid() in (player1, player2));
 
 
 -- ============================================================================

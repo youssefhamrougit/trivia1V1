@@ -1,22 +1,11 @@
 // ============================================================================
-//  config.js — paste your Supabase keys here.
+//  config.js — TriviaDuel Supabase configuration.
 //
-//  TriviaDuel is a static site that talks to Supabase DIRECTLY from the
-//  browser (auth, questions, matchmaking RPCs, live scores via Realtime).
-//  There is no server of our own, so the only setup is these two keys.
-//
-//  HOW TO GET THEM:
-//    1. supabase.com -> your project -> Project Settings -> API
-//    2. copy the "Project URL" and the "publishable" (aka anon) key here
-//
-//  NOTE: the publishable key is PUBLIC by design — it ships to the browser
-//  and the real security comes from the Row Level Security policies in
-//  database/schema.sql. NEVER put the SECRET key (sb_secret_... / the old
-//  service_role key) in this repo — it grants full database access and this
-//  app has no server, so it doesn't need it.
-//
-//  If the keys are missing the app still opens (no setup screen anymore) —
-//  online play just won't work until these two values are real.
+//  TriviaDuel talks to Supabase DIRECTLY from the browser (auth, questions,
+//  matchmaking RPCs, live scores via Realtime). This file holds the project's
+//  Supabase credentials — the publishable (anon) key is PUBLIC by design: it
+//  ships to the browser, and the real security comes from the Row Level
+//  Security policies in database/schema.sql.
 // ============================================================================
 
 // NOTE: must be set on `window` (not `const`) — api.js reads it via

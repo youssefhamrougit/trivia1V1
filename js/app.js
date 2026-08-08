@@ -2,8 +2,8 @@
 //  app.js — the "main" file for TriviaDuel
 //
 //  What it does:
-//    1. On startup: check the Supabase keys in js/config.js, then check
-//       whether you are already logged in.
+//    1. On startup: connect to Supabase and check whether you are already
+//       logged in.
 //    2. Login / signup / guest / sign-out (all through Supabase directly).
 //    3. Show and hide screens (the router).
 //    4. Shared little helpers.
@@ -18,13 +18,6 @@ let currentProfile = null; // the database row for this user (trophies, wins, ..
 function setError(id, message) {
   const el = document.getElementById(id);
   if (el) el.textContent = message || "";
-}
-
-// when the Supabase keys in js/config.js are missing, reveal the small hint
-// on the auth screen (replaces the old blocking "Almost ready" page)
-function showKeysHint() {
-  const el = document.getElementById("auth-keys-hint");
-  if (el) el.style.display = "block";
 }
 
 function pad2(n) {
@@ -125,9 +118,8 @@ function authSignOut() {
 // ---- app startup -----------------------------------------------------------
 //
 // The app is a static site that talks to Supabase directly. No backend to
-// wait for: we open the auth screen right away, even if the keys in
-// js/config.js are still missing (online play just won't work until they're
-// added — a small hint on the auth screen explains it).
+// wait for: we connect, restore the saved session (if any), and open the
+// right screen.
 
 async function appInit() {
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
@@ -136,15 +128,6 @@ async function appInit() {
 
   // connect to Supabase and restore the saved session (if any)
   try { await API.init(); } catch (e) { console.error("API.init:", e.message); }
-
-  if (!API.configured) {
-    // no keys in js/config.js yet — skip the old "Almost ready" screen and
-    // open the app anyway, with a gentle hint on the auth screen
-    resetArenaTheme();
-    showKeysHint();
-    go("screen-auth");
-    return;
-  }
 
   await afterBoot();
 }

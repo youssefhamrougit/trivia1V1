@@ -20,19 +20,10 @@ const API = {
   token: null, // the JWT of the current session (null = logged out)
   user: null,  // the supabase user object of the current session
 
-  // are the Supabase keys in js/config.js real yet?
-  get configured() {
-    const c = window.TRIVIADUEL_CONFIG;
-    if (!c) return false;
-    if (!c.SUPABASE_URL || c.SUPABASE_URL.includes("PASTE") || c.SUPABASE_URL.includes("YOUR_PROJECT")) return false;
-    if (!c.SUPABASE_ANON_KEY || c.SUPABASE_ANON_KEY.includes("PASTE")) return false;
-    return c.SUPABASE_URL.startsWith("http") && c.SUPABASE_ANON_KEY.length > 20;
-  },
-
   // build the supabase client + restore the saved session (if any)
   async init() {
-    if (this._supabase || !this.configured) return false;
-    if (!window.supabase) throw new Error("supabase-js failed to load (check the CDN script tag)");
+    if (this._supabase) return false;
+    if (!window.supabase) throw new Error("Service is temporarily unavailable — please try again.");
     this._supabase = window.supabase.createClient(
       window.TRIVIADUEL_CONFIG.SUPABASE_URL,
       window.TRIVIADUEL_CONFIG.SUPABASE_ANON_KEY
@@ -57,18 +48,8 @@ const API = {
 
   // one logical call, mirroring the old /api/* routes
   async call(path, opts) {
-    if (!this.configured) {
-      // no keys in js/config.js — give a helpful message instead of a
-      // confusing "Supabase is not initialised" error
-      throw new Error("Online play needs your Supabase keys — add them to js/config.js.");
-    }
     const sup = this._ensureClient();
     const body = (opts && opts.body) || {};
-
-    // ---- status: are the keys set? -----------------------------------------
-    if (path === "/api/status") {
-      return { name: "TriviaDuel", backend: "Supabase (browser)", configured: this.configured };
-    }
 
     // ---- auth (GoTrue) ------------------------------------------------------
     if (path === "/api/auth/signup") {

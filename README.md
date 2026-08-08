@@ -15,7 +15,7 @@
 <br>
 
 ![license](https://img.shields.io/badge/license-MIT-blue)
-![status](https://img.shields.io/badge/status-active%20development-yellow)
+![status](https://img.shields.io/badge/status-live-brightgreen)
 ![static](https://img.shields.io/badge/static%20site-vanilla%20JS-8b5cf6)
 
 </div>
@@ -62,7 +62,7 @@ triviaduel/
 ├── .env.example        # env var reference (placeholders only)
 ├── assets/             # icons, arena art, UI graphics
 ├── js/
-│   ├── config.js       # 👉 your Supabase URL + publishable key
+│   ├── config.js       # Supabase config (project URL + publishable key)
 │   ├── api.js          # Supabase client (auth, RPCs, Realtime)
 │   ├── app.js          # startup, login, screen switching
 │   ├── arenas.js       # the 7-arena "Knowledge Ladder"
@@ -75,9 +75,9 @@ triviaduel/
 
 ## 🗺️ Status
 
-⚠️ **Active development** — a complete, playable 1v1 game, with more on the way.
+✅ **Live** — a complete, playable 1v1 game in production.
 
-**✅ Shipped** — live matchmaking, real-time score relay, 7-arena ladder, QuizBot practice mode, leaderboard, email/guest auth, PWA install.
+**Shipped** — live matchmaking, real-time score relay, 7-arena ladder, QuizBot practice mode, leaderboard, email/guest auth, PWA install.
 
 **⬜ Roadmap** — rate limiting & abuse protection, AI-generated questions, short-lived Realtime tokens for guest abuse.
 

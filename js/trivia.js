@@ -30,7 +30,8 @@ let triviaState = {
   streak: 0,         // consecutive correct answers in a row
   oppName: "…",
   oppAvatar: "?",
-  answered: false,   // have we picked an answer this question?  stream: null,       // the live Realtime subscription for this match / queue
+  answered: false,   // have we picked an answer this question?
+  stream: null,      // the live Realtime subscription for this match / queue
   timer: null,       // the per-question countdown
   starting: false,   // guard so the match can't start twice (concurrency)
   started: false,    // true once the match has begun — stops the queue poller
