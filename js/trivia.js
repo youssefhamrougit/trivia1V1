@@ -120,6 +120,8 @@ async function triviaStartMatch(matchId) {
     return;
   }
 
+  showToast("Opponent found — good luck!", "ok");
+
   const match = data.match;
   const opp = data.opponent || { username: "Player" };
   triviaState.iAmPlayer1 = match.player1 === currentUser.id;
@@ -141,6 +143,7 @@ async function triviaStartMatch(matchId) {
   triviaState.oppScore = 0;
   triviaState.streak = 0;
 
+  buildProgressDots();
   setScoreboard();
   showArenaInMatch();
   go("screen-trivia-match");
@@ -174,6 +177,7 @@ async function triviaStartBot() {
   triviaState.oppScore = 0;
   triviaState.streak = 0;
 
+  buildProgressDots();
   setScoreboard();
   showArenaInMatch();
   go("screen-trivia-match");
@@ -184,6 +188,18 @@ function closeStream() {
   if (triviaState.stream) {
     triviaState.stream.close();
     triviaState.stream = null;
+  }
+}
+
+// the 10 little dots that track progress through the match
+function buildProgressDots() {
+  const wrap = document.getElementById("match-progress");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  for (let i = 0; i < QUESTIONS_PER_MATCH; i++) {
+    const d = document.createElement("span");
+    d.className = "pdot";
+    wrap.appendChild(d);
   }
 }
 
@@ -200,15 +216,21 @@ function setScoreboard() {
 }
 
 function updateScoreboard() {
-  document.getElementById("match-my-score").textContent = triviaState.myScore;
-  document.getElementById("match-opp-score").textContent = triviaState.oppScore;
+  animateNumber(document.getElementById("match-my-score"), triviaState.myScore, 260);
+  animateNumber(document.getElementById("match-opp-score"), triviaState.oppScore, 260);
 }
 
 function updateStreak() {
   const pill = document.getElementById("match-streak");
-  pill.innerHTML = triviaState.streak >= 2
+  const on = triviaState.streak >= 2;
+  pill.innerHTML = on
     ? '<img class="pill-icon" src="assets/icons/flame.svg" alt=""> ' + triviaState.streak + " streak"
     : "streak: " + triviaState.streak;
+  if (on) {
+    pill.classList.remove("flame-on");
+    void pill.offsetWidth; // restart the pop animation
+    pill.classList.add("flame-on");
+  }
 }
 
 function renderQuestion() {
@@ -221,13 +243,27 @@ function renderQuestion() {
     "Question " + (triviaState.qIndex + 1) + " of " + QUESTIONS_PER_MATCH + " · " + QUESTION_SECONDS + " seconds each";
   updateStreak();
 
-  // build the 4 answer buttons
+  // progress dots: done / current / upcoming
+  const dots = document.querySelectorAll("#match-progress .pdot");
+  dots.forEach(function (d, i) {
+    d.className = "pdot" + (i < triviaState.qIndex ? " done" : i === triviaState.qIndex ? " now" : "");
+  });
+
+  // build the 4 answer buttons with A/B/C/D badges
   const wrap = document.getElementById("match-answers");
   wrap.innerHTML = "";
+  const letters = ["A", "B", "C", "D"];
   for (let i = 0; i < q.options.length; i++) {
     const btn = document.createElement("button");
     btn.className = "answer";
-    btn.textContent = q.options[i];
+    btn.style.animationDelay = i * 60 + "ms";
+    const badge = document.createElement("span");
+    badge.className = "answer-letter";
+    badge.textContent = letters[i] || String(i + 1);
+    const txt = document.createElement("span");
+    txt.textContent = q.options[i];
+    btn.appendChild(badge);
+    btn.appendChild(txt);
     btn.onclick = function () { triviaPick(i, q, btn); };
     wrap.appendChild(btn);
   }
@@ -245,6 +281,7 @@ function startQuestionTimer() {
   triviaState.timer = setInterval(function () {
     remaining -= 0.1;
     fill.style.width = Math.max(0, (remaining / QUESTION_SECONDS) * 100) + "%";
+    fill.classList.toggle("urgent", remaining <= 5 && !triviaState.answered);
     if (remaining <= 0 && !triviaState.answered) {
       triviaState.answered = true;
       clearInterval(triviaState.timer);
@@ -368,11 +405,22 @@ async function endMatch() {
     '<img src="' + (iWon ? "assets/icons/trophy.svg" : tie ? "assets/icons/tie.svg" : "assets/icons/skull.svg") + '" alt="">';
   document.getElementById("result-title").textContent = iWon ? "You win!" : tie ? "It's a tie!" : "You lost!";
   const deltaText = delta > 0 ? "+" + delta + " trophy" : delta < 0 ? delta + " trophy" : "No trophy change";
-  document.getElementById("result-trophy-line").textContent = online
+  const deltaEl = document.getElementById("result-trophy-line");
+  deltaEl.textContent = online
     ? ranked
       ? deltaText
       : "Couldn't reach the network — no rank change"
     : "Practice game — no rank change";
+  deltaEl.classList.remove("up", "down", "flat");
+  deltaEl.classList.add(delta > 0 ? "up" : delta < 0 ? "down" : "flat");
+
+  // celebration! confetti fountain on a win
+  if (iWon) confettiBurst();
+
+  // scores + animated comparison bars
+  animateNumber(document.getElementById("result-my-score"), triviaState.myScore, 500);
+  animateNumber(document.getElementById("result-opp-score"), triviaState.oppScore, 500);
+  document.getElementById("result-opp-name").textContent = triviaState.oppName;
 
   // "new arena unlocked!" celebration when a win crosses a threshold
   const promo = document.getElementById("result-arena-msg");
@@ -380,14 +428,25 @@ async function endMatch() {
     const peak = (currentProfile && currentProfile.peak_trophies) || 0;
     const before = arenaForTrophies(peak - delta);
     const after = arenaForTrophies(peak);
-    promo.innerHTML = (delta > 0 && after.id > before.id)
-      ? 'Arena unlocked: <img class="inline-icon" src="' + after.icon + '" alt=""> ' + after.name + "!"
-      : "";
+    if (delta > 0 && after.id > before.id) {
+      promo.innerHTML = 'Arena unlocked: <img class="inline-icon" src="' + after.icon + '" alt=""> ' + after.name + "!";
+      promo.classList.add("gold-msg");
+      showArenaUnlock(after);
+    } else {
+      promo.innerHTML = "";
+      promo.classList.remove("gold-msg");
+    }
   }
 
-  document.getElementById("result-my-score").textContent = triviaState.myScore;
-  document.getElementById("result-opp-score").textContent = triviaState.oppScore;
-  document.getElementById("result-opp-name").textContent = triviaState.oppName;
+  // animate the score bars in
+  const maxS = Math.max(triviaState.myScore, triviaState.oppScore, 1);
+  const myBar = document.getElementById("result-my-bar");
+  const oppBar = document.getElementById("result-opp-bar");
+  const fillBars = function () {
+    myBar.style.width = Math.round((triviaState.myScore / maxS) * 100) + "%";
+    oppBar.style.width = Math.round((triviaState.oppScore / maxS) * 100) + "%";
+  };
+  requestAnimationFrame(function () { requestAnimationFrame(fillBars); });
 
   go("screen-trivia-result");
 }
@@ -430,9 +489,13 @@ async function loadTriviaHome() {
   if (!currentProfile) return;
   const trophies = currentProfile.trophies || 0;
   const peak = currentProfile.peak_trophies || trophies;
-  document.getElementById("trivia-trophies").textContent = trophies;
-  document.getElementById("trivia-wins").textContent = currentProfile.wins;
-  document.getElementById("trivia-losses").textContent = currentProfile.losses;
+  animateNumber(document.getElementById("trivia-trophies"), trophies, 500);
+  animateNumber(document.getElementById("trivia-wins"), currentProfile.wins || 0, 500);
+  animateNumber(document.getElementById("trivia-losses"), currentProfile.losses || 0, 500);
+
+  // player avatar initial in the top bar
+  const av = document.getElementById("home-avatar");
+  if (av) av.textContent = (currentProfile.username || "?").charAt(0).toUpperCase();
 
   // arena banner + paint the app in the arena's colors
   const prog = arenaProgress(peak);
@@ -443,7 +506,33 @@ async function loadTriviaHome() {
   document.getElementById("arena-next").textContent = prog.next
     ? prog.needed + " trophies to " + prog.next.name
     : "Max arena reached — you're a legend!";
+  document.getElementById("arena-peak").textContent = "Peak: " + peak + " trophies";
+  buildArenaLadder(peak);
   applyArenaTheme(a);
+}
+
+// the little 7-step Knowledge Ladder strip under the arena card
+function buildArenaLadder(peak) {
+  const wrap = document.getElementById("arena-ladder");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+  const cur = arenaForTrophies(peak);
+  for (const a of ARENAS) {
+    const step = document.createElement("div");
+    step.className = "ladder-step" + (peak >= a.min ? " unlocked" : "") + (a === cur ? " current" : "");
+    step.title = a.name;
+    const img = document.createElement("img");
+    img.src = a.icon;
+    img.alt = a.name;
+    step.appendChild(img);
+    if (peak < a.min) {
+      const lock = document.createElement("span");
+      lock.className = "ladder-lock";
+      lock.textContent = "\uD83D\uDD12";
+      step.appendChild(lock);
+    }
+    wrap.appendChild(step);
+  }
 }
 
 // show the arena pill on the match screen + theme it

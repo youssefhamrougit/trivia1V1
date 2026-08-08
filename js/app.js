@@ -28,6 +28,171 @@ function randomInt(n) {
   return Math.floor(Math.random() * n);
 }
 
+// ---- UI helpers: toasts, animated numbers, confetti -------------------------
+
+// a small notification that slides in from the top and fades out.
+// types: "ok" (green) | "err" (red) | "gold" (celebration)
+function showToast(message, type) {
+  const wrap = document.getElementById("toast-wrap");
+  if (!wrap) return;
+  const t = document.createElement("div");
+  t.className = "toast" + (type ? " " + type : "");
+  t.textContent = message;
+  wrap.appendChild(t);
+  setTimeout(function () { t.classList.add("show"); }, 10);
+  setTimeout(function () {
+    t.classList.remove("show");
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 320);
+  }, 2600);
+}
+
+// count a number up (or down) inside `el` with a smooth ease-out tween.
+// each call cancels the previous tween, so rapid live score updates stay smooth.
+function animateNumber(el, to, duration) {
+  if (!el) return;
+  duration = duration || 320;
+  const start = el._v !== undefined ? el._v : (parseInt(el.textContent, 10) || 0);
+  if (el._raf) cancelAnimationFrame(el._raf);
+  if (start === to) { el.textContent = to; el._v = to; return; }
+  const t0 = performance.now();
+  function step(now) {
+    const p = Math.min(1, (now - t0) / duration);
+    const e = 1 - Math.pow(1 - p, 3); // ease-out cubic
+    el.textContent = Math.round(start + (to - start) * e);
+    if (p < 1) el._raf = requestAnimationFrame(step);
+    else { el._v = to; el._raf = null; }
+  }
+  el._v = to;
+  el._raf = requestAnimationFrame(step);
+}
+
+// a confetti fountain — used for big wins and arena unlocks
+let _confettiRunning = false;
+function confettiBurst() {
+  const canvas = document.getElementById("confetti-canvas");
+  if (!canvas || _confettiRunning) return;
+  const ctx = canvas.getContext("2d");
+  const colors = ["#8b5cf6", "#ec4899", "#22d3ee", "#2dd4bf", "#fbbf24", "#fb7185", "#a78bfa"];
+  const DPR = Math.min(2, window.devicePixelRatio || 1);
+  canvas.width = innerWidth * DPR;
+  canvas.height = innerHeight * DPR;
+  canvas.style.width = innerWidth + "px";
+  canvas.style.height = innerHeight + "px";
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  const parts = [];
+  const cx = innerWidth / 2;
+  const cy = innerHeight * 0.82;
+  for (let i = 0; i < 160; i++) {
+    parts.push({
+      x: cx + (Math.random() - 0.5) * 90,
+      y: cy + Math.random() * 20,
+      vx: (Math.random() - 0.5) * 8,
+      vy: -(Math.random() * 11 + 5),
+      g: 0.16,
+      s: Math.random() * 7 + 4,
+      c: colors[(Math.random() * colors.length) | 0],
+      r: Math.random() * Math.PI * 2,
+      rs: (Math.random() - 0.5) * 0.3,
+      life: 1,
+      rect: Math.random() < 0.6,
+    });
+  }
+
+  _confettiRunning = true;
+  canvas.style.display = "block";
+  const t0 = performance.now();
+  function frame(now) {
+    const dt = (now - t0) / 1000; // seconds since the burst started
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    let alive = false;
+    for (const p of parts) {
+      if (p.life <= 0) continue;
+      alive = true;
+      p.vy += p.g;
+      p.x += p.vx;
+      p.y += p.vy;
+      p.r += p.rs;
+      p.life -= dt * 0.72;
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.r);
+      ctx.fillStyle = p.c;
+      if (p.rect) ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+      else { ctx.beginPath(); ctx.arc(0, 0, p.s / 2, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+    if (alive) {
+      requestAnimationFrame(frame);
+    } else {
+      ctx.clearRect(0, 0, innerWidth, innerHeight);
+      canvas.style.display = "none";
+      _confettiRunning = false;
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+// ---- arena unlock modal (Clash-Royale style celebration) -------------------
+
+let _arenaModalLastFocus = null;
+
+// show the full-screen "Arena unlocked!" modal themed in the arena's colors,
+// with confetti. Called from the result screen when a win crosses a threshold.
+function showArenaUnlock(arena) {
+  const modal = document.getElementById("arena-modal");
+  if (!modal) return;
+
+  document.getElementById("arena-modal-icon").innerHTML =
+    '<img src="' + arena.icon + '" alt="' + arena.name + '">';
+  document.getElementById("arena-modal-name").textContent = arena.name;
+  document.getElementById("arena-modal-blurb").textContent = arena.blurb || "";
+  document.getElementById("arena-modal-req").textContent = "Reached " + arena.min + " trophies";
+
+  // paint the card, icon and button in the arena's colors
+  const card = modal.querySelector(".arena-modal-card");
+  card.style.setProperty("--arena-c1", arena.theme.c1);
+  card.style.setProperty("--arena-c2", arena.theme.c2);
+  card.style.setProperty("--arena-glow", arena.theme.glow);
+
+  // replay the entrance ceremony on every unlock: reflow the card so the
+  // gated child animations (kicker, icon pop, name, …) run again
+  card.classList.remove("celebrating");
+  void card.offsetWidth;
+  card.classList.add("celebrating");
+  modal.classList.remove("show");
+  void modal.offsetWidth;
+  modal.classList.add("show");
+  confettiBurst();
+
+  // keyboard support: Escape closes, and focus moves to the Continue button
+  _arenaModalLastFocus = document.activeElement;
+  const btn = modal.querySelector(".arena-modal-btn");
+  if (btn) setTimeout(function () { btn.focus(); }, 260);
+  if (!window._arenaModalEsc) {
+    window._arenaModalEsc = function (e) {
+      if (e.key === "Escape") closeArenaModal();
+    };
+    document.addEventListener("keydown", window._arenaModalEsc);
+  }
+}
+
+function closeArenaModal() {
+  const modal = document.getElementById("arena-modal");
+  if (!modal) return;
+  modal.classList.remove("show");
+  if (window._arenaModalEsc) {
+    document.removeEventListener("keydown", window._arenaModalEsc);
+    window._arenaModalEsc = null;
+  }
+  if (_arenaModalLastFocus && _arenaModalLastFocus.focus) {
+    _arenaModalLastFocus.focus();
+    _arenaModalLastFocus = null;
+  }
+}
+
 // ---- the router: show one screen, hide the rest ---------------------------
 
 function go(screenId) {
