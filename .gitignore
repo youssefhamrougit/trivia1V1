@@ -1,11 +1,8 @@
-# ---- build artifacts (rebuild with: cd backend && mingw32-make) ----
-backend/app.exe
-backend/*.o
-backend/*.dll
-
-# ---- secrets — NEVER commit real Supabase keys ----
-# Copy backend/config.example.ini -> backend/config.ini and paste your keys
-backend/config.ini
+# ---- secrets ----
+# The app's Supabase anon key lives in js/config.js and is committed on
+# purpose — the anon key is PUBLIC by design (the real security is the
+# Row Level Security in database/schema.sql). NEVER commit a
+# service_role / secret key.
 .env
 *.env
 
@@ -17,7 +14,8 @@ backend/config.ini
 Thumbs.db
 desktop.ini
 
-# ---- safety ----
+# ---- local tooling ----
 node_modules/
 dist/
 build/
+.vercel/

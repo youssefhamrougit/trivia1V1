@@ -12,7 +12,7 @@ Find a stranger, get the same 10 questions, 15 seconds each. Winner takes **+1 t
 
 ## What is this?
 
-TriviaDuel is a real-time 1v1 trivia game — no frameworks, no build step, pure HTML/CSS/JS. The browser talks to Supabase directly: GoTrue for auth, PostgREST for data, Postgres functions (`join_matchmaking`, `finish_match`) for game logic, and Supabase Realtime for live scores. There is no server of our own — no C++, no Node, nothing to build or deploy. (The repo keeps the old Windows C++ backend in `backend/` purely as historical reference; the web app never loads it.)
+TriviaDuel is a real-time 1v1 trivia game — no frameworks, no build step, pure HTML/CSS/JS. The browser talks to Supabase directly: GoTrue for auth, PostgREST for data, Postgres functions (`join_matchmaking`, `finish_match`) for game logic, and Supabase Realtime for live scores. There is no server of our own — no C++, no Node, nothing to build or deploy.
 
 It's intentionally simple:
 
@@ -49,19 +49,21 @@ Already used a project before? Run **`database/setup-demo.sql`** instead — it'
 
 Open **`js/config.js`** and paste your **Project URL** and **anon public key** from *Project Settings → API*. (The anon key is public by design — the real security is the Row Level Security in the schema.)
 
-To test locally, just open `index.html` in a browser (or run any static server) — no backend needed. There's no setup page to get stuck on: the app opens straight to the login screen, and if the keys are missing it still opens, with a small hint telling you what to add.
+> The keys are already committed with real values, so a fresh clone works out of the box. Only change them if you switch to a different Supabase project.
+
+There's no setup page to get stuck on: the app opens straight to the login screen, and if the keys are missing it still opens, with a small hint telling you what to add.
 
 ### 3. Deploy to Vercel (~2 minutes, free)
 
 1. Push this repo to **GitHub**.
 2. Go to **vercel.com** → **Add New → Project** → import the repo.
 3. Framework preset: **Other** — leave *Build command* and *Output directory* empty (it's static).
-4. Click **Deploy**. Done — the app is live at your `*.vercel.app` URL.
+4. Click **Deploy**. Done — the app is live at your `*.vercel.app` URL. The repo's `vercel.json` ships the right caching headers for the service worker automatically.
 5. Changed keys later? Edit `js/config.js`, commit, and push — Vercel redeploys automatically.
 
 That's it — no servers, no Docker, no environment variables.
 
-> The app is **100% HTML/CSS/JS** — the browser talks to Supabase directly and nothing else needs to run. The old Windows **C++ backend** in `backend/` is legacy code that the web app never loads; it's kept only as a reference and is safe to delete.
+> The app is **100% HTML/CSS/JS** — the browser talks to Supabase directly and nothing else needs to run. There is no server of our own to build or deploy.
 
 ## 🗺️ Project Status
 
@@ -91,6 +93,7 @@ triviaduel/
 ├── style.css               # design system (dark + neon)
 ├── manifest.json           # PWA install
 ├── sw.js                   # offline support (network-first)
+├── vercel.json             # Vercel headers (no-cache for sw.js + index.html)
 ├── assets/
 │   ├── icon.svg            # logo (favicon + in-app)
 │   ├── arenas/             # 7 arena icons
@@ -101,9 +104,6 @@ triviaduel/
 │   ├── app.js              # startup, login, screen switching
 │   ├── arenas.js           # the 7-arena "Knowledge Ladder"
 │   └── trivia.js           # the TriviaDuel game
-├── backend/                # legacy C++ backend (unused by the app — safe to delete)
-│   ├── main.cpp / app.cpp / http.hpp / json.hpp / supabase.hpp
-│   └── Makefile            # build with `mingw32-make`
 └── database/
     ├── schema.sql          # tables + security + functions (run first)
     ├── seed.sql            # 40 questions + the practice bot (run second)

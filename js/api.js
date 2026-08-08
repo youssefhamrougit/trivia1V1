@@ -1,8 +1,8 @@
 // ============================================================================
 //  api.js — talk to Supabase DIRECTLY from the browser.
 //
-//  Older versions went through a small Windows-only backend; now the browser
-//  is the only client — auth, data and game logic all live on Supabase:
+//  The browser is the only client — auth, data and game logic all live on
+//  Supabase:
 //    - auth ......... GoTrue        (sign-up / log-in / guest)
 //    - tables ....... PostgREST     (profiles, questions, matches)
 //    - game logic ... Postgres RPCs (join_matchmaking, finish_match)

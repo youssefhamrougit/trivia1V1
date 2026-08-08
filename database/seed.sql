@@ -16,7 +16,7 @@ insert into auth.users (
   '', '', '', ''
 ) on conflict (id) do nothing;
 
--- Give the bot a profile (excluded from leaderboard via BOT_ID in the backend)
+-- Give the bot a profile (excluded from leaderboard via BOT_ID)
 insert into public.profiles (id, username)
 values ('00000000-0000-0000-0000-000000000001', 'QuizBot')
 on conflict (id) do nothing;
