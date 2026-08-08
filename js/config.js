@@ -7,10 +7,13 @@
 //
 //  HOW TO GET THEM:
 //    1. supabase.com -> your project -> Project Settings -> API
-//    2. copy the "Project URL" and the "anon public" key into this file
+//    2. copy the "Project URL" and the "publishable" (aka anon) key here
 //
-//  NOTE: the anon key is PUBLIC by design — the real security comes from the
-//  Row Level Security policies in database/schema.sql.
+//  NOTE: the publishable key is PUBLIC by design — it ships to the browser
+//  and the real security comes from the Row Level Security policies in
+//  database/schema.sql. NEVER put the SECRET key (sb_secret_... / the old
+//  service_role key) in this repo — it grants full database access and this
+//  app has no server, so it doesn't need it.
 //
 //  If the keys are missing the app still opens (no setup screen anymore) —
 //  online play just won't work until these two values are real.
@@ -18,5 +21,5 @@
 
 const TRIVIADUEL_CONFIG = {
   SUPABASE_URL: "https://ajtwoiohwjzobnpenghb.supabase.co",
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqdHdvaW9od2p6b2JucGVuZ2hiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NjkxNDYsImV4cCI6MjEwMTQ0NTE0Nn0.AgD-eArh4CuNnTRE2l3inwxfV59OeyVlw72oapv-6AM",
+  SUPABASE_ANON_KEY: "sb_publishable_dAG_t11J8Q55iDaiThnxMw_2Z8pLEJP",
 };
