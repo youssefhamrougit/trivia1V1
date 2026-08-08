@@ -27,6 +27,18 @@ function friendAvatar(p) {
   return '<div class="ring"><div class="avatar">' + esc(ch) + "</div></div>";
 }
 
+// ---- friends screen tabs: "Add Friend" | "Requests" ------------------------
+function switchFriendsTab(tab) {
+  const addTab = document.getElementById("tab-add");
+  const reqTab = document.getElementById("tab-requests");
+  const addPane = document.getElementById("friends-pane-add");
+  const reqPane = document.getElementById("friends-pane-requests");
+  if (addTab) addTab.classList.toggle("active", tab === "add");
+  if (reqTab) reqTab.classList.toggle("active", tab === "requests");
+  if (addPane) addPane.hidden = tab !== "add";
+  if (reqPane) reqPane.hidden = tab !== "requests";
+}
+
 // ============================================================================
 //  MAIN LOADER  (called by the router when the Friends screen opens)
 // ============================================================================
@@ -322,15 +334,18 @@ function friendsCleanup() {
 // ============================================================================
 
 async function refreshFriendsBadge() {
-  const badge = document.getElementById("friends-badge");
-  if (!badge) return;
   let n = 0;
   try {
     const d = await API.call("/api/friends");
     n += (d.requests || []).length;
     const c = await API.call("/api/friends/challenges");
     n += (c || []).length;
-  } catch (e) { /* table not set up yet — badge stays hidden */ }
-  badge.textContent = n > 0 ? n : "";
-  badge.hidden = n === 0;
+  } catch (e) { /* table not set up yet — badges stay hidden */ }
+  // update both the home-screen chip badge and the Requests tab badge
+  ["friends-badge", "friends-requests-badge"].forEach(function (id) {
+    const b = document.getElementById(id);
+    if (!b) return;
+    b.textContent = n > 0 ? n : "";
+    b.hidden = n === 0;
+  });
 }

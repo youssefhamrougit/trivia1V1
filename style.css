@@ -157,6 +157,18 @@ h1 { font-size: 30px; }
 .btn-icon { width: 18px; height: 18px; }
 .chip-icon { width: 15px; height: 15px; }
 
+/* the little avatar dot inside the Profile chip (top-right of home) */
+.chip-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px;
+  margin-right: 7px; vertical-align: -6px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  border: 1px solid var(--line-2);
+  color: var(--accent-bright);
+  font-size: 12px; font-weight: 800;
+}
+
 /* chips (small pill buttons) */
 .chip {
   display: inline-flex; align-items: center;
@@ -657,6 +669,48 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
 }
 .challenge-card .ring { width: 40px; height: 40px; }
 .challenge-actions { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; }
+
+/* ---------- profile screen ---------- */
+.profile-card { text-align: center; margin-top: 12px; }
+.profile-ring { width: 88px; height: 88px; margin: 0 auto; padding: 5px; }
+.profile-ring .avatar { font-size: 32px; }
+.profile-username { font-size: 24px; margin-top: 12px; letter-spacing: -0.01em; }
+.profile-card + .arena-card { margin-top: 18px; }
+.profile-signout { margin-top: 24px; }
+
+/* ---------- friends tabs (Add Friend / Requests) ---------- */
+.friend-tabs {
+  display: flex; gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 5px;
+  margin-bottom: 4px;
+}
+.friend-tab {
+  flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13px; font-weight: 800;
+  padding: 10px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+.friend-tab:hover { color: var(--text); }
+.friend-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.friend-tab .badge { margin-left: 2px; }
+.friend-tab.active .badge { background: #fff; color: var(--accent); box-shadow: none; }
+.friend-pane[hidden] { display: none; }
+.friend-pane:not([hidden]) { animation: fadeIn 0.2s var(--ease); }
 
 /* ---------- toasts ---------- */
 .toast-wrap {

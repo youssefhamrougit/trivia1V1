@@ -62,7 +62,9 @@
             <b id="trivia-username">…</b>
           </div>
         </div>
-        <button class="chip" onclick="authSignOut()"><img class="chip-icon" src="assets/icons/gamepad.svg" alt="" /> Sign out</button>
+        <button class="chip" onclick="go('screen-profile')" aria-label="Open your profile">
+          <span class="chip-avatar" id="home-chip-avatar">…</span> Profile
+        </button>
       </header>
 
       <h1 class="screen-title">Your <span class="accent">Arena</span></h1>
@@ -105,6 +107,45 @@
         <button class="chip" onclick="go('screen-leaderboard')"><img class="chip-icon" src="assets/icons/trophy.svg" alt="" /> Leaderboard</button>
       </div>
       <p id="trivia-error" class="error"></p>
+    </section>
+
+    <!-- ================================================================
+         SCREEN: PROFILE (tap the Profile chip in the top-right corner)
+    ================================================================= -->
+    <section id="screen-profile" class="screen">
+      <div class="topbar">
+        <button class="chip" onclick="go('screen-trivia-home')">← Back</button>
+        <h1 class="friends-title">Profile</h1>
+        <span></span>
+      </div>
+
+      <div class="profile-card">
+        <div class="ring profile-ring"><div class="avatar" id="profile-avatar">…</div></div>
+        <h2 class="profile-username" id="profile-username">…</h2>
+        <p class="muted small" id="profile-arena"></p>
+      </div>
+
+      <div class="arena-card">
+        <div class="arena-card-top">
+          <div class="arena-emoji" id="profile-arena-emoji"></div>
+          <div class="arena-info">
+            <span class="arena-label">Current arena</span>
+            <b id="profile-arena-name">Training Grounds</b>
+          </div>
+        </div>
+        <div class="arena-progress"><div id="profile-arena-fill"></div></div>
+        <div class="arena-progress-row">
+          <span class="muted small" id="profile-arena-next"></span>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat"><img class="stat-icon" src="assets/icons/trophy.svg" alt="" /><b id="profile-trophies">0</b><span>Trophies</span></div>
+        <div class="stat"><img class="stat-icon" src="assets/icons/bolt.svg" alt="" /><b id="profile-wins">0</b><span>Wins</span></div>
+        <div class="stat"><img class="stat-icon" src="assets/icons/skull.svg" alt="" /><b id="profile-losses">0</b><span>Losses</span></div>
+      </div>
+
+      <button class="btn ghost profile-signout" onclick="authSignOut()"><img class="btn-icon" src="assets/icons/gamepad.svg" alt="" /> Sign out</button>
     </section>
 
     <!-- ================================================================
@@ -200,20 +241,32 @@
         <span></span>
       </div>
 
-      <div class="card">
-        <h3>Add a friend</h3>
-        <p class="muted small">Find them by username and send a request.</p>
-        <div class="search-row">
-          <input id="friends-search" type="text" placeholder="username…" autocomplete="off"
-                 onkeydown="if(event.key==='Enter')friendsSearch()" />
-          <button class="mini-btn primary" onclick="friendsSearch()">Search</button>
-        </div>
-        <div id="friends-search-results" class="friends-results"></div>
+      <div class="friend-tabs" role="tablist">
+        <button class="friend-tab active" id="tab-add" role="tab" onclick="switchFriendsTab('add')">Add Friend</button>
+        <button class="friend-tab" id="tab-requests" role="tab" onclick="switchFriendsTab('requests')">Requests <span id="friends-requests-badge" class="badge" hidden></span></button>
       </div>
 
-      <div id="friends-requests"></div>
-      <div id="friends-list"></div>
-      <div id="friends-challenges"></div>
+      <!-- TAB: ADD FRIEND (search + your friends) -->
+      <div id="friends-pane-add" class="friend-pane">
+        <div class="card">
+          <h3>Add a friend</h3>
+          <p class="muted small">Find them by username and send a request.</p>
+          <div class="search-row">
+            <input id="friends-search" type="text" placeholder="username…" autocomplete="off"
+                   onkeydown="if(event.key==='Enter')friendsSearch()" />
+            <button class="mini-btn primary" onclick="friendsSearch()">Search</button>
+          </div>
+          <div id="friends-search-results" class="friends-results"></div>
+        </div>
+        <div id="friends-list"></div>
+      </div>
+
+      <!-- TAB: REQUESTS (incoming requests + challenges) -->
+      <div id="friends-pane-requests" class="friend-pane" hidden>
+        <div id="friends-requests"></div>
+        <div id="friends-challenges"></div>
+      </div>
+
       <p id="friends-error" class="error"></p>
     </section>
 

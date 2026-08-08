@@ -210,6 +210,7 @@ function go(screenId) {
   if (screenId === "screen-trivia-home") loadTriviaHome();
   if (screenId === "screen-leaderboard") loadLeaderboard();
   if (screenId === "screen-friends") loadFriends();
+  if (screenId === "screen-profile") loadProfile();
 }
 
 // ---- loading my profile row (from Supabase) -------------------------
@@ -224,6 +225,35 @@ async function loadMyProfile() {
     console.error("loadMyProfile:", err.message);
     return null;
   }
+}
+
+// ---- the Profile screen (top-right chip on the home screen) ----------
+
+async function loadProfile() {
+  if (!currentProfile) await loadMyProfile();
+  if (!currentProfile) return;
+  const p = currentProfile;
+  const trophies = p.trophies || 0;
+
+  document.getElementById("profile-username").textContent = p.username || "Player";
+  document.getElementById("profile-avatar").textContent = (p.username || "?").charAt(0).toUpperCase();
+  animateNumber(document.getElementById("profile-trophies"), trophies, 400);
+  animateNumber(document.getElementById("profile-wins"), p.wins || 0, 400);
+  animateNumber(document.getElementById("profile-losses"), p.losses || 0, 400);
+
+  // arena pill + progress card
+  const a = arenaForTrophies(trophies);
+  const prog = arenaProgress(trophies);
+  document.getElementById("profile-arena").innerHTML =
+    '<img class="pill-icon" src="' + a.icon + '" alt=""> ' + a.name;
+  document.getElementById("profile-arena-emoji").innerHTML =
+    '<img src="' + a.icon + '" alt="' + a.name + '">';
+  document.getElementById("profile-arena-name").textContent = a.name;
+  document.getElementById("profile-arena-fill").style.width = prog.pct + "%";
+  document.getElementById("profile-arena-next").textContent = prog.next
+    ? prog.needed + " trophies to " + prog.next.name
+    : "Max arena reached — you're a legend!";
+  applyArenaTheme(a);
 }
 
 // ---- auth: sign up / log in / guest / sign out -----------------------------

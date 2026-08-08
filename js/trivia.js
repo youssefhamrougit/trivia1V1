@@ -688,9 +688,11 @@ async function loadTriviaHome() {
   animateNumber(document.getElementById("trivia-wins"), currentProfile.wins || 0, 500);
   animateNumber(document.getElementById("trivia-losses"), currentProfile.losses || 0, 500);
 
-  // player avatar initial in the top bar
+  // player avatar initial in the top bar + the Profile chip
   const av = document.getElementById("home-avatar");
   if (av) av.textContent = (currentProfile.username || "?").charAt(0).toUpperCase();
+  const chipAv = document.getElementById("home-chip-avatar");
+  if (chipAv) chipAv.textContent = (currentProfile.username || "?").charAt(0).toUpperCase();
 
   // arena banner + paint the app in the arena's colors (current trophies)
   const prog = arenaProgress(trophies);
