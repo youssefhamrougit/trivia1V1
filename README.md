@@ -1,40 +1,83 @@
-# TriviaDuel
+<div align="center">
 
-A live 1v1 trivia battle game that runs in any browser. It's a **static site** (plain HTML/CSS/JS) that talks to **Supabase** directly — auth, storage, matchmaking and live score sync all happen on Supabase, so it deploys anywhere (Vercel included) with zero servers of your own.
+# ⚔️ TriviaDuel
 
-Find a stranger, get the same 10 questions, 15 seconds each. Winner takes **+1 trophy**. Climb 7 arenas, Clash Royale style.
+**Real-time 1v1 trivia battles — 10 questions, 15 seconds each. Beat strangers, climb 7 arenas, and take their trophies.**
 
+<br>
 
-⚠️ Active development 
+<a href="https://triviaduel-xi.vercel.app"><strong>🔗 Live site →</strong></a>
+&nbsp;&nbsp;·&nbsp;&nbsp;
+<a href="#-the-stack">The stack</a>
+&nbsp;&nbsp;·&nbsp;&nbsp;
+<a href="#-whats-in-the-repo">What's in the repo</a>
+&nbsp;&nbsp;·&nbsp;&nbsp;
+<a href="#-run-it-yourself">Run it yourself</a>
 
-— the current build ships a complete 1v1 game , yet to be fully developed.
+<br>
 
+![license](https://img.shields.io/badge/license-MIT-blue)
+![status](https://img.shields.io/badge/status-active%20development-yellow)
+![static](https://img.shields.io/badge/static%20site-vanilla%20JS-8b5cf6)
 
-## What is this?
+</div>
 
-TriviaDuel is a real-time 1v1 trivia game — no frameworks, no build step, pure HTML/CSS/JS. The browser talks to Supabase directly: GoTrue for auth, PostgREST for data, Postgres functions (`join_matchmaking`, `finish_match`) for game logic, and Supabase Realtime for live scores. There is no server of our own — no C++, no Node, nothing to build or deploy.
+---
 
-It's intentionally simple:
+## 🎮 What is it?
 
-- **Match** — find a stranger (or practice vs. QuizBot) and get the same 10 questions.
-- **Answer fast** — 15 seconds per question, streaks score more.
-- **Live scores** — answers relay to the other phone instantly over Supabase Realtime.
-- **Climb arenas** — +1 trophy per win; your *peak* trophies unlock 7 arenas forever.
+TriviaDuel is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot), get the same 10 questions, and race the 15-second clock. Answers relay to the other player **live**, winner takes **+1 trophy** — climb a 7-arena "Knowledge Ladder" Clash Royale style, and your *peak* trophies unlock arenas forever.
 
-## ✨ Features
+**No app stores. No downloads. No login wall.** Open the link, tap *Continue as guest*, and you're in a match.
 
-| Category | Details |
+| | |
 |---|---|
-| ⚔️ Matchmaking | Pair with a stranger (same 10 questions) or practice vs. QuizBot |
-| 🔴 Live relay | Supabase Realtime pushes scores between phones instantly |
-| 🏆 Trophy ladder | 1:1 trophies (win +1, lose −1), peak-trophy arenas, arena-themed questions |
-| 📊 Leaderboard | Top 50 players by trophies |
-| 🔐 Auth | Email sign-up/login or one-tap guest via Supabase Auth |
-| 📱 PWA | Installable on phones, offline-ready (network-first service worker) |
+| ⚔️ **Matchmaking** | Pair with a stranger (same 10 questions) or practice vs. QuizBot |
+| 🔴 **Live relay** | Scores push between phones instantly via Supabase Realtime |
+| 🏆 **Trophy ladder** | Win +1 / lose −1, peak-trophy arena progression, arena-themed questions |
+| 📊 **Leaderboard** | Top 50 players by trophies |
+| 🔐 **Auth** | Email sign-up/login or one-tap guest via Supabase Auth |
+| 📱 **PWA** | Installable on phones, offline-ready (network-first service worker) |
 
-## 🚀 Quick Start
+## 🛠️ The stack
 
-The app is a **static site** that talks to Supabase directly — there is no server to run. Deploy it to Vercel and paste 2 keys, and it's live.
+| Layer | Technology |
+|---|---|
+| **Frontend** | Vanilla HTML5 + CSS3 + JavaScript (ES2022) — no frameworks, no build step |
+| **Backend** | None of our own — **Supabase** handles everything (GoTrue auth, PostgREST, Postgres RPCs, Realtime) |
+| **Database** | Supabase (Postgres) with **Row Level Security** — the anon key is public by design, RLS is the real gate |
+| **Game logic** | Postgres functions (`join_matchmaking`, `finish_match`) + `profiles` / `questions` / `matches` tables |
+| **Hosting** | **Vercel** — pure static deployment, zero servers, zero build |
+| **PWA** | Web app manifest + network-first service worker |
+
+The whole thing is a **static site**: the browser talks to Supabase directly (auth, questions, matchmaking RPCs, live scores). There is no C++, no Node, no Docker — nothing to build or deploy.
+
+## 📁 What's in the repo
+
+```
+triviaduel/
+├── index.html          # all screens (the shell of the app)
+├── style.css           # design system (dark + neon)
+├── manifest.json       # PWA install
+├── sw.js               # offline support (network-first)
+├── vercel.json         # Vercel caching headers
+├── .env.example        # env var reference (placeholders only)
+├── assets/             # icons, arena art, UI graphics
+├── js/
+│   ├── config.js       # 👉 your Supabase URL + publishable key
+│   ├── api.js          # Supabase client (auth, RPCs, Realtime)
+│   ├── app.js          # startup, login, screen switching
+│   ├── arenas.js       # the 7-arena "Knowledge Ladder"
+│   └── trivia.js       # the TriviaDuel game
+└── database/
+    ├── schema.sql      # tables + security + functions (run first)
+    ├── seed.sql        # 40 questions + the practice bot (run second)
+    └── setup-demo.sql  # idempotent migration for existing projects
+```
+
+## 🚀 Run it yourself
+
+The app is a static site talking to Supabase directly — deploy it anywhere static (Vercel, Netlify, GitHub Pages) in minutes.
 
 ### 1. Set up the database (Supabase, ~2 minutes)
 
@@ -43,82 +86,32 @@ The app is a **static site** that talks to Supabase directly — there is no ser
 3. **SQL Editor** → run **`database/seed.sql`** (questions + the QuizBot).
 4. **Authentication → Sign In / Providers**: turn **OFF** *"Confirm email"*, turn **ON** *"Allow anonymous sign-ins"*.
 
-Already used a project before? Run **`database/setup-demo.sql`** instead — it's idempotent and brings an existing project up to date (trophies, question bank, fixed matchmaking, realtime).
+Already used a project before? Run **`database/setup-demo.sql`** instead — it's idempotent and brings an existing project up to date.
 
 ### 2. Add your keys
 
-Open **`js/config.js`** and paste your **Project URL** and **anon public key** from *Project Settings → API*. (The anon key is public by design — the real security is the Row Level Security in the schema.)
+Open **`js/config.js`** and paste your **Project URL** and **publishable (anon) key** from *Project Settings → API*.
 
-> The keys are already committed with real values, so a fresh clone works out of the box. Only change them if you switch to a different Supabase project.
+> ⚠️ The publishable key is **public by design** — the real security is Row Level Security. **Never** put the `sb_secret_...` / `service_role` key in this repo; it grants full database access and this app has no server to need it. See `.env.example` for the full reference.
 
-There's no setup page to get stuck on: the app opens straight to the login screen, and if the keys are missing it still opens, with a small hint telling you what to add.
+The keys are already committed with real values, so a fresh clone works out of the box. Only change them if you switch to a different Supabase project.
 
 ### 3. Deploy to Vercel (~2 minutes, free)
 
 1. Push this repo to **GitHub**.
 2. Go to **vercel.com** → **Add New → Project** → import the repo.
 3. Framework preset: **Other** — leave *Build command* and *Output directory* empty (it's static).
-4. Click **Deploy**. Done — the app is live at your `*.vercel.app` URL. The repo's `vercel.json` ships the right caching headers for the service worker automatically.
-5. Changed keys later? Edit `js/config.js`, commit, and push — Vercel redeploys automatically.
+4. Click **Deploy**. The repo's `vercel.json` ships the right caching headers for the service worker automatically.
 
-That's it — no servers, no Docker, no environment variables.
+That's it — no servers, no environment variables, no build step.
 
-> The app is **100% HTML/CSS/JS** — the browser talks to Supabase directly and nothing else needs to run. There is no server of our own to build or deploy.
+## 🗺️ Status
 
-## 🗺️ Project Status
+⚠️ **Active development** — a complete, playable 1v1 game, with more on the way.
 
-⚠️ Active development — the current build ships a complete 1v1 game.
+**✅ Shipped** — live matchmaking, real-time score relay, 7-arena ladder, QuizBot practice mode, leaderboard, email/guest auth, PWA install.
 
-**✅ Shipped**
-
-- Live 1v1 matchmaking (both players get the same 10 questions)
-- Real-time score relay over Supabase Realtime (queue + match streams)
-- 7-arena ladder with arena-themed question pools
-- Practice mode vs. QuizBot (no rank change)
-- Leaderboard + email/guest auth
-- PWA install + offline shell
-- Deploys as a pure static site — Vercel-ready
-
-**⬜ On the roadmap**
-
-- Rate limiting & abuse protection
-- AI-generated questions
-- Short-lived Realtime tokens / rate limits for guest abuse
-
-## 📁 Project Structure
-
-```
-triviaduel/
-├── index.html              # all screens (the shell of the app)
-├── style.css               # design system (dark + neon)
-├── manifest.json           # PWA install
-├── sw.js                   # offline support (network-first)
-├── vercel.json             # Vercel headers (no-cache for sw.js + index.html)
-├── assets/
-│   ├── icon.svg            # logo (favicon + in-app)
-│   ├── arenas/             # 7 arena icons
-│   └── icons/              # UI icons (trophy, bolt, medals…)
-├── js/
-│   ├── config.js           # 👉 paste your Supabase URL + anon key here
-│   ├── api.js              # talks to Supabase directly (auth, RPCs, Realtime)
-│   ├── app.js              # startup, login, screen switching
-│   ├── arenas.js           # the 7-arena "Knowledge Ladder"
-│   └── trivia.js           # the TriviaDuel game
-└── database/
-    ├── schema.sql          # tables + security + functions (run first)
-    ├── seed.sql            # 40 questions + the practice bot (run second)
-    └── setup-demo.sql      # idempotent migration for existing projects
-```
-
-## 🛠️ Technology
-
-| Layer | Technology |
-|---|---|
-| Frontend | Vanilla HTML5 + CSS3 + JavaScript (ES2022) — no frameworks, no build step |
-| Hosting | Vercel (pure static — no server functions needed) |
-| Realtime | Supabase Realtime (Postgres changes on the matches table) |
-| Database | Supabase (Postgres + GoTrue auth), row-level security |
-| PWA | Web app manifest + network-first service worker |
+**⬜ Roadmap** — rate limiting & abuse protection, AI-generated questions, short-lived Realtime tokens for guest abuse.
 
 ## 📄 License
 
