@@ -15,6 +15,19 @@
 
 const BOT_ID = "00000000-0000-0000-0000-000000000001";
 
+// ---- username + password auth -------------------------------------------------
+// Supabase GoTrue only signs people up with an email, so we turn the chosen
+// username into a private per-user email:  <username>@triviaduel.local
+// The player never sees this — for them it's just username + password.
+// (Requires "Confirm email" to be OFF in the Supabase dashboard — see README.)
+const AUTH_DOMAIN = "triviaduel.local";
+
+function usernameToEmail(username) {
+  return String(username || "")
+    .trim().toLowerCase()
+    .replace(/[^a-z0-9_]/g, "") + "@" + AUTH_DOMAIN;
+}
+
 const API = {
   _supabase: null,
   token: null, // the JWT of the current session (null = logged out)
@@ -53,12 +66,37 @@ const API = {
 
     // ---- auth (GoTrue) ------------------------------------------------------
     if (path === "/api/auth/signup") {
-      const { data, error } = await sup.auth.signUp({ email: body.email, password: body.password });
-      if (error) throw new Error(error.message);
+      const username = String(body.username || "").trim().toLowerCase();
+      const { data, error } = await sup.auth.signUp({
+        email: usernameToEmail(username),
+        password: body.password,
+        options: { data: { username: username } }, // the SQL trigger claims it on the profile row
+      });
+      if (error) {
+        // the friendliest way to read "User already registered"
+        if (/already registered|already been registered/i.test(error.message)) {
+          throw new Error("That username is taken — try another.");
+        }
+        throw new Error(error.message);
+      }
+      // email confirmation is ON: no session yet, the player must confirm first
+      if (data.user && !data.session) {
+        return { session: null, user: data.user, needsConfirm: true };
+      }
+      // backup claim in case the trigger hasn't been (re)created yet
+      if (data.user && data.session) {
+        try {
+          await sup.from("profiles").update({ username: username }).eq("id", data.user.id);
+        } catch (e) { /* the trigger probably handled it */ }
+      }
       return { session: data.session, user: data.user || null };
     }
     if (path === "/api/auth/login") {
-      const { data, error } = await sup.auth.signInWithPassword({ email: body.email, password: body.password });
+      const username = String(body.username || "").trim().toLowerCase();
+      const { data, error } = await sup.auth.signInWithPassword({
+        email: usernameToEmail(username),
+        password: body.password,
+      });
       if (error) throw new Error(error.message);
       return { session: data.session, user: data.user || null };
     }
@@ -104,15 +142,15 @@ const API = {
       const uid = await this._uid();
       if (!uid) throw new Error("Not logged in");
       // arena signature discipline (mirrors the original backend logic): the RPC tilts
-      // half the match's questions toward the arena the player has reached
+      // half the match's questions toward the arena the player is currently in
       let sig = "mixed";
-      const prof = await sup.from("profiles").select("peak_trophies").eq("id", uid).limit(1);
+      const prof = await sup.from("profiles").select("trophies").eq("id", uid).limit(1);
       if (!prof.error && prof.data && prof.data[0]) {
-        const peak = prof.data[0].peak_trophies || 0;
-        if (peak >= 27) sig = "Math";
-        else if (peak >= 20) sig = "History";
-        else if (peak >= 13) sig = "Football";
-        else if (peak >= 6) sig = "Science";
+        const trophies = prof.data[0].trophies || 0;
+        if (trophies >= 27) sig = "Math";
+        else if (trophies >= 20) sig = "History";
+        else if (trophies >= 13) sig = "Football";
+        else if (trophies >= 6) sig = "Science";
       }
       const { data, error } = await sup.rpc("join_matchmaking", { me: uid, sig: sig });
       if (error) throw new Error(error.message);
@@ -151,6 +189,138 @@ const API = {
       return { match: match, opponent: opp, questions: qs };
     }
 
+    // ---- bot difficulty (easy / medium / hard) -------------------------------
+    if (path === "/api/bot/config") {
+      const { data, error } = await sup.from("bot_config").select("*").order("difficulty");
+      if (error) {
+        // PLACEHOLDER: run database/friends-bots.sql to create bot_config.
+        // The game falls back to built-in difficulty defaults, so practice
+        // still works until then.
+        console.warn("PLACEHOLDER — bot_config table missing. Run database/friends-bots.sql (see README).");
+        return null;
+      }
+      return data || null;
+    }
+
+    // ---- friends -------------------------------------------------------------
+    if (path === "/api/friends/search") {
+      const uid = await this._uid();
+      const q = String(body.q || "").trim();
+      if (q.length < 2) return [];
+      const { data, error } = await sup.from("profiles")
+        .select("id,username,trophies")
+        .ilike("username", "%" + q + "%")
+        .neq("id", uid).neq("id", BOT_ID)
+        .order("trophies", { ascending: false })
+        .limit(10);
+      if (error) throw new Error(error.message);
+      return data || [];
+    }
+    if (path === "/api/friends/request") {
+      const { data, error } = await sup.rpc("send_friend_request", { to_username: body.username });
+      if (error) throw new Error(error.message);
+      return { status: data };
+    }
+    if (path === "/api/friends") {
+      const uid = await this._uid();
+      const [reqRes, accRes, outRes] = await Promise.all([
+        sup.from("friends").select("id,requester,created_at").eq("addressee", uid).eq("status", "pending"),
+        sup.from("friends").select("id,requester,addressee,created_at").eq("status", "accepted")
+          .or("requester.eq." + uid + ",addressee.eq." + uid),
+        sup.from("matches").select("id,challengee").eq("player1", uid).eq("status", "challenged"),
+      ]);
+      if (reqRes.error) throw new Error(reqRes.error.message);
+      if (accRes.error) throw new Error(accRes.error.message);
+      if (outRes.error) throw new Error(outRes.error.message);
+
+      const requests = reqRes.data || [];
+      const accepted = accRes.data || [];
+      const outgoing = (outRes.data || []).map(function (m) { return m.challengee; });
+
+      // fetch the other party's profile for every row in one batched call
+      const otherIds = requests.map(function (r) { return r.requester; });
+      accepted.forEach(function (f) { otherIds.push(f.requester === uid ? f.addressee : f.requester); });
+      const ids = Array.from(new Set(otherIds));
+      const profiles = {};
+      if (ids.length) {
+        const p = await sup.from("profiles").select("id,username,trophies").in("id", ids);
+        if (!p.error && p.data) p.data.forEach(function (x) { profiles[x.id] = x; });
+      }
+
+      return {
+        requests: requests.map(function (r) {
+          return { rowId: r.id, id: r.requester, created_at: r.created_at, ...(profiles[r.requester] || {}) };
+        }),
+        friends: accepted.map(function (f) {
+          const oid = f.requester === uid ? f.addressee : f.requester;
+          return { rowId: f.id, id: oid, ...(profiles[oid] || {}) };
+        }),
+        outgoing: outgoing, // friend ids who have a pending challenge from us
+      };
+    }
+    if (path === "/api/friends/accept") {
+      const uid = await this._uid();
+      const { data, error } = await sup.from("friends")
+        .update({ status: "accepted" })
+        .eq("id", body.id).eq("addressee", uid).eq("status", "pending").select("id");
+      if (error) throw new Error(error.message);
+      return { ok: data && data.length > 0 };
+    }
+    if (path === "/api/friends/decline") {
+      const uid = await this._uid();
+      const { error } = await sup.from("friends").delete().eq("id", body.id).eq("addressee", uid);
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
+    if (path === "/api/friends/remove") {
+      const uid = await this._uid();
+      const { error } = await sup.from("friends").delete()
+        .eq("id", body.id).or("requester.eq." + uid + ",addressee.eq." + uid);
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
+
+    // ---- friend 1v1 challenges (casual — no trophy change) -------------------
+    if (path === "/api/friends/challenge") {
+      const { data, error } = await sup.rpc("create_challenge", { challengee: body.friendId });
+      if (error) throw new Error(error.message);
+      return { match_id: data };
+    }
+    if (path === "/api/friends/challenges") {
+      const uid = await this._uid();
+      const { data, error } = await sup.from("matches")
+        .select("id,player1,created_at")
+        .eq("challengee", uid).eq("status", "challenged")
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      const ids = Array.from(new Set((data || []).map(function (m) { return m.player1; })));
+      const profiles = {};
+      if (ids.length) {
+        const p = await sup.from("profiles").select("id,username,trophies").in("id", ids);
+        if (!p.error && p.data) p.data.forEach(function (x) { profiles[x.id] = x; });
+      }
+      return (data || []).map(function (m) {
+        return { matchId: m.id, created_at: m.created_at, challenger: profiles[m.player1] || { username: "Player" } };
+      });
+    }
+    if (path === "/api/friends/acceptchallenge") {
+      const uid = await this._uid();
+      const { data, error } = await sup.from("matches")
+        .update({ status: "active", player2: uid })
+        .eq("id", body.matchId).eq("challengee", uid).eq("status", "challenged").select("id");
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) throw new Error("That challenge is no longer available.");
+      return { ok: true };
+    }
+    if (path === "/api/friends/declinechallenge") {
+      const uid = await this._uid();
+      const { error } = await sup.from("matches")
+        .update({ status: "finished" })
+        .eq("id", body.matchId).eq("challengee", uid).eq("status", "challenged");
+      if (error) throw new Error(error.message);
+      return { ok: true };
+    }
+
     // ---- live answer relay: write my score onto the match row. The opponent
     // hears about it through Supabase Realtime (API.stream), not SSE ----------
     if (path === "/api/trivia/answer") {
@@ -174,16 +344,24 @@ const API = {
       if (er) throw new Error(er.message);
       if (!rows || !rows[0]) throw new Error("Not your match");
       const myIsP1 = rows[0].player1 === uid;
+      // ranked = true (normal matchmaking) moves trophies; friend duels pass
+      // ranked = false so the winner is recorded but no trophies change.
+      const ranked = body.ranked !== false;
       const { error } = await sup.rpc("finish_match", {
         match_id: body.match_id,
         me: uid,
         s1: myIsP1 ? body.my_score : body.opp_score,
         s2: myIsP1 ? body.opp_score : body.my_score,
+        ranked: ranked,
       });
       if (error) throw new Error(error.message);
       const after = await sup.from("matches").select("winner").eq("id", body.match_id).limit(1);
       const winner = after.data && after.data[0] ? after.data[0].winner : null;
-      return { winner: winner, delta: winner === uid ? 1 : winner ? -1 : 0, ranked: true };
+      return {
+        winner: winner,
+        delta: ranked ? (winner === uid ? 1 : winner ? -1 : 0) : 0,
+        ranked: ranked,
+      };
     }
 
     throw new Error("Unknown API path: " + path);
@@ -211,10 +389,13 @@ const API = {
           const row = payload.new || {};
           const old = payload.old || {};
 
-          // queue listener: an opponent joined, the match went active
+          // queue listener: an opponent joined (match went active) — or a
+          // friend declined the challenge (challenged -> finished)
           if (isQueue) {
             if (row.status === "active" && old.status !== "active") {
               onEvent({ type: "match_active", match_id: matchId });
+            } else if (row.status === "finished" && old.status === "challenged") {
+              onEvent({ type: "match_declined", match_id: matchId });
             }
             return;
           }

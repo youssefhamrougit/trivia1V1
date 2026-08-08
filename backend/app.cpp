@@ -306,17 +306,15 @@ void setupRoutes(http::Server& srv) {
     Value args = Value::mkObj();
     args.o["me"] = Value::mkStr(uid);
     // arena signature discipline: the RPC tilts half the match's questions
-    // toward the arena the player has reached (by peak trophies). Only send
-    // it if the profile has the new column (i.e. setup-demo.sql was run) —
-    // otherwise the old DB's join_matchmaking(me) would reject the call.
-    Value prof = firstRow(supabase.select("profiles", "select=peak_trophies&id=eq." + uid, r.bearer()));
-    if (prof.has("peak_trophies")) {
+    // toward the arena the player is currently in (by trophies).
+    Value prof = firstRow(supabase.select("profiles", "select=trophies&id=eq." + uid, r.bearer()));
+    if (prof.has("trophies")) {
       std::string sig = "mixed";
-      double peak = prof.num("peak_trophies");
-      if (peak >= 27) sig = "Math";
-      else if (peak >= 20) sig = "History";
-      else if (peak >= 13) sig = "Football";
-      else if (peak >= 6) sig = "Science";
+      double trophies = prof.num("trophies");
+      if (trophies >= 27) sig = "Math";
+      else if (trophies >= 20) sig = "History";
+      else if (trophies >= 13) sig = "Football";
+      else if (trophies >= 6) sig = "Science";
       args.o["sig"] = Value::mkStr(sig);
     }
     auto res = supabase.rpc("join_matchmaking", jx::dump(args), r.bearer());

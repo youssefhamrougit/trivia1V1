@@ -203,6 +203,7 @@ function go(screenId) {
 
   if (screenId === "screen-trivia-home") loadTriviaHome();
   if (screenId === "screen-leaderboard") loadLeaderboard();
+  if (screenId === "screen-friends") loadFriends();
 }
 
 // ---- loading my profile row (from Supabase) -------------------------
@@ -221,28 +222,35 @@ async function loadMyProfile() {
 
 // ---- auth: sign up / log in / guest / sign out -----------------------------
 
+// a username is 3–20 characters: letters, digits, underscore
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,20}$/;
+
 function authSignUp() {
-  const email = document.getElementById("auth-email").value.trim();
+  const username = document.getElementById("auth-username").value.trim();
   const password = document.getElementById("auth-password").value;
-  if (!email || password.length < 6) {
-    setError("auth-error", "Enter an email and a password of at least 6 characters.");
+  if (!USERNAME_RE.test(username)) {
+    setError("auth-error", "Username: 3–20 letters, numbers or underscores.");
+    return;
+  }
+  if (password.length < 6) {
+    setError("auth-error", "Password must be at least 6 characters.");
     return;
   }
   setError("auth-error", "");
-  API.call("/api/auth/signup", { method: "POST", body: { email: email, password: password } })
+  API.call("/api/auth/signup", { method: "POST", body: { username: username, password: password } })
     .then(afterAuth)
     .catch(function (err) { setError("auth-error", err.message); });
 }
 
 function authLogIn() {
-  const email = document.getElementById("auth-email").value.trim();
+  const username = document.getElementById("auth-username").value.trim();
   const password = document.getElementById("auth-password").value;
-  if (!email || !password) {
-    setError("auth-error", "Enter your email and password.");
+  if (!username || !password) {
+    setError("auth-error", "Enter your username and password.");
     return;
   }
   setError("auth-error", "");
-  API.call("/api/auth/login", { method: "POST", body: { email: email, password: password } })
+  API.call("/api/auth/login", { method: "POST", body: { username: username, password: password } })
     .then(afterAuth)
     .catch(function (err) { setError("auth-error", err.message); });
 }
@@ -257,7 +265,11 @@ function authGuest() {
 function afterAuth(data) {
   const session = data.session || data;
   if (!session || !session.access_token) {
-    setError("auth-error", (data && data.message) || "Please check your email or log in.");
+    if (data && data.needsConfirm) {
+      setError("auth-error", "Account created! Confirm your email first, then log in. (Or turn off \"Confirm email\" in Supabase — see README.)");
+    } else {
+      setError("auth-error", (data && data.message) || "Please check your email or log in.");
+    }
     return;
   }
   API.saveSession({ access_token: session.access_token }, session.user || null);
@@ -267,6 +279,7 @@ function afterAuth(data) {
 async function afterLogin(user) {
   currentUser = user || null;
   await loadMyProfile();
+  initFriendsListener(); // live incoming-challenge listener (Supabase Realtime)
   go("screen-trivia-home");
 }
 
@@ -276,6 +289,7 @@ function authSignOut() {
   currentUser = null;
   currentProfile = null;
   triviaCleanup();
+  friendsCleanup();
   resetArenaTheme();
   go("screen-auth");
 }
@@ -302,6 +316,7 @@ async function afterBoot() {
   if (API.token) {
     const me = await loadMyProfile();
     if (me && me.profile) {
+      initFriendsListener();
       go("screen-trivia-home");
       return;
     }

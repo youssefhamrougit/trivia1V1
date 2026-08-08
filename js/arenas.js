@@ -1,8 +1,8 @@
 // ============================================================================
 //  arenas.js — the "Knowledge Ladder": 7 arenas, Clash Royale style.
 //
-//  Trophies are 1:1 (win +1, lose -1). Your ARENA is decided by your PEAK
-//  trophies, so reaching an arena unlocks it forever — you never get demoted.
+//  Trophies are 1:1 (win +1, lose -1). Your ARENA follows your CURRENT
+//  trophies, so dropping below a threshold takes you back down an arena.
 //
 //  Arena thresholds:  0 | 6 | 13 | 20 | 27 | 34 | 42  (~6-7 wins per arena)
 // ============================================================================
@@ -31,7 +31,7 @@ const ARENAS = [
     blurb: "You've reached the summit. Now etch your name in history." },
 ];
 
-// the arena a player is in, given their (peak) trophies
+// the arena a player is in, given their current trophies
 function arenaForTrophies(t) {
   let arena = ARENAS[0];
   for (const a of ARENAS) if (t >= a.min) arena = a;

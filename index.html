@@ -37,8 +37,8 @@
       </div>
 
       <div class="card auth-card">
-        <input id="auth-email" type="email" placeholder="you@email.com" autocomplete="email" />
-        <input id="auth-password" type="password" placeholder="password (at least 6 characters)" />
+        <input id="auth-username" type="text" placeholder="username" autocomplete="username" autofocus />
+        <input id="auth-password" type="password" placeholder="password (at least 6 characters)" autocomplete="current-password" />
 
         <button class="btn" onclick="authSignUp()">Create account</button>
         <button class="btn ghost" onclick="authLogIn()">Log in</button>
@@ -79,14 +79,19 @@
         <div class="arena-progress"><div id="arena-fill"></div></div>
         <div class="arena-progress-row">
           <span class="muted small" id="arena-next"></span>
-          <span class="muted small" id="arena-peak"></span>
         </div>
       </div>
 
       <div class="arena-ladder" id="arena-ladder"></div>
 
       <button class="btn big" onclick="triviaFindMatch()"><img class="btn-icon" src="assets/icons/bolt.svg" alt="" /> Find a match</button>
-      <button class="btn ghost" onclick="triviaStartBot()"><img class="btn-icon" src="assets/arenas/arena-1.svg" alt="" /> Practice vs. QuizBot</button>
+
+      <p class="muted small center-text bot-practice-label">Practice vs. QuizBot</p>
+      <div class="bot-diff-row">
+        <button class="btn bot-diff easy" onclick="triviaStartBot('easy')">Easy</button>
+        <button class="btn bot-diff medium" onclick="triviaStartBot('medium')">Medium</button>
+        <button class="btn bot-diff hard" onclick="triviaStartBot('hard')">Hard</button>
+      </div>
       <p class="muted small center-text home-note">Practice matches don't change your trophies.</p>
 
       <div class="stats-row">
@@ -95,7 +100,10 @@
         <div class="stat"><img class="stat-icon" src="assets/icons/skull.svg" alt="" /><b id="trivia-losses">0</b><span>Losses</span></div>
       </div>
 
-      <button class="chip leaderboard-chip" onclick="go('screen-leaderboard')"><img class="chip-icon" src="assets/icons/trophy.svg" alt="" /> Leaderboard</button>
+      <div class="chip-row">
+        <button class="chip" onclick="go('screen-friends')"><img class="chip-icon" src="assets/icons/gamepad.svg" alt="" /> Friends <span id="friends-badge" class="badge" hidden></span></button>
+        <button class="chip" onclick="go('screen-leaderboard')"><img class="chip-icon" src="assets/icons/trophy.svg" alt="" /> Leaderboard</button>
+      </div>
       <p id="trivia-error" class="error"></p>
     </section>
 
@@ -182,6 +190,33 @@
     </section>
 
     <!-- ================================================================
+         SCREEN: FRIENDS (search, requests, list, 1v1 challenges)
+    ================================================================= -->
+    <section id="screen-friends" class="screen">
+      <div class="topbar">
+        <button class="chip" onclick="go('screen-trivia-home')">← Back</button>
+        <h1 class="friends-title">Friends</h1>
+        <span></span>
+      </div>
+
+      <div class="card">
+        <h3>Add a friend</h3>
+        <p class="muted small">Find them by username and send a request.</p>
+        <div class="search-row">
+          <input id="friends-search" type="text" placeholder="username…" autocomplete="off"
+                 onkeydown="if(event.key==='Enter')friendsSearch()" />
+          <button class="mini-btn primary" onclick="friendsSearch()">Search</button>
+        </div>
+        <div id="friends-search-results" class="friends-results"></div>
+      </div>
+
+      <div id="friends-requests"></div>
+      <div id="friends-list"></div>
+      <div id="friends-challenges"></div>
+      <p id="friends-error" class="error"></p>
+    </section>
+
+    <!-- ================================================================
          SCREEN: LEADERBOARD
     ================================================================= -->
     <section id="screen-leaderboard" class="screen">
@@ -220,6 +255,7 @@
   <script src="js/arenas.js"></script>
   <script src="js/app.js"></script>
   <script src="js/trivia.js"></script>
+  <script src="js/friends.js"></script>
   <script>appInit();</script>
 </body>
 </html>

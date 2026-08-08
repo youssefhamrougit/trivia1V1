@@ -21,6 +21,7 @@ const MEDAL_ICONS = ["assets/icons/medal-1.svg", "assets/icons/medal-2.svg", "as
 // all of the game's variables live in one object (like a struct)
 let triviaState = {
   mode: null,        // 'online' = real match | 'bot' = practice
+  casual: false,     // true for friend 1v1 duels (no trophy change)
   matchId: null,
   iAmPlayer1: true,  // which side of the match am I?
   questions: [],     // the 10 questions for this match
@@ -30,6 +31,9 @@ let triviaState = {
   streak: 0,         // consecutive correct answers in a row
   oppName: "…",
   oppAvatar: "?",
+  botDiff: "medium", // easy | medium | hard (practice mode)
+  botChance: 0.55,   // bot answer-correctness chance (from bot_config)
+  botDelay: 1600,    // bot "thinking" delay in ms (from bot_config)
   answered: false,   // have we picked an answer this question?
   stream: null,      // the live Realtime subscription for this match / queue
   timer: null,       // the per-question countdown
@@ -50,6 +54,7 @@ function triviaFindMatch() {
   setError("trivia-error", "");
   go("screen-trivia-queue");
   triviaState.mode = "online";
+  triviaState.casual = false;
   triviaState.started = false;
 
   // ask Supabase: join an existing waiting match, or create a new one.
@@ -78,7 +83,9 @@ function triviaPollForOpponent(attempt) {
   if (!triviaState.matchId || triviaState.mode !== "online") return;
   if (attempt > 40) {
     // give up quietly: go home and show the message there
-    setError("trivia-error", "No opponent found yet. Try again in a moment!");
+    setError("trivia-error", triviaState.casual
+      ? "Your friend didn't accept the challenge. Try again!"
+      : "No opponent found yet. Try again in a moment!");
     triviaCancelQueue();
     return;
   }
@@ -151,13 +158,23 @@ async function triviaStartMatch(matchId) {
   triviaState.starting = false;
 }
 
-// practice mode: you vs. the bot (no rank change)
-async function triviaStartBot() {
+// practice mode: you vs. a bot at easy / medium / hard (no rank change).
+// The difficulty settings come from Supabase's bot_config table; if that
+// table hasn't been created yet (see database/friends-bots.sql) we fall
+// back to sensible built-in defaults.
+async function triviaStartBot(diff) {
   setError("trivia-error", "");
+  diff = diff || "medium";
   triviaState.mode = "bot";
+  triviaState.casual = false;
   triviaState.started = false;
+  triviaState.botDiff = diff;
   triviaState.oppName = "QuizBot";
-  triviaState.oppAvatar = '<img class="avatar-img" src="assets/icons/robot.svg" alt="QuizBot">';    // grab all questions from Supabase and pick 10 random ones
+  triviaState.oppAvatar = '<img class="avatar-img" src="assets/icons/robot.svg" alt="QuizBot">';
+
+  await applyBotDifficulty(diff);
+
+  // grab all questions from Supabase and pick 10 random ones
   try {
     const allQs = await API.call("/api/questions?limit=200");
     triviaState.questions = [];
@@ -182,6 +199,28 @@ async function triviaStartBot() {
   showArenaInMatch();
   go("screen-trivia-match");
   renderQuestion();
+}
+
+// ---- bot difficulty -------------------------------------------------------
+// cached read of Supabase's bot_config table (falls back to built-ins)
+let _botConfigCache = null;
+// answer_ms stays under the ~1.4s question-reveal pause so the bot's score
+// always lands while the reveal is still showing (never mid-next-question)
+const BOT_DIFF_FALLBACK = {
+  easy:   { answer_chance: 0.35, answer_ms: 1100 },
+  medium: { answer_chance: 0.55, answer_ms: 800 },
+  hard:   { answer_chance: 0.85, answer_ms: 550 },
+};
+
+async function applyBotDifficulty(diff) {
+  if (_botConfigCache === null) {
+    try { _botConfigCache = await API.call("/api/bot/config"); }
+    catch (e) { _botConfigCache = []; }
+  }
+  const row = (_botConfigCache || []).find(function (c) { return c.difficulty === diff; });
+  const fb = BOT_DIFF_FALLBACK[diff] || BOT_DIFF_FALLBACK.medium;
+  triviaState.botChance = row ? Number(row.answer_chance) : fb.answer_chance;
+  triviaState.botDelay = row ? Number(row.answer_ms) : fb.answer_ms;
 }
 
 function closeStream() {
@@ -326,12 +365,13 @@ function finishQuestion(correct, chosenBtn) {
     }).catch(function () { /* the opponent will see the final scores anyway */ });
   }
 
-  // in practice mode, the bot "answers" too (sometimes correctly)
+  // in practice mode, the bot "answers" too — how often it's right and how
+  // fast it answers depend on the difficulty you picked
   if (triviaState.mode === "bot") {
     setTimeout(function () {
-      if (Math.random() < 0.55) triviaState.oppScore += 100;
+      if (Math.random() < triviaState.botChance) triviaState.oppScore += 100;
       updateScoreboard();
-    }, 900);
+    }, triviaState.botDelay);
   }
 
   // short pause so you can see the result, then next question
@@ -362,15 +402,15 @@ async function endMatch() {
 
   if (online) {
     try {
-      // the database decides the winner and moves trophies. The finish_match
-      // RPC orders the scores server-side, so player1's score always lands
-      // in the right slot (this permanently fixes the old always-tie bug).
+      // the database decides the winner and moves trophies (unless this is a
+      // casual friend duel — then the winner is recorded but no trophies move).
       const res = await API.call("/api/trivia/finish", {
         method: "POST",
         body: {
           match_id: triviaState.matchId,
           my_score: triviaState.myScore,
           opp_score: triviaState.oppScore,
+          ranked: !triviaState.casual,
         },
       });
       winner = res.winner;
@@ -409,7 +449,9 @@ async function endMatch() {
   deltaEl.textContent = online
     ? ranked
       ? deltaText
-      : "Couldn't reach the network — no rank change"
+      : triviaState.casual
+        ? "Friendly duel — no rank change"
+        : "Couldn't reach the network — no rank change"
     : "Practice game — no rank change";
   deltaEl.classList.remove("up", "down", "flat");
   deltaEl.classList.add(delta > 0 ? "up" : delta < 0 ? "down" : "flat");
@@ -425,9 +467,9 @@ async function endMatch() {
   // "new arena unlocked!" celebration when a win crosses a threshold
   const promo = document.getElementById("result-arena-msg");
   if (promo) {
-    const peak = (currentProfile && currentProfile.peak_trophies) || 0;
-    const before = arenaForTrophies(peak - delta);
-    const after = arenaForTrophies(peak);
+    const now = (currentProfile && currentProfile.trophies) || 0;
+    const before = arenaForTrophies(now - delta);
+    const after = arenaForTrophies(now);
     if (delta > 0 && after.id > before.id) {
       promo.innerHTML = 'Arena unlocked: <img class="inline-icon" src="' + after.icon + '" alt=""> ' + after.name + "!";
       promo.classList.add("gold-msg");
@@ -470,7 +512,7 @@ function shareResult() {
 
 function triviaRematch() {
   if (triviaState.lastOnline) triviaFindMatch();
-  else triviaStartBot();
+  else triviaStartBot(triviaState.botDiff || "medium");
 }
 
 // clean up anything left running (used when signing out)
@@ -488,7 +530,6 @@ function triviaCleanup() {
 async function loadTriviaHome() {
   if (!currentProfile) return;
   const trophies = currentProfile.trophies || 0;
-  const peak = currentProfile.peak_trophies || trophies;
   animateNumber(document.getElementById("trivia-trophies"), trophies, 500);
   animateNumber(document.getElementById("trivia-wins"), currentProfile.wins || 0, 500);
   animateNumber(document.getElementById("trivia-losses"), currentProfile.losses || 0, 500);
@@ -497,8 +538,8 @@ async function loadTriviaHome() {
   const av = document.getElementById("home-avatar");
   if (av) av.textContent = (currentProfile.username || "?").charAt(0).toUpperCase();
 
-  // arena banner + paint the app in the arena's colors
-  const prog = arenaProgress(peak);
+  // arena banner + paint the app in the arena's colors (current trophies)
+  const prog = arenaProgress(trophies);
   const a = prog.arena;
   document.getElementById("arena-emoji").innerHTML = '<img src="' + a.icon + '" alt="' + a.name + '">';
   document.getElementById("arena-name").textContent = a.name;
@@ -506,26 +547,28 @@ async function loadTriviaHome() {
   document.getElementById("arena-next").textContent = prog.next
     ? prog.needed + " trophies to " + prog.next.name
     : "Max arena reached — you're a legend!";
-  document.getElementById("arena-peak").textContent = "Peak: " + peak + " trophies";
-  buildArenaLadder(peak);
+  buildArenaLadder(trophies);
   applyArenaTheme(a);
+
+  // keep the Friends chip badge (pending requests + challenges) fresh
+  if (typeof refreshFriendsBadge === "function") refreshFriendsBadge();
 }
 
 // the little 7-step Knowledge Ladder strip under the arena card
-function buildArenaLadder(peak) {
+function buildArenaLadder(trophies) {
   const wrap = document.getElementById("arena-ladder");
   if (!wrap) return;
   wrap.innerHTML = "";
-  const cur = arenaForTrophies(peak);
+  const cur = arenaForTrophies(trophies);
   for (const a of ARENAS) {
     const step = document.createElement("div");
-    step.className = "ladder-step" + (peak >= a.min ? " unlocked" : "") + (a === cur ? " current" : "");
+    step.className = "ladder-step" + (trophies >= a.min ? " unlocked" : "") + (a === cur ? " current" : "");
     step.title = a.name;
     const img = document.createElement("img");
     img.src = a.icon;
     img.alt = a.name;
     step.appendChild(img);
-    if (peak < a.min) {
+    if (trophies < a.min) {
       const lock = document.createElement("span");
       lock.className = "ladder-lock";
       lock.textContent = "\uD83D\uDD12";
@@ -537,8 +580,8 @@ function buildArenaLadder(peak) {
 
 // show the arena pill on the match screen + theme it
 function showArenaInMatch() {
-  const peak = (currentProfile && currentProfile.peak_trophies) || 0;
-  const a = arenaForTrophies(peak);
+  const trophies = (currentProfile && currentProfile.trophies) || 0;
+  const a = arenaForTrophies(trophies);
   const pill = document.getElementById("match-arena");
   if (pill) pill.innerHTML = '<img class="pill-icon" src="' + a.icon + '" alt=""> ' + a.name;
   applyArenaTheme(a);

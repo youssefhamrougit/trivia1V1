@@ -37,7 +37,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   console.log("== profile ==");
   try {
     const me = await call("/api/me", { token: a.token });
-    if (me.profile && me.profile.trophies === 0 && me.profile.peak_trophies === 0) ok("profile starts at 0 trophies");
+    if (me.profile && me.profile.trophies === 0) ok("profile starts at 0 trophies");
     else bad("profile", new Error("unexpected: " + JSON.stringify(me).slice(0, 120)));
   } catch (e) { bad("profile", e); }
 

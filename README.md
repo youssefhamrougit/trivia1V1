@@ -24,17 +24,18 @@
 
 ## 🎮 What is it?
 
-TriviaDuel is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot), get the same 10 questions, and race the 15-second clock. Answers relay to the other player **live**, winner takes **+1 trophy** — climb a 7-arena "Knowledge Ladder" Clash Royale style, and your *peak* trophies unlock arenas forever.
+TriviaDuel is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot), get the same 10 questions, and race the 15-second clock. Answers relay to the other player **live**, winner takes **+1 trophy** — climb a 7-arena "Knowledge Ladder" Clash Royale style, where your **current** trophies decide your arena. Win to climb; lose and you drop back down.
 
 **No app stores. No downloads. No login wall.** Open the link, tap *Continue as guest*, and you're in a match.
 
 | | |
 |---|---|
-| ⚔️ **Matchmaking** | Pair with a stranger (same 10 questions) or practice vs. QuizBot |
+| ⚔️ **Matchmaking** | Pair with a stranger (same 10 questions) or practice vs. QuizBot — Easy / Medium / Hard |
 | 🔴 **Live relay** | Scores push between phones instantly via Supabase Realtime |
-| 🏆 **Trophy ladder** | Win +1 / lose −1, peak-trophy arena progression, arena-themed questions |
+| 🏆 **Trophy ladder** | Win +1 / lose −1, arena follows your current trophies, arena-themed questions |
+| 🤝 **Friends** | Search by username, send/accept requests, and 1v1-challenge friends (casual duels — no trophies) |
 | 📊 **Leaderboard** | Top 50 players by trophies |
-| 🔐 **Auth** | Email sign-up/login or one-tap guest via Supabase Auth |
+| 🔐 **Auth** | Username + password (or one-tap guest) via Supabase Auth |
 | 📱 **PWA** | Installable on phones, offline-ready (network-first service worker) |
 
 ## 🛠️ The stack
@@ -66,20 +67,32 @@ triviaduel/
 │   ├── api.js          # Supabase client (auth, RPCs, Realtime)
 │   ├── app.js          # startup, login, screen switching
 │   ├── arenas.js       # the 7-arena "Knowledge Ladder"
-│   └── trivia.js       # the TriviaDuel game
+│   ├── trivia.js       # the TriviaDuel game
+│   └── friends.js      # the Friends tab (requests, 1v1 challenges)
 └── database/
     ├── schema.sql      # tables + security + functions (run first)
     ├── seed.sql        # 40 questions + the practice bot (run second)
-    └── setup-demo.sql  # idempotent migration for existing projects
+    ├── setup-demo.sql  # idempotent migration for existing projects
+    └── friends-bots.sql # ⚠️ REQUIRED: friends + bot difficulty + username auth
 ```
 
 ## 🗺️ Status
 
 ✅ **Live** — a complete, playable 1v1 game in production.
 
-**Shipped** — live matchmaking, real-time score relay, 7-arena ladder, QuizBot practice mode, leaderboard, email/guest auth, PWA install.
+**Shipped** — live matchmaking, real-time score relay, 7-arena ladder, bot practice with Easy/Medium/Hard, friends + 1v1 challenges, leaderboard, username/password or guest auth, PWA install.
 
-**⬜ Roadmap** — rate limiting & abuse protection, AI-generated questions, short-lived Realtime tokens for guest abuse.
+**⬜ Roadmap** — rate limiting & abuse protection, AI-generated questions, short-lived Realtime tokens for guest abuse, challenge expiry cleanup.
+
+## 🔧 Supabase setup checklist (you must do this once)
+
+The app is a static site that talks to Supabase directly — which means **one file + one dashboard toggle** are required for the newer features:
+
+1. **Run `database/friends-bots.sql`** in the Supabase SQL Editor. It creates the `friends` table, the `bot_config` table, the `matches.challengee` column + `'challenged'` status, and the `send_friend_request` / `create_challenge` RPCs — and upgrades `finish_match` with a `ranked` flag. Safe to re-run.
+2. **Turn OFF “Confirm email”** — Supabase dashboard → *Authentication → Providers → Email*. Sign-up then logs you straight in and claims your username.
+3. **Old email accounts**: accounts created before this change won't log in by username (their email isn't `username@triviaduel.local`). Recreate them, or rename their email in the dashboard to `<username>@triviaduel.local`.
+
+Until you run the SQL, the app degrades gracefully: practice bots still work with built-in difficulty defaults, and the Friends tab shows a hint instead of crashing.
 
 ## 📄 License
 

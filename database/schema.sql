@@ -16,7 +16,6 @@ create table public.profiles (
   id             uuid primary key,
   username       text unique,
   trophies       integer not null default 0,  -- +1 win, -1 loss (1:1)
-  peak_trophies  integer not null default 0,  -- highest trophies ever (arena never demotes)
   wins           integer not null default 0,
   losses         integer not null default 0,
   created_at     timestamptz default now()
@@ -214,11 +213,10 @@ begin
   where id = match_id;
 
   if winner_id is not null then
-    -- 1:1 trophies: winner +1, loser -1. peak_trophies never drops, so the
-    -- arena you've unlocked stays unlocked (Clash Royale style).
+    -- 1:1 trophies: winner +1, loser -1. Your arena follows your CURRENT
+    -- trophies, so dropping below a threshold takes you back down.
     update public.profiles
     set trophies = trophies + 1,
-        peak_trophies = greatest(peak_trophies, trophies + 1),
         wins = wins + 1
     where id = winner_id;
     if winner_id = m.player1 then

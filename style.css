@@ -322,7 +322,6 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
   display: flex; justify-content: space-between; gap: 8px;
   margin-top: 8px; position: relative;
 }
-#arena-peak { color: var(--muted-2); }
 
 /* ---------- arena ladder (home) ---------- */
 .arena-ladder {
@@ -618,6 +617,83 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
 .lb-row.me { border-color: rgba(139, 92, 246, 0.6); background: rgba(139, 92, 246, 0.09); box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.3); }
 
 .title-icon { width: 26px; height: 26px; vertical-align: -5px; margin-right: 4px; }
+
+/* ---------- home: friends + leaderboard chips ---------- */
+.chip-row { display: flex; gap: 10px; margin-top: 18px; }
+.chip-row .chip { flex: 1; justify-content: center; }
+.badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px;
+  border-radius: 999px;
+  background: var(--grad-brand);
+  color: #fff;
+  font-size: 11px; font-weight: 800;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+}
+
+/* ---------- home: bot difficulty (practice) ---------- */
+.bot-practice-label {
+  margin-top: 22px;
+  font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase;
+  color: var(--muted-2); font-size: 10px;
+}
+.bot-diff-row { display: flex; gap: 10px; margin-top: 12px; }
+.bot-diff { flex: 1; margin-top: 0; padding: 13px 6px; font-size: 14px; border-radius: 14px; }
+.bot-diff.easy { background: linear-gradient(135deg, #059669, #34d399); box-shadow: 0 8px 22px rgba(52, 211, 153, 0.35); }
+.bot-diff.medium { background: linear-gradient(135deg, #d97706, #fbbf24); box-shadow: 0 8px 22px rgba(251, 191, 36, 0.35); }
+.bot-diff.hard { background: linear-gradient(135deg, #dc2626, #fb7185); box-shadow: 0 8px 22px rgba(248, 113, 113, 0.35); }
+.bot-diff:active { transform: scale(0.96); }
+
+/* ---------- friends screen ---------- */
+.friends-title { font-size: 22px; }
+.search-row { display: flex; gap: 10px; align-items: flex-end; }
+.search-row input { flex: 1; margin-top: 12px; }
+.friends-results { margin-top: 8px; }
+.friends-section { margin-top: 22px; }
+.friends-section h3 {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 15px; margin-bottom: 4px;
+  padding: 0 2px;
+}
+.friend-row {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)), var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px; padding: 10px 12px; margin-top: 8px;
+  animation: rise 0.3s var(--ease) backwards;
+  transition: border-color 0.2s;
+}
+.friend-row .ring { width: 40px; height: 40px; }
+.friend-info { flex: 1; min-width: 0; }
+.friend-info b { display: block; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.friend-info span { display: block; }
+.mini-btn {
+  flex-shrink: 0;
+  border: 1px solid rgba(139, 92, 246, 0.45);
+  background: rgba(139, 92, 246, 0.14);
+  color: var(--violet-soft);
+  padding: 9px 14px; border-radius: 12px;
+  font-size: 13px; font-weight: 700; font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.2s, border-color 0.2s;
+}
+.mini-btn:active { transform: scale(0.94); }
+.mini-btn:hover { background: rgba(139, 92, 246, 0.24); }
+.mini-btn:disabled { opacity: 0.5; cursor: default; }
+.mini-btn.primary { border-color: transparent; background: var(--grad-brand); color: #fff; box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4); }
+.mini-btn.green { border-color: rgba(52, 211, 153, 0.5); background: rgba(52, 211, 153, 0.12); color: var(--green); }
+.mini-btn.green:hover { background: rgba(52, 211, 153, 0.22); }
+.mini-btn.red { border-color: rgba(248, 113, 113, 0.5); background: rgba(248, 113, 113, 0.12); color: #fca5a5; }
+.mini-btn.red:hover { background: rgba(248, 113, 113, 0.22); }
+.challenge-card {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(160deg, rgba(251, 191, 36, 0.10), rgba(251, 113, 133, 0.05)), var(--surface);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 18px; padding: 12px; margin-top: 8px;
+  animation: rise 0.3s var(--ease) backwards;
+}
+.challenge-card .ring { width: 40px; height: 40px; }
+.challenge-actions { display: flex; gap: 8px; margin-left: auto; flex-shrink: 0; }
 
 /* ---------- toasts ---------- */
 .toast-wrap {
