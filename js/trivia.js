@@ -164,6 +164,9 @@ async function triviaStartMatch(matchId) {
 // back to sensible built-in defaults.
 async function triviaStartBot(diff) {
   setError("trivia-error", "");
+  // close the difficulty picker once a match starts
+  const botRow = document.getElementById("bot-diff-row");
+  if (botRow) botRow.hidden = true;
   diff = diff || "medium";
   triviaState.mode = "bot";
   triviaState.casual = false;

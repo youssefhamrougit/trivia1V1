@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#faf7f0" />
+  <meta name="theme-color" content="#0e0d0b" />
   <title>TriviaDuel</title>
 
   <link rel="manifest" href="manifest.json" />
@@ -86,8 +86,8 @@
 
       <button class="btn big" onclick="triviaFindMatch()"><img class="btn-icon" src="assets/icons/bolt.svg" alt="" /> Find a match</button>
 
-      <p class="muted small center-text bot-practice-label">Practice vs. QuizBot</p>
-      <div class="bot-diff-row">
+      <button class="btn ghost bot-launch" onclick="toggleBotDiff()"><img class="btn-icon" src="assets/icons/robot.svg" alt="" /> Practice vs. QuizBot</button>
+      <div class="bot-diff-row" id="bot-diff-row" hidden>
         <button class="btn bot-diff easy" onclick="triviaStartBot('easy')">Easy</button>
         <button class="btn bot-diff medium" onclick="triviaStartBot('medium')">Medium</button>
         <button class="btn bot-diff hard" onclick="triviaStartBot('hard')">Hard</button>

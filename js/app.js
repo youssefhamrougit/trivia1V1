@@ -28,6 +28,12 @@ function randomInt(n) {
   return Math.floor(Math.random() * n);
 }
 
+// show/hide the QuizBot difficulty options on the home screen
+function toggleBotDiff() {
+  const row = document.getElementById("bot-diff-row");
+  if (row) row.hidden = !row.hidden;
+}
+
 // ---- UI helpers: toasts, animated numbers, confetti -------------------------
 
 // a small notification that slides in from the top and fades out.
