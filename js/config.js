@@ -19,7 +19,9 @@
 //  online play just won't work until these two values are real.
 // ============================================================================
 
-const TRIVIADUEL_CONFIG = {
+// NOTE: must be set on `window` (not `const`) — api.js reads it via
+// window.TRIVIADUEL_CONFIG, and top-level const/let don't attach to window.
+window.TRIVIADUEL_CONFIG = {
   SUPABASE_URL: "https://ajtwoiohwjzobnpenghb.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_dAG_t11J8Q55iDaiThnxMw_2Z8pLEJP",
 };

@@ -11,8 +11,6 @@
 <a href="#-the-stack">The stack</a>
 &nbsp;&nbsp;·&nbsp;&nbsp;
 <a href="#-whats-in-the-repo">What's in the repo</a>
-&nbsp;&nbsp;·&nbsp;&nbsp;
-<a href="#-run-it-yourself">Run it yourself</a>
 
 <br>
 
@@ -74,36 +72,6 @@ triviaduel/
     ├── seed.sql        # 40 questions + the practice bot (run second)
     └── setup-demo.sql  # idempotent migration for existing projects
 ```
-
-## 🚀 Run it yourself
-
-The app is a static site talking to Supabase directly — deploy it anywhere static (Vercel, Netlify, GitHub Pages) in minutes.
-
-### 1. Set up the database (Supabase, ~2 minutes)
-
-1. Go to **supabase.com** → **New project** (free plan).
-2. **SQL Editor** → run **`database/schema.sql`** (tables + security + functions).
-3. **SQL Editor** → run **`database/seed.sql`** (questions + the QuizBot).
-4. **Authentication → Sign In / Providers**: turn **OFF** *"Confirm email"*, turn **ON** *"Allow anonymous sign-ins"*.
-
-Already used a project before? Run **`database/setup-demo.sql`** instead — it's idempotent and brings an existing project up to date.
-
-### 2. Add your keys
-
-Open **`js/config.js`** and paste your **Project URL** and **publishable (anon) key** from *Project Settings → API*.
-
-> ⚠️ The publishable key is **public by design** — the real security is Row Level Security. **Never** put the `sb_secret_...` / `service_role` key in this repo; it grants full database access and this app has no server to need it. See `.env.example` for the full reference.
-
-The keys are already committed with real values, so a fresh clone works out of the box. Only change them if you switch to a different Supabase project.
-
-### 3. Deploy to Vercel (~2 minutes, free)
-
-1. Push this repo to **GitHub**.
-2. Go to **vercel.com** → **Add New → Project** → import the repo.
-3. Framework preset: **Other** — leave *Build command* and *Output directory* empty (it's static).
-4. Click **Deploy**. The repo's `vercel.json` ships the right caching headers for the service worker automatically.
-
-That's it — no servers, no environment variables, no build step.
 
 ## 🗺️ Status
 
