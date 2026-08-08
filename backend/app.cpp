@@ -311,10 +311,10 @@ void setupRoutes(http::Server& srv) {
     if (prof.has("trophies")) {
       std::string sig = "mixed";
       double trophies = prof.num("trophies");
-      if (trophies >= 27) sig = "Math";
-      else if (trophies >= 20) sig = "History";
-      else if (trophies >= 13) sig = "Football";
-      else if (trophies >= 6) sig = "Science";
+      if (trophies >= 540) sig = "Math";
+      else if (trophies >= 400) sig = "History";
+      else if (trophies >= 260) sig = "Football";
+      else if (trophies >= 120) sig = "Science";
       args.o["sig"] = Value::mkStr(sig);
     }
     auto res = supabase.rpc("join_matchmaking", jx::dump(args), r.bearer());
@@ -429,8 +429,8 @@ void setupRoutes(http::Server& srv) {
 
       Value m2 = firstRow(supabase.select("matches", "select=*&id=eq." + id, r.bearer()));
       winner = m2.str("winner");
-      // 1:1 trophies: win = +1, loss = -1
-      delta = winner == uid ? 1 : (winner.empty() ? 0 : -1);
+      // 1:1 trophies: win = +20, loss = -20
+      delta = winner == uid ? 20 : (winner.empty() ? 0 : -20);
       ranked = true;
     } catch (const std::exception&) {
       winner = myScore > oppScore ? uid : (myScore < oppScore ? "opponent" : "");

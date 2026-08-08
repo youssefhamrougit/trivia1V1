@@ -147,10 +147,10 @@ const API = {
       const prof = await sup.from("profiles").select("trophies").eq("id", uid).limit(1);
       if (!prof.error && prof.data && prof.data[0]) {
         const trophies = prof.data[0].trophies || 0;
-        if (trophies >= 27) sig = "Math";
-        else if (trophies >= 20) sig = "History";
-        else if (trophies >= 13) sig = "Football";
-        else if (trophies >= 6) sig = "Science";
+        if (trophies >= 540) sig = "Math";
+        else if (trophies >= 400) sig = "History";
+        else if (trophies >= 260) sig = "Football";
+        else if (trophies >= 120) sig = "Science";
       }
       const { data, error } = await sup.rpc("join_matchmaking", { me: uid, sig: sig });
       if (error) throw new Error(error.message);
@@ -371,7 +371,7 @@ const API = {
       const winner = after.data && after.data[0] ? after.data[0].winner : null;
       return {
         winner: winner,
-        delta: ranked ? (winner === uid ? 1 : winner ? -1 : 0) : 0,
+        delta: ranked ? (winner === uid ? 20 : winner ? -20 : 0) : 0,
         ranked: ranked,
       };
     }

@@ -591,7 +591,10 @@ async function endMatch() {
   document.getElementById("result-emoji").innerHTML =
     '<img src="' + (iWon ? "assets/icons/trophy.svg" : tie ? "assets/icons/tie.svg" : "assets/icons/skull.svg") + '" alt="">';
   document.getElementById("result-title").textContent = iWon ? "You win!" : tie ? "It's a tie!" : "You lost!";
-  const deltaText = delta > 0 ? "+" + delta + " trophy" : delta < 0 ? delta + " trophy" : "No trophy change";
+  const trophyWord = Math.abs(delta) === 1 ? "trophy" : "trophies";
+  const deltaText = delta > 0
+    ? "+" + delta + " " + trophyWord
+    : delta < 0 ? delta + " " + trophyWord : "No trophy change";
   const deltaEl = document.getElementById("result-trophy-line");
   deltaEl.textContent = online
     ? ranked

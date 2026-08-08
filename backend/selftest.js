@@ -91,10 +91,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await sleep(500);
   try {
     const me = await call("/api/me", { token: a.token });
-    if (deltaA === -1 && me.profile.trophies === -1 && me.profile.losses === 1) {
-      ok("A lost 1 trophy (-1) with 1 loss — 1:1 ratio");
+    if (deltaA === -20 && me.profile.trophies === -20 && me.profile.losses === 1) {
+      ok("A lost 20 trophies (-20) with 1 loss — 1:1 ratio");
     } else {
-      bad("trophy check", new Error("trophies=" + me.profile.trophies + " (expected -1) wins=" + me.profile.wins + " losses=" + me.profile.losses));
+      bad("trophy check", new Error("trophies=" + me.profile.trophies + " (expected -20) wins=" + me.profile.wins + " losses=" + me.profile.losses));
     }
   } catch (e) { bad("trophy check", e); }
 

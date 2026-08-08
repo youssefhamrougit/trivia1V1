@@ -200,7 +200,7 @@ $$;
 -- ============================================================================
 --  6) RPC: finish_match — now takes a `ranked` flag.
 --
---     ranked = true  (default, normal matchmaking): winner +1 / loser -1
+--     ranked = true  (default, normal matchmaking): winner +20 / loser -20
 --     ranked = false (friend duels): the winner is recorded, but NO trophies
 --     move. Backwards compatible with the old call signature.
 -- ============================================================================
@@ -253,16 +253,16 @@ begin
   where id = match_id;
 
   if winner_id is not null and ranked then
-    -- 1:1 trophies: winner +1, loser -1. Your arena follows your CURRENT
+    -- 1:1 trophies: winner +20, loser -20. Your arena follows your CURRENT
     -- trophies, so dropping below a threshold takes you back down.
     update public.profiles
-    set trophies = trophies + 1,
+    set trophies = trophies + 20,
         wins = wins + 1
     where id = winner_id;
     if winner_id = m.player1 then
-      update public.profiles set trophies = trophies - 1, losses = losses + 1 where id = m.player2;
+      update public.profiles set trophies = trophies - 20, losses = losses + 1 where id = m.player2;
     else
-      update public.profiles set trophies = trophies - 1, losses = losses + 1 where id = m.player1;
+      update public.profiles set trophies = trophies - 20, losses = losses + 1 where id = m.player1;
     end if;
   end if;
 end;

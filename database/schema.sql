@@ -15,7 +15,7 @@
 create table public.profiles (
   id             uuid primary key,
   username       text unique,
-  trophies       integer not null default 0,  -- +1 win, -1 loss (1:1)
+  trophies       integer not null default 0,  -- +20 win, -20 loss (1:1)
   wins           integer not null default 0,
   losses         integer not null default 0,
   created_at     timestamptz default now()
@@ -105,7 +105,8 @@ create policy "update matches"
 -- ============================================================================
 --  FUNCTION: join_matchmaking
 --  Called when a player taps "Find Match".
---  Step 1: look for a waiting match created by someone else -> join it
+--  Step 1: look for a waiting match created by someone else -> join it, but
+--          only if they are within 60 trophies of us (skill-based pairing)
 --  Step 2: if none exists, create a new waiting match (with 10 random questions)
 -- ============================================================================
 create or replace function public.join_matchmaking(me uuid, sig text default 'mixed')
@@ -116,18 +117,29 @@ as $$
 declare
   found_id uuid;
   picked   bigint[];
+  mine     integer;
 begin
   -- never trust the client: derive the identity from the JWT instead
   me := auth.uid();
   if me is null then return null; end if;
 
+  -- my current trophies — the centre of the skill-based pairing band
+  select trophies into mine from public.profiles where id = me;
+  mine := coalesce(mine, 0);
+
+  -- strict skill-based pairing: only join a waiting match whose creator is
+  -- within 60 trophies of us (3 games at the 20-per-game scale). If nobody
+  -- in the band shows up, the client waits out its 7-second window and then
+  -- plays QuizBot — we never pair a big skill mismatch.
   select m.id into found_id
   from public.matches m
+  join public.profiles p on p.id = m.player1
   where m.status = 'waiting' and m.player1 <> me
     and m.created_at > now() - interval '5 minutes'  -- skip abandoned queues
+    and abs(p.trophies - mine) <= 60
   order by m.created_at
   limit 1
-  for update skip locked;
+  for update of m skip locked;
 
   if found_id is not null then
     update public.matches
@@ -216,7 +228,7 @@ $$;
 -- ============================================================================
 --  FUNCTION: finish_match
 --  Called by each player when the match ends.
---  Decides the winner and moves trophies (+1 / -1, 1:1 ratio).
+--  Decides the winner and moves trophies (+20 / -20, 1:1 ratio).
 -- ============================================================================
 create or replace function public.finish_match(
   match_id uuid,
@@ -265,16 +277,16 @@ begin
   where id = match_id;
 
   if winner_id is not null then
-    -- 1:1 trophies: winner +1, loser -1. Your arena follows your CURRENT
+    -- 1:1 trophies: winner +20, loser -20. Your arena follows your CURRENT
     -- trophies, so dropping below a threshold takes you back down.
     update public.profiles
-    set trophies = trophies + 1,
+    set trophies = trophies + 20,
         wins = wins + 1
     where id = winner_id;
     if winner_id = m.player1 then
-      update public.profiles set trophies = trophies - 1, losses = losses + 1 where id = m.player2;
+      update public.profiles set trophies = trophies - 20, losses = losses + 1 where id = m.player2;
     else
-      update public.profiles set trophies = trophies - 1, losses = losses + 1 where id = m.player1;
+      update public.profiles set trophies = trophies - 20, losses = losses + 1 where id = m.player1;
     end if;
   end if;
 end;

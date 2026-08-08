@@ -27,7 +27,7 @@
 create table if not exists public.profiles (
   id             uuid primary key,
   username       text unique,
-  trophies       integer not null default 0,  -- +1 win, -1 loss (1:1)
+  trophies       integer not null default 0,  -- +20 win, -20 loss (1:1)
   wins           integer not null default 0,
   losses         integer not null default 0,
   created_at     timestamptz default now()
@@ -51,6 +51,14 @@ $$;
 -- migration: the peak-trophy system is gone — only current trophies matter.
 -- Drop the old column if it exists (existing projects ran schema.sql before).
 alter table public.profiles drop column if exists peak_trophies;
+
+-- ⚠️ ONE-TIME MIGRATION — the economy moved from ±1 to ±20 per match and the
+-- arena thresholds scaled ×20. If your players already have trophies on the
+-- OLD ±1 scale, uncomment the line below and run it ONCE to scale everyone
+-- so their arena position is preserved. It is idempotent in spirit: new-scale
+-- balances are always multiples of 20, so re-running it touches nothing.
+--   update public.profiles set trophies = trophies * 20 where trophies <> 0 and trophies % 20 <> 0;
+-- (If you'd rather start fresh, leave it commented — everyone just re-climbs.)
 
 -- ============================================================================
 --  TABLE: questions (the trivia question bank)
@@ -155,18 +163,29 @@ as $$
 declare
   found_id uuid;
   picked   bigint[];
+  mine     integer;
 begin
   -- never trust the client: derive the identity from the JWT instead
   me := auth.uid();
   if me is null then return null; end if;
 
+  -- my current trophies — the centre of the skill-based pairing band
+  select trophies into mine from public.profiles where id = me;
+  mine := coalesce(mine, 0);
+
+  -- strict skill-based pairing: only join a waiting match whose creator is
+  -- within 60 trophies of us (3 games at the 20-per-game scale). If nobody
+  -- in the band shows up, the client waits out its 7-second window and then
+  -- plays QuizBot — we never pair a big skill mismatch.
   select m.id into found_id
   from public.matches m
+  join public.profiles p on p.id = m.player1
   where m.status = 'waiting' and m.player1 <> me
     and m.created_at > now() - interval '5 minutes'  -- skip abandoned queues
+    and abs(p.trophies - mine) <= 60
   order by m.created_at
   limit 1
-  for update skip locked;
+  for update of m skip locked;
 
   if found_id is not null then
     update public.matches
@@ -304,16 +323,16 @@ begin
   where id = match_id;
 
   if winner_id is not null then
-    -- 1:1 trophies: winner +1, loser -1. Your arena follows your CURRENT
+    -- 1:1 trophies: winner +20, loser -20. Your arena follows your CURRENT
     -- trophies, so dropping below a threshold takes you back down.
     update public.profiles
-    set trophies = trophies + 1,
+    set trophies = trophies + 20,
         wins = wins + 1
     where id = winner_id;
     if winner_id = m.player1 then
-      update public.profiles set trophies = trophies - 1, losses = losses + 1 where id = m.player2;
+      update public.profiles set trophies = trophies - 20, losses = losses + 1 where id = m.player2;
     else
-      update public.profiles set trophies = trophies - 1, losses = losses + 1 where id = m.player1;
+      update public.profiles set trophies = trophies - 20, losses = losses + 1 where id = m.player1;
     end if;
   end if;
 end;

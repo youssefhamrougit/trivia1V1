@@ -1,32 +1,32 @@
 // ============================================================================
 //  arenas.js — the "Knowledge Ladder": 7 arenas, Clash Royale style.
 //
-//  Trophies are 1:1 (win +1, lose -1). Your ARENA follows your CURRENT
+//  Trophies are 1:1 (win +20, lose -20). Your ARENA follows your CURRENT
 //  trophies, so dropping below a threshold takes you back down an arena.
 //
-//  Arena thresholds:  0 | 6 | 13 | 20 | 27 | 34 | 42  (~6-7 wins per arena)
+//  Arena thresholds:  0 | 120 | 260 | 400 | 540 | 680 | 840  (~6-7 wins per arena)
 // ============================================================================
 
 const ARENAS = [
   { id: 1, name: "Training Grounds",  icon: "assets/arenas/arena-1.svg",  min: 0,  sig: null,
     theme: { c1: "#94a3b8", c2: "#475569", glow: "rgba(148,163,184,0.18)" },
     blurb: "Every legend starts somewhere. Learn the ropes — then climb." },
-  { id: 2, name: "Science Lab",       icon: "assets/arenas/arena-2.svg",  min: 6,  sig: "Science",
+  { id: 2, name: "Science Lab",       icon: "assets/arenas/arena-2.svg",  min: 120, sig: "Science",
     theme: { c1: "#34d399", c2: "#0d9488", glow: "rgba(52,211,153,0.20)" },
     blurb: "Molecules, stars, and the laws of the universe. Can you keep up?" },
-  { id: 3, name: "Football Stadium",  icon: "assets/arenas/arena-3.svg",  min: 13, sig: "Football",
+  { id: 3, name: "Football Stadium",  icon: "assets/arenas/arena-3.svg",  min: 260, sig: "Football",
     theme: { c1: "#4ade80", c2: "#15803d", glow: "rgba(74,222,128,0.20)" },
     blurb: "Hear that roar? That's the crowd calling your name." },
-  { id: 4, name: "History Museum",    icon: "assets/arenas/arena-4.svg",  min: 20, sig: "History",
+  { id: 4, name: "History Museum",    icon: "assets/arenas/arena-4.svg",  min: 400, sig: "History",
     theme: { c1: "#fbbf24", c2: "#b45309", glow: "rgba(251,191,36,0.20)" },
     blurb: "The past belongs to those who remember it. Become unforgettable." },
-  { id: 5, name: "Math Arena",        icon: "assets/arenas/arena-5.svg",  min: 27, sig: "Math",
+  { id: 5, name: "Math Arena",        icon: "assets/arenas/arena-5.svg",  min: 540, sig: "Math",
     theme: { c1: "#a78bfa", c2: "#6d28d9", glow: "rgba(167,139,250,0.20)" },
     blurb: "Numbers don't bluff. Prove your calculations, challenger." },
-  { id: 6, name: "Grand Colosseum",   icon: "assets/arenas/arena-6.svg",  min: 34, sig: null,
+  { id: 6, name: "Grand Colosseum",   icon: "assets/arenas/arena-6.svg",  min: 680, sig: null,
     theme: { c1: "#f87171", c2: "#b91c1c", glow: "rgba(248,113,113,0.20)" },
     blurb: "Only the strongest survive the sand. Champions are made here." },
-  { id: 7, name: "Hall of Legends",   icon: "assets/arenas/arena-7.svg",  min: 42, sig: null,
+  { id: 7, name: "Hall of Legends",   icon: "assets/arenas/arena-7.svg",  min: 840, sig: null,
     theme: { c1: "#facc15", c2: "#a16207", glow: "rgba(250,204,21,0.22)" },
     blurb: "You've reached the summit. Now etch your name in history." },
 ];

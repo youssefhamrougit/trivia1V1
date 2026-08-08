@@ -24,7 +24,7 @@
 
 ## 🎮 What is it?
 
-TriviaDuel is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot), get the same 10 questions, and race the 15-second clock. Answers relay to the other player **live**, winner takes **+1 trophy** — climb a 7-arena "Knowledge Ladder" Clash Royale style, where your **current** trophies decide your arena. Win to climb; lose and you drop back down.
+TriviaDuel is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot), get the same 10 questions, and race the 15-second clock. Answers relay to the other player **live**, winner takes **+20 trophies** (loser −20, a strict 1:1 swap) — climb a 7-arena "Knowledge Ladder" Clash Royale style, where your **current** trophies decide your arena. Matchmaking only pairs you with humans within 60 trophies; otherwise QuizBot steps in after 7 seconds. Win to climb; lose and you drop back down.
 
 **No app stores. No downloads. No login wall.** Open the link, tap *Continue as guest*, and you're in a match.
 
@@ -32,7 +32,7 @@ TriviaDuel is a mobile-first **1v1 trivia game** that runs entirely in the brows
 |---|---|
 | ⚔️ **Matchmaking** | Pair with a stranger (same 10 questions) or practice vs. QuizBot — Easy / Medium / Hard |
 | 🔴 **Live relay** | Scores push between phones instantly via Supabase Realtime |
-| 🏆 **Trophy ladder** | Win +1 / lose −1, arena follows your current trophies, arena-themed questions |
+| 🏆 **Trophy ladder** | Win +20 / lose −20 (1:1), arena follows your current trophies, skill-matched pairings (60-trophy band), arena-themed questions |
 | 🤝 **Friends** | Search by username, send/accept requests, and 1v1-challenge friends (casual duels — no trophies) |
 | 📊 **Leaderboard** | Top 50 players by trophies |
 | 🔐 **Auth** | Username + password (or one-tap guest) via Supabase Auth |
