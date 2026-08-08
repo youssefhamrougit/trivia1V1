@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <!-- warm rounded tile -->
-  <rect width="512" height="512" rx="120" fill="#ec8b2e"/>
+  <rect width="512" height="512" rx="120" fill="#df7d1f"/>
   <!-- friendly lightning bolt (thick, rounded joins) -->
   <path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#ffffff" stroke="#ffffff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/>
   <!-- "trivia?" sticker badge -->
