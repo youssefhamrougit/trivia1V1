@@ -12,13 +12,13 @@ Find a stranger, get the same 10 questions, 15 seconds each. Winner takes **+1 t
 
 ## What is this?
 
-TriviaDuel is a real-time 1v1 trivia game — no frameworks, no build step. The browser talks to Supabase directly: GoTrue for auth, PostgREST for data, Postgres functions (`join_matchmaking`, `finish_match`) for game logic, and Supabase Realtime for live scores. A Windows C++ backend used to proxy all of this — it's still in `backend/` as a reference, but the web app no longer needs it.
+TriviaDuel is a real-time 1v1 trivia game — no frameworks, no build step, pure HTML/CSS/JS. The browser talks to Supabase directly: GoTrue for auth, PostgREST for data, Postgres functions (`join_matchmaking`, `finish_match`) for game logic, and Supabase Realtime for live scores. There is no server of our own — no C++, no Node, nothing to build or deploy. (The repo keeps the old Windows C++ backend in `backend/` purely as historical reference; the web app never loads it.)
 
 It's intentionally simple:
 
 - **Match** — find a stranger (or practice vs. QuizBot) and get the same 10 questions.
 - **Answer fast** — 15 seconds per question, streaks score more.
-- **Live scores** — answers relay to the other phone instantly over SSE.
+- **Live scores** — answers relay to the other phone instantly over Supabase Realtime.
 - **Climb arenas** — +1 trophy per win; your *peak* trophies unlock 7 arenas forever.
 
 ## ✨ Features
@@ -49,7 +49,7 @@ Already used a project before? Run **`database/setup-demo.sql`** instead — it'
 
 Open **`js/config.js`** and paste your **Project URL** and **anon public key** from *Project Settings → API*. (The anon key is public by design — the real security is the Row Level Security in the schema.)
 
-To test locally, just open `index.html` in a browser (or run any static server) — no backend needed.
+To test locally, just open `index.html` in a browser (or run any static server) — no backend needed. There's no setup page to get stuck on: the app opens straight to the login screen, and if the keys are missing it still opens, with a small hint telling you what to add.
 
 ### 3. Deploy to Vercel (~2 minutes, free)
 
@@ -61,7 +61,7 @@ To test locally, just open `index.html` in a browser (or run any static server) 
 
 That's it — no servers, no Docker, no environment variables.
 
-> The old Windows **C++ backend** (`backend/`) is no longer required — the browser talks to Supabase directly. The files are kept as a reference for the game logic.
+> The app is **100% HTML/CSS/JS** — the browser talks to Supabase directly and nothing else needs to run. The old Windows **C++ backend** in `backend/` is legacy code that the web app never loads; it's kept only as a reference and is safe to delete.
 
 ## 🗺️ Project Status
 
@@ -101,7 +101,7 @@ triviaduel/
 │   ├── app.js              # startup, login, screen switching
 │   ├── arenas.js           # the 7-arena "Knowledge Ladder"
 │   └── trivia.js           # the TriviaDuel game
-├── backend/                # the original C++ backend (optional — no longer used)
+├── backend/                # legacy C++ backend (unused by the app — safe to delete)
 │   ├── main.cpp / app.cpp / http.hpp / json.hpp / supabase.hpp
 │   └── Makefile            # build with `mingw32-make`
 └── database/

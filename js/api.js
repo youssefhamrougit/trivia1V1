@@ -1,9 +1,8 @@
 // ============================================================================
 //  api.js — talk to Supabase DIRECTLY from the browser.
 //
-//  Older versions needed a Windows-only C++ backend to proxy Supabase and
-//  relay live scores over SSE — that server can't run on Vercel, so now the
-//  browser is the only client and there is no backend to deploy at all:
+//  Older versions went through a small Windows-only backend; now the browser
+//  is the only client — auth, data and game logic all live on Supabase:
 //    - auth ......... GoTrue        (sign-up / log-in / guest)
 //    - tables ....... PostgREST     (profiles, questions, matches)
 //    - game logic ... Postgres RPCs (join_matchmaking, finish_match)
@@ -58,6 +57,11 @@ const API = {
 
   // one logical call, mirroring the old /api/* routes
   async call(path, opts) {
+    if (!this.configured) {
+      // no keys in js/config.js — give a helpful message instead of a
+      // confusing "Supabase is not initialised" error
+      throw new Error("Online play needs your Supabase keys — add them to js/config.js.");
+    }
     const sup = this._ensureClient();
     const body = (opts && opts.body) || {};
 
@@ -118,7 +122,7 @@ const API = {
     if (path === "/api/trivia/join") {
       const uid = await this._uid();
       if (!uid) throw new Error("Not logged in");
-      // arena signature discipline (mirrors the old C++ server): the RPC tilts
+      // arena signature discipline (mirrors the original backend logic): the RPC tilts
       // half the match's questions toward the arena the player has reached
       let sig = "mixed";
       const prof = await sup.from("profiles").select("peak_trophies").eq("id", uid).limit(1);

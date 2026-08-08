@@ -12,7 +12,8 @@
 //  NOTE: the anon key is PUBLIC by design — the real security comes from the
 //  Row Level Security policies in database/schema.sql.
 //
-//  The app shows the "Almost ready" screen until both values are real.
+//  If the keys are missing the app still opens (no setup screen anymore) —
+//  online play just won't work until these two values are real.
 // ============================================================================
 
 const TRIVIADUEL_CONFIG = {

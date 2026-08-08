@@ -19,28 +19,6 @@
   <div id="app">
 
     <!-- ================================================================
-         SCREEN: SETUP (shown when Supabase keys are missing)
-    ================================================================= -->
-    <section id="screen-setup" class="screen">
-      <div class="card center">
-        <img class="logo" src="assets/icon.svg" alt="TriviaDuel" />
-        <h1>Almost ready</h1>
-        <p class="muted">
-          TriviaDuel is a static site that stores everything in a free database called <b>Supabase</b>.
-          You just need to paste 2 keys into <code>js/config.js</code>.
-        </p>
-        <ol class="steps">
-          <li>Create a free project at <b>supabase.com</b></li>
-          <li>Open the SQL Editor and run <code>database/schema.sql</code>, then <code>database/seed.sql</code></li>
-          <li>In <b>Authentication → Sign In / Providers</b>: turn <b>OFF</b> “Confirm email”, turn <b>ON</b> “Allow anonymous sign-ins”</li>
-          <li>Copy your <b>Project URL</b> and <b>anon key</b> into <code>js/config.js</code></li>
-          <li>Refresh this page — or push to Vercel and refresh the live site</li>
-        </ol>
-        <button class="btn" onclick="location.reload()">I added the keys — reload</button>
-      </div>
-    </section>
-
-    <!-- ================================================================
          SCREEN: AUTH (log in / sign up / guest)
     ================================================================= -->
     <section id="screen-auth" class="screen">
@@ -59,6 +37,9 @@
         <button class="btn subtle" onclick="authGuest()"><img class="btn-icon" src="assets/icons/gamepad.svg" alt="" /> Continue as guest</button>
 
         <p id="auth-error" class="error"></p>
+        <p id="auth-keys-hint" class="muted small" style="display:none;">
+          Online play needs your Supabase keys — open <code>js/config.js</code> and paste your Project URL + anon key.
+        </p>
       </div>
     </section>
 

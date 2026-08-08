@@ -2,16 +2,16 @@
 //  trivia.js — the TriviaDuel game
 //
 //  THE FLOW:
-//    tap "Find Match"  ->  the C++ server pairs us with a stranger
+//    tap "Find Match"  ->  Supabase pairs us with a stranger
 //    both players get the SAME 10 questions, 15 seconds each
-//    answers are relayed live through the C++ server (SSE) so both
+//    answers are relayed live through Supabase Realtime so both
 //    phones show both scores
-//    at the end, the server calculates the winner and moves ELO points
+//    at the end, the database decides the winner and moves trophies
 //
 //  HOW THE "LIVE" PART WORKS:
-//    each player opens a live stream (SSE) on the room "match-<id>".
-//    When you answer, we POST your score to the C++ server and it pushes
-//    it down the stream to the other phone instantly.
+//    each player subscribes to Realtime changes on the match row
+//    ("match-<id>"). When you answer, we write your score to the match
+//    row in Supabase and Realtime pushes it to the other phone instantly.
 // ============================================================================
 
 const QUESTION_SECONDS = 15;
@@ -30,8 +30,7 @@ let triviaState = {
   streak: 0,         // consecutive correct answers in a row
   oppName: "…",
   oppAvatar: "?",
-  answered: false,   // have we picked an answer this question?
-  stream: null,      // the live SSE feed for this match / queue
+  answered: false,   // have we picked an answer this question?  stream: null,       // the live Realtime subscription for this match / queue
   timer: null,       // the per-question countdown
   starting: false,   // guard so the match can't start twice (concurrency)
   started: false,    // true once the match has begun — stops the queue poller
@@ -39,7 +38,7 @@ let triviaState = {
   lastWinner: null,  // for the result screen
   lastDelta: 0,
   lastOnline: false,
-  lastRanked: false, // did the server actually move ELO?
+  lastRanked: false, // did the database actually move trophies?
 };
 
 // ============================================================================
@@ -52,13 +51,13 @@ function triviaFindMatch() {
   triviaState.mode = "online";
   triviaState.started = false;
 
-  // ask the C++ server: join an existing waiting match, or create a new one.
-  // the server also picks the 10 questions (so both players get the same ones)
+  // ask Supabase: join an existing waiting match, or create a new one.
+  // the database also picks the 10 questions (so both players get the same ones)
   API.call("/api/trivia/join", { method: "POST", body: {} })
     .then(function (data) {
       triviaState.matchId = data.match_id;
 
-      // live: the C++ server pings us the moment the match goes active
+      // live: Realtime pings us the moment the match goes active
       closeStream();
       triviaState.stream = API.stream("queue-" + triviaState.matchId, function (ev) {
         if (ev.type === "match_active") triviaStartMatch(triviaState.matchId);
@@ -109,7 +108,7 @@ async function triviaStartMatch(matchId) {
 
   closeStream(); // stop the queue listener
 
-  // load the match + opponent + questions from the C++ server
+  // load the match + opponent + questions from Supabase
   let data;
   try {
     data = await API.call("/api/trivia/match/" + matchId);
@@ -127,7 +126,7 @@ async function triviaStartMatch(matchId) {
   triviaState.oppAvatar = triviaState.oppName.charAt(0).toUpperCase();
   triviaState.questions = data.questions || [];
 
-  // open the live feed: the C++ server pushes the opponent's scores to us
+  // open the live feed: Realtime pushes the opponent's scores to us
   triviaState.stream = API.stream("match-" + matchId, function (ev) {
     if (ev.type === "answer" && ev.from !== currentUser.id) {
       triviaState.oppScore = ev.score;
@@ -154,9 +153,7 @@ async function triviaStartBot() {
   triviaState.mode = "bot";
   triviaState.started = false;
   triviaState.oppName = "QuizBot";
-  triviaState.oppAvatar = '<img class="avatar-img" src="assets/icons/robot.svg" alt="QuizBot">';
-
-  // grab all questions from the C++ server and pick 10 random ones
+  triviaState.oppAvatar = '<img class="avatar-img" src="assets/icons/robot.svg" alt="QuizBot">';    // grab all questions from Supabase and pick 10 random ones
   try {
     const allQs = await API.call("/api/questions?limit=200");
     triviaState.questions = [];
@@ -283,7 +280,7 @@ function finishQuestion(correct, chosenBtn) {
   updateScoreboard();
   updateStreak();
 
-  // tell the C++ server our new score; it relays it to the opponent (online only)
+  // write our new score to Supabase; Realtime relays it to the opponent (online only)
   if (triviaState.mode === "online" && triviaState.matchId) {
     API.call("/api/trivia/answer", {
       method: "POST",
@@ -323,13 +320,13 @@ async function endMatch() {
   const online = triviaState.mode === "online";
   let winner = null;
   let delta = 0;
-  let ranked = false; // did the server actually move ELO this time?
+  let ranked = false; // did the database actually move trophies this time?
 
   if (online) {
     try {
-      // the C++ server decides the winner and moves ELO. It orders the
-      // scores server-side, so player1's score always lands in the right
-      // slot (this permanently fixes the old always-tie bug).
+      // the database decides the winner and moves trophies. The finish_match
+      // RPC orders the scores server-side, so player1's score always lands
+      // in the right slot (this permanently fixes the old always-tie bug).
       const res = await API.call("/api/trivia/finish", {
         method: "POST",
         body: {
@@ -341,9 +338,9 @@ async function endMatch() {
       winner = res.winner;
       delta = res.delta || 0;
       ranked = !!res.ranked;
-      await loadMyProfile(); // refresh elo / wins / losses
+      await loadMyProfile(); // refresh trophies / wins / losses
     } catch (err) {
-      // couldn't reach the server — score it locally so we still get a
+      // couldn't reach Supabase — score it locally so we still get a
       // result screen (no rank change, and we say so)
       winner = triviaState.myScore > triviaState.oppScore
         ? currentUser.id
@@ -373,7 +370,7 @@ async function endMatch() {
   document.getElementById("result-trophy-line").textContent = online
     ? ranked
       ? deltaText
-      : "Couldn't reach the server — no rank change"
+      : "Couldn't reach the network — no rank change"
     : "Practice game — no rank change";
 
   // "new arena unlocked!" celebration when a win crosses a threshold
@@ -461,7 +458,7 @@ async function loadLeaderboard() {
   const wrap = document.getElementById("leaderboard-list");
   wrap.innerHTML = "<p class='muted'>Loading…</p>";
 
-  // top 50 players by ELO (the bot is excluded — the server does that)
+  // top 50 players by trophies (the bot is excluded via BOT_ID)
   let data = [];
   try {
     data = await API.call("/api/leaderboard");
