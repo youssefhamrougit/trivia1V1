@@ -11,7 +11,7 @@
 
 // ---- global state: who is the current user? ------------------------------
 let currentUser = null;    // has .id
-let currentProfile = null; // the database row for this user (elo, wins, ...)
+let currentProfile = null; // the database row for this user (trophies, wins, ...)
 
 // ---- tiny helpers ---------------------------------------------------------
 
