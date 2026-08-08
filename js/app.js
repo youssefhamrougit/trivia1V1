@@ -72,7 +72,7 @@ function confettiBurst() {
   const canvas = document.getElementById("confetti-canvas");
   if (!canvas || _confettiRunning) return;
   const ctx = canvas.getContext("2d");
-  const colors = ["#8b5cf6", "#ec4899", "#22d3ee", "#2dd4bf", "#fbbf24", "#fb7185", "#a78bfa"];
+  const colors = ["#ec8b2e", "#f4b450", "#d96050", "#e3a13b", "#8fae5f", "#5d86a8", "#3b352c"];
   const DPR = Math.min(2, window.devicePixelRatio || 1);
   canvas.width = innerWidth * DPR;
   canvas.height = innerHeight * DPR;
