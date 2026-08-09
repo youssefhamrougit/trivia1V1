@@ -12,7 +12,7 @@ your app drawer. There's no native codebase; the game logic stays on the web + S
 
 ## ⚡ Fastest: PWABuilder (no installs, ~2 minutes)
 
-1. Make sure the app is deployed and reachable, e.g. **https://triviaduel-xi.vercel.app**
+1. Make sure the app is deployed and reachable, e.g. **https://trivia1-v1.vercel.app**
 2. Go to [**pwabuilder.com**](https://www.pwabuilder.com) and enter the app URL.
 3. Click **Android** → **Generate package** → download the ZIP.
 4. Extract the release APK (the file inside is named something like `app-release-signed.apk`) and copy it here:

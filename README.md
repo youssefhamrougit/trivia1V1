@@ -6,7 +6,7 @@
 
 <br>
 
-<a href="https://triviaduel-xi.vercel.app"><strong>🔗 Live site →</strong></a>
+<a href="https://trivia1-v1.vercel.app"><strong>🔗 Live site →</strong></a>
 &nbsp;&nbsp;·&nbsp;&nbsp;
 <a href="#-the-stack">The stack</a>
 &nbsp;&nbsp;·&nbsp;&nbsp;
@@ -29,8 +29,8 @@ Get Trivia1v1 on your phone's home screen — **two ways**:
 
 | | |
 |---|---|
-| 📦 **APK (Android)** | Grab the installer from the [**download page**](download.html) (live at [`/download.html`](https://triviaduel-xi.vercel.app/download.html)). The Download button turns on automatically once `apk/trivia1v1.apk` is in the repo — see [`apk/README.md`](apk/README.md) to generate it in ~2 minutes (PWABuilder or Capacitor). |
-| 🌐 **PWA (any phone)** | No file needed. Open [the app](https://triviaduel-xi.vercel.app) and use your browser's **Install app** (Android Chrome) or **Add to Home Screen** (iOS Safari). Same app, offline-capable, full-screen. |
+| 📦 **APK (Android)** | Grab the installer from the [**download page**](download.html) (live at [`/download.html`](https://trivia1-v1.vercel.app/download.html)). The Download button turns on automatically once `apk/trivia1v1.apk` is in the repo — see [`apk/README.md`](apk/README.md) to generate it in ~2 minutes (PWABuilder or Capacitor). |
+| 🌐 **PWA (any phone)** | No file needed. Open [the app](https://trivia1-v1.vercel.app) and use your browser's **Install app** (Android Chrome) or **Add to Home Screen** (iOS Safari). Same app, offline-capable, full-screen. |
 
 ---
 
