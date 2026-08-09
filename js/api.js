@@ -294,7 +294,7 @@ const API = {
 
     // ---- friend 1v1 challenges (casual — no trophy change) -------------------
     if (path === "/api/friends/challenge") {
-      const { data, error } = await sup.rpc("create_challenge", { challengee: body.friendId });
+      const { data, error } = await sup.rpc("create_challenge", { challengee_id: body.friendId });
       if (error) throw new Error(error.message);
       return { match_id: data };
     }

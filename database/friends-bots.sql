@@ -156,12 +156,18 @@ create policy "update matches"
 
 
 -- ============================================================================
---  5) RPC: create_challenge(challengee)
+--  5) RPC: create_challenge(challengee_id)
 --     Starts a CASUAL 1v1 vs a friend: 10 random questions, status
 --     'challenged' until the friend accepts (then it becomes 'active' and
 --     the normal match flow takes over). Friend duels never move trophies.
+--
+--     NOTE: the parameter is named challengee_id (NOT challengee) on purpose.
+--     PL/pgSQL treats a bare identifier that matches a column of a table in
+--     the statement as the COLUMN, not the variable — so a parameter named
+--     exactly 'challengee' collides with the matches.challengee column and
+--     Postgres fails with 'column reference "challengee" is ambiguous'.
 -- ============================================================================
-create or replace function public.create_challenge(challengee uuid)
+create or replace function public.create_challenge(challengee_id uuid)
 returns uuid
 language plpgsql
 security definer
@@ -173,7 +179,7 @@ declare
   new_id uuid;
 begin
   if me is null then return null; end if;
-  if challengee is null or challengee = me then return null; end if;
+  if challengee_id is null or challengee_id = me then return null; end if;
 
   -- first sweep away any stale challenge between this pair (e.g. one the
   -- challenger abandoned, or that was never answered and the client
@@ -183,15 +189,15 @@ begin
   set status = 'finished'
   where m.status = 'challenged'
     and m.created_at < now() - interval '10 minutes'
-    and ((m.player1 = me and m.challengee = challengee)
-      or (m.player1 = challengee and m.challengee = me));
+    and ((m.player1 = me and m.challengee = challengee_id)
+      or (m.player1 = challengee_id and m.challengee = me));
 
   -- only one pending challenge between the same pair at a time
   if exists (
     select 1 from public.matches m
     where m.status = 'challenged'
-      and ((m.player1 = me and m.challengee = challengee)
-        or (m.player1 = challengee and m.challengee = me))
+      and ((m.player1 = me and m.challengee = challengee_id)
+        or (m.player1 = challengee_id and m.challengee = me))
   ) then
     return null;
   end if;
@@ -200,7 +206,7 @@ begin
   into picked;
 
   insert into public.matches (player1, challengee, status, question_ids)
-  values (me, challengee, 'challenged', picked)
+  values (me, challengee_id, 'challenged', picked)
   returning id into new_id;
 
   return new_id;
