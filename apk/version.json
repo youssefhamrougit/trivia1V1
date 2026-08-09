@@ -1,7 +1,0 @@
-{
-    "sha256":  "2ab3d5972a71407d94b5640c6e4effa5ec3cdace1ac4879892450b1e85adc0df",
-    "built":  "2026-08-09 17:21",
-    "min_android":  "6.0",
-    "version":  "v1.2.0",
-    "notes":  "Fresh Android build from https://trivia1-v1.vercel.app on 2026-08-09."
-}
