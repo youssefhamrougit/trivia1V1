@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚔️ TriviaDuel
+# ⚔️ Trivia1v1
 
 **Real-time 1v1 trivia battles — 10 questions, 15 seconds each. Beat strangers, climb 7 arenas, and take their trophies.**
 
@@ -36,7 +36,7 @@ Get TriviaDuel on your phone's home screen — **two ways**:
 
 ## 🎮 What is it?
 
-TriviaDuel is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot), get the same 10 questions, and race the 15-second clock. Answers relay to the other player **live**, winner takes **+20 trophies** (loser −20, a strict 1:1 swap) — climb a 7-arena "Knowledge Ladder" Clash Royale style, where your **current** trophies decide your arena. Matchmaking only pairs you with humans within 60 trophies; otherwise QuizBot steps in after 7 seconds. Win to climb; lose and you drop back down.
+trivia1v1 is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot), get the same 10 questions, and race the 15-second clock. Answers relay to the other player **live**, winner takes **+20 trophies** (loser −20, a strict 1:1 swap) — climb a 7-arena "Knowledge Ladder" Clash Royale style, where your **current** trophies decide your arena. Matchmaking only pairs you with humans within 60 trophies; otherwise QuizBot steps in after 7 seconds. Win to climb; lose and you drop back down.
 
 **No app stores. No downloads. No login wall.** Open the link, tap *Continue as guest*, and you're in a match.
 
@@ -66,7 +66,7 @@ The whole thing is a **static site**: the browser talks to Supabase directly (au
 ## 📁 What's in the repo
 
 ```
-triviaduel/
+trivia1v1/
 ├── index.html          # all screens (the shell of the app)
 ├── style.css           # design system (dark + neon)
 ├── manifest.json       # PWA install
@@ -82,7 +82,7 @@ triviaduel/
 │   ├── api.js          # Supabase client (auth, RPCs, Realtime)
 │   ├── app.js          # startup, login, screen switching
 │   ├── arenas.js       # the 7-arena "Knowledge Ladder"
-│   ├── trivia.js       # the TriviaDuel game
+│   ├── trivia.js       # the trivia1v1 game
 │   └── friends.js      # the Friends tab (requests, 1v1 challenges)
 └── database/
     ├── schema.sql      # tables + security + functions (run first)
@@ -105,7 +105,7 @@ The app is a static site that talks to Supabase directly — which means **one f
 
 1. **Run `database/friends-bots.sql`** in the Supabase SQL Editor. It creates the `friends` table, the `bot_config` table, the `matches.challengee` column + `'challenged'` status, and the `send_friend_request` / `create_challenge` RPCs — and upgrades `finish_match` with a `ranked` flag. Safe to re-run.
 2. **Turn OFF “Confirm email”** — Supabase dashboard → *Authentication → Providers → Email*. Sign-up then logs you straight in and claims your username.
-3. **Old email accounts**: accounts created before this change won't log in by username (their email isn't `username@triviaduel.local`). Recreate them, or rename their email in the dashboard to `<username>@triviaduel.local`.
+3. **Old email accounts**: accounts created before this change won't log in by username (their email isn't `username@trivia1v1.local`). Recreate them, or rename their email in the dashboard to `<username>@trivia1v1.local`.
 
 Until you run the SQL, the app degrades gracefully: practice bots still work with built-in difficulty defaults, and the Friends tab shows a hint instead of crashing.
 
