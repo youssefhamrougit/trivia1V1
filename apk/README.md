@@ -27,33 +27,33 @@ your app drawer. There's no native codebase; the game logic stays on the web + S
 ## 🚀 One-click build (zero installs — recommended)
 
 All the build tooling deliberately lives **outside the repo** — it is not part
-of GitHub. The tools folder sits next to your local clone (e.g.
-`triviaduel-tools/`), containing `build-apk.ps1`, a Capacitor alternative and
-a README. In the repo, `tools/build-apk.bat` is just a tiny launcher that
-finds and runs that external script.
+of GitHub. It lives in the **`triviaduel-tools`** folder on the **Desktop**:
+`build-apk.ps1`, `build-apk-capacitor.bat`, `export-icons.html` and a README.
 
 - **`build-apk.ps1`** — the recommended route. It asks the **PWABuilder cloud
   API** to package the live PWA into a signed APK: **nothing to install, ~2-4
-  minutes**. On its first run it also generates the missing PNG launcher icons
+  minutes**. On its first run it also fixes/generates the PNG launcher icons
   into `assets/` (drawn from the app's SVG), downloads the signed APK into
-  `apk/trivia1v1.apk`, saves your signing key in `triviaduel-tools/signing-keys/`
-  (outside the repo, where it belongs) and bumps `version.json`.
+  `apk/trivia1v1.apk`, saves your signing key in
+  `triviaduel-tools/signing-keys/` (outside the repo, where it belongs) and
+  bumps `version.json`.
 - **`build-apk-capacitor.bat`** — the local Capacitor route (needs Node.js +
   Android Studio) for full control.
 
-Run it with:
+Run it with (right-click → **Run with PowerShell**, or):
 
 ```
-powershell -ExecutionPolicy Bypass -File <your-tools-folder>\build-apk.ps1
+powershell -ExecutionPolicy Bypass -File <Desktop>\triviaduel-tools\build-apk.ps1
 ```
 
-or just double-click `tools/build-apk.bat` in the repo. It prints the exact
-`git add / commit / push` commands to publish the APK when it's done.
+It prints the exact `git add / commit / push` commands to publish the APK when
+it's done.
 
 ## 🔧 Local: Capacitor (full control, needs Android Studio)
 
-The one-click version of this route is `build-apk-capacitor.bat` in the tools
-folder **outside** the repo (see above). Manual steps, from the project root:
+The one-click version of this route is `build-apk-capacitor.bat` in the
+Desktop `triviaduel-tools` folder (see above). Manual steps, from the project
+root:
 
 ```bash
 # from the project root
@@ -95,10 +95,11 @@ shield, facing chevrons + bolt). Android launcher icons must be **PNG**.
 `build-apk.ps1` generates all three automatically on its first run (`icon-192.png`,
 `icon-512.png` and `icon-maskable-512.png` — full-bleed + safe zone, drawn from
 the SVG), so you only need the manual route below if you want to tweak them by
-hand: open `tools/export-icons.html` in any browser and hit **Download all 3
-PNGs**. Drop them into `assets/` (they're already referenced in `manifest.json`,
-which keeps the SVG for in-app use). PWABuilder rasterises the SVG automatically
-too, but the PNGs give you full control.
+hand: open `export-icons.html` from the Desktop `triviaduel-tools` folder in any
+browser and hit **Download all 3 PNGs**. Drop them into `assets/` (they're
+already referenced in `manifest.json`, which keeps the SVG for in-app use).
+PWABuilder rasterises the SVG automatically too, but the PNGs give you full
+control.
 
 ## 🔒 Checksum
 
