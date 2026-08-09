@@ -20,10 +20,6 @@ function setError(id, message) {
   if (el) el.textContent = message || "";
 }
 
-function pad2(n) {
-  return String(n).padStart(2, "0");
-}
-
 function randomInt(n) {
   return Math.floor(Math.random() * n);
 }
