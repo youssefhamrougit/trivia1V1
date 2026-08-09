@@ -36,7 +36,7 @@ Get Trivia1v1 on your phone's home screen — **two ways**:
 
 ## 🎮 What is it?
 
-trivia1v1 is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot), get the same 10 questions, and race the 15-second clock. Answers relay to the other player **live**, winner takes **+20 trophies** (loser −20, a strict 1:1 swap) — climb a 7-arena "Knowledge Ladder" Clash Royale style, where your **current** trophies decide your arena. Matchmaking only pairs you with humans within 60 trophies; otherwise QuizBot steps in after 7 seconds. Win to climb; lose and you drop back down.
+trivia1v1 is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot), get the same 10 questions, and race the 15-second clock. Answers relay to the other player **live**, winner takes **+20 trophies** (loser −20, a strict 1:1 swap) — climb a 7-arena "Knowledge Ladder" Clash Royale style, where your **current** trophies decide your arena. Matchmaking only pairs you with humans within 60 trophies; otherwise a **skill-matched bot opponent** (indistinguishable from a human) steps in after 7 seconds. Win to climb; lose and you drop back down.
 
 **No app stores. No downloads. No login wall.** Open the link, tap *Continue as guest*, and you're in a match.
 
@@ -48,6 +48,7 @@ trivia1v1 is a mobile-first **1v1 trivia game** that runs entirely in the browse
 | 🤝 **Friends** | Search by username, send/accept requests, and 1v1-challenge friends (casual duels — no trophies) |
 | 📊 **Leaderboard** | Top 50 players by trophies |
 | 🔐 **Auth** | Username + password (or one-tap guest) via Supabase Auth |
+| 🔊 **Sound** | Synthesized effects for right/wrong answers + the countdown clock (Web Audio, no audio files) — mute toggle on the home + match screens |
 | 📱 **PWA** | Installable on phones, offline-ready (network-first service worker) |
 
 ## 🛠️ The stack
@@ -80,6 +81,7 @@ trivia1v1/
 ├── js/
 │   ├── config.js       # Supabase config (project URL + publishable key)
 │   ├── api.js          # Supabase client (auth, RPCs, Realtime)
+│   ├── sound.js        # synthesized sound effects (Web Audio — no audio files)
 │   ├── app.js          # startup, login, screen switching
 │   ├── arenas.js       # the 7-arena "Knowledge Ladder"
 │   ├── trivia.js       # the trivia1v1 game
@@ -88,6 +90,7 @@ trivia1v1/
     ├── schema.sql      # tables + security + functions (run first)
     ├── seed.sql        # 40 starter questions + the practice bot (run second)
     ├── questions-bank.sql # 440 more questions — the full 480-question bank
+    ├── stealth-bots.sql # disguised skill-matched bot opponents (run after seed)
     ├── setup-demo.sql  # idempotent migration for existing projects
     └── friends-bots.sql # ⚠️ REQUIRED: friends + bot difficulty + username auth
 ```
@@ -105,9 +108,10 @@ trivia1v1/
 The app is a static site that talks to Supabase directly — which means **one file + one dashboard toggle** are required for the newer features:
 
 1. **Run `database/questions-bank.sql`** in the Supabase SQL Editor. It adds 440 questions (110 per category, Science / Math / Football / History) to the 40 in `seed.sql` — a 480-question bank. Safe to re-run.
-2. **Run `database/friends-bots.sql`** in the Supabase SQL Editor. It creates the `friends` table, the `bot_config` table, the `matches.challengee` column + `'challenged'` status, and the `send_friend_request` / `create_challenge` RPCs — and upgrades `finish_match` with a `ranked` flag. Safe to re-run.
-3. **Turn OFF “Confirm email”** — Supabase dashboard → *Authentication → Providers → Email*. Sign-up then logs you straight in and claims your username.
-4. **Old email accounts**: accounts created before this change won't log in by username (their email isn't `username@triviaduel.local` — that domain is functional and intentionally unchanged). Recreate them, or rename their email in the dashboard to `<username>@triviaduel.local`.
+2. **Run `database/stealth-bots.sql`** — creates the disguised, skill-matched bot opponents (`start_bot_match` RPC + 10 human-looking bot profiles). When no human joins the queue within 7 seconds, the app matches you with the bot whose trophies sit nearest yours — it looks and plays exactly like a human, trophies included. Safe to re-run.
+3. **Run `database/friends-bots.sql`** — creates the `friends` table, the `bot_config` table, the `matches.challengee` column + `'challenged'` status, and the `send_friend_request` / `create_challenge` RPCs — and upgrades `finish_match` with a `ranked` flag. Safe to re-run.
+4. **Turn OFF “Confirm email”** — Supabase dashboard → *Authentication → Providers → Email*. Sign-up then logs you straight in and claims your username.
+5. **Old email accounts**: accounts created before this change won't log in by username (their email isn't `username@triviaduel.local` — that domain is functional and intentionally unchanged). Recreate them, or rename their email in the dashboard to `<username>@triviaduel.local`.
 
 Until you run the SQL, the app degrades gracefully: practice bots still work with built-in difficulty defaults, and the Friends tab shows a hint instead of crashing.
 

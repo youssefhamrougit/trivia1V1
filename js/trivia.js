@@ -47,7 +47,11 @@ let triviaState = {
   fallbackTimer: null,  // the 7-second human-search timer (queue)
   queueTimer: null,     // the per-second countdown tick on the queue screen
   ending: false,        // guard so the match ends exactly once (for BOTH players)
-  botFallback: false,   // this game started because no human was found
+  botFallback: false,   // this game started because no human was found (visible QuizBot)
+  stealthBot: false,    // this online match's opponent is a DISGUISED bot (looks human)
+  botStreak: 0,         // the invisible opponent's current answer streak (streak scoring)
+  botTimer: null,       // the invisible opponent's independent per-question "brain"
+  botAnsweredThisQ: false, // has the invisible opponent already answered this question?
   lastWinner: null,  // for the result screen
   lastDelta: 0,
   lastOnline: false,
@@ -58,8 +62,8 @@ let triviaState = {
 //  MATCHMAKING  (tap "Find Match")
 //
 //  Humans get HUMAN_SEARCH_SECONDS to queue up at the same time as us. If
-//  nobody joins in that window, we play QuizBot instead of sitting in the
-//  queue forever.
+//  nobody joins in that window, we secretly match a skill-matched bot that
+//  looks exactly like a human — no "QuizBot" anywhere in this flow.
 // ============================================================================
 
 function setQueueStatus(text) {
@@ -92,7 +96,7 @@ function startQueueCountdown() {
     if (left > 0) setQueueStatus("Searching for a human opponent… (" + left + "s)");
     else {
       clearQueueCountdown();
-      setQueueStatus("No humans online right now — matching you with QuizBot!");
+      setQueueStatus("Opponent found — starting…");
     }
   }, 1000);
 }
@@ -105,6 +109,7 @@ function triviaFindMatch() {
   triviaState.started = false;
   triviaState.ending = false;
   triviaState.botFallback = false;
+  triviaState.stealthBot = false;
   triviaState.opponentFound = false;
   clearQueueTimers();
   startQueueCountdown();
@@ -143,6 +148,7 @@ function triviaFindMatch() {
 // place instead of bailing to the home screen.
 function triviaPollForOpponent(attempt, onGiveUp) {
   if (!triviaState.matchId || triviaState.mode !== "online") return;
+  if (triviaState.started || triviaState.stealthBot) return; // a match already took over
   if (attempt > (triviaState.casual ? 60 : 40)) {
     if (typeof onGiveUp === "function") { onGiveUp(); return; }
     // give up quietly: go home and show the message there
@@ -162,62 +168,45 @@ function triviaPollForOpponent(attempt, onGiveUp) {
   }, 1500);
 }
 
-// no human joined within the search window — play QuizBot instead, reusing
-// the questions the queue match already picked (so it feels like a real game)
+// no human joined within the 7-second window — secretly pair the player with
+// a skill-matched bot that is indistinguishable from a human: real-looking
+// name + avatar, a REAL 'active' match row, and real trophy movement. The
+// only thing that's fake is who is on the other side (stealth-bots.sql).
 async function triviaFallbackToBot() {
   if (triviaState.opponentFound || triviaState.started || triviaState.mode !== "online") return;
-  const matchId = triviaState.matchId;
 
-  // grab the questions first (we may delete the match row in a moment)
-  let reuseQuestions = null;
-  if (matchId) {
-    try {
-      const data = await API.call("/api/trivia/match/" + matchId);
-      if (triviaState.mode !== "online") return; // cancelled while we looked
-      if (data.match && data.match.status === "active") {
-        triviaStartMatch(matchId); // a human is there after all
-        return;
-      }
-      if (Array.isArray(data.questions) && data.questions.length) reuseQuestions = data.questions;
-    } catch (e) { /* the row may already be gone — fall through */ }
-  }
-
-  // atomically remove the waiting match — unless a human JUST joined it,
-  // in which case the database hands it back and we play that human
-  if (matchId) {
-    try {
-      const res = await API.call("/api/trivia/cancel", { method: "POST", body: {} });
-      if (triviaState.mode !== "online") return; // cancelled while we looked
-      if (res && res.match_id) {
-        triviaStartMatch(res.match_id);
-        return;
-      }
-    } catch (e) { /* leave the row; it ages out on its own */ }
-  }
+  // atomically leave the queue — unless a human JUST joined it, in which
+  // case the database hands the match back and we play that human instead
+  try {
+    const res = await API.call("/api/trivia/cancel", { method: "POST", body: {} });
+    if (triviaState.mode !== "online") return; // cancelled while we looked
+    if (res && res.match_id) {
+      await triviaStartMatch(res.match_id);
+      return;
+    }
+  } catch (e) { /* leave the row; it ages out on its own */ }
 
   // a human match may have started through the stream while we were
   // deciding — don't stomp on it
   if (triviaState.mode !== "online" || triviaState.started || triviaState.opponentFound) return;
 
-  if (reuseQuestions) {
-    startBotFallbackGame(reuseQuestions);
-    return;
+  // create a real match against a disguised bot whose skill follows OUR
+  // trophies — the normal online flow (and finish_match) makes it look real
+  try {
+    const res = await API.call("/api/trivia/botmatch", { method: "POST", body: {} });
+    if (triviaState.mode !== "online" || triviaState.started || triviaState.opponentFound) return;
+    if (!res || !res.match_id) throw new Error("No bot opponent available");
+    triviaState.stealthBot = true;    // simulate the bot's answers client-side
+    triviaState.opponentFound = true; // never fall back again / stop the poll
+    triviaState.botFallback = false;  // this IS a ranked match — trophies move
+    clearQueueTimers();
+    closeStream();
+    await triviaStartMatch(res.match_id); // applies the trophy-matched skill
+  } catch (e) {
+    // start_bot_match isn't deployed yet (run database/stealth-bots.sql) —
+    // fall back to the old VISIBLE QuizBot practice game so the app still works
+    triviaStartBot("medium", true);
   }
-
-  // last resort: a brand-new random set, exactly like practice mode
-  triviaStartBot("medium", true);
-}
-
-// launch the QuizBot game with the queue match's questions
-function startBotFallbackGame(questions) {
-  setQueueStatus("No humans online right now — matching you with QuizBot!");
-  triviaState.botFallback = true;
-  closeStream(); // stop listening for queue updates — we've given up on humans
-  prepareBotGame("medium");
-  applyBotDifficulty("medium").then(function () {
-    showToast("No humans found — playing QuizBot instead", "gold");
-    triviaStartBotGame(questions);
-  });
 }
 
 function triviaCancelQueue() {
@@ -237,6 +226,7 @@ function triviaCancelQueue() {
 async function triviaStartMatch(matchId) {
   if (triviaState.starting || triviaState.started) return;
   if (triviaState.mode !== "online") return; // a QuizBot fallback already took over
+  triviaState.matchId = matchId; // this match is the live one now (replaces any stale queue id)
   triviaState.starting = true;
   triviaState.started = true;
   triviaState.opponentFound = true; // a human joined — never fall back to QuizBot
@@ -281,6 +271,7 @@ async function triviaStartMatch(matchId) {
   triviaState.myScore = 0;
   triviaState.oppScore = 0;
   triviaState.streak = 0;
+  if (triviaState.stealthBot) applyStealthBotSkill(); // trophy-matched "opponent"
 
   buildProgressDots();
   setScoreboard();
@@ -325,6 +316,8 @@ function prepareBotGame(diff) {
   triviaState.botDiff = diff || "medium";
   triviaState.oppName = "QuizBot";
   triviaState.oppAvatar = '<img class="avatar-img" src="assets/icons/robot.svg" alt="QuizBot">';
+  triviaState.stealthBot = false; // practice is the VISIBLE QuizBot, never disguised
+  triviaState.botStreak = 0;
   triviaState.matchId = null; // the online queue is over — don't touch it again
 }
 
@@ -335,6 +328,7 @@ function triviaStartBotGame(questions) {
   triviaState.myScore = 0;
   triviaState.oppScore = 0;
   triviaState.streak = 0;
+  triviaState.botStreak = 0;
 
   buildProgressDots();
   setScoreboard();
@@ -397,6 +391,17 @@ async function applyBotDifficulty(diff) {
   const fb = BOT_DIFF_FALLBACK[diff] || BOT_DIFF_FALLBACK.medium;
   triviaState.botChance = row ? Number(row.answer_chance) : fb.answer_chance;
   triviaState.botDelay = row ? Number(row.answer_ms) : fb.answer_ms;
+}
+
+// the disguised bot's skill follows the PLAYER's trophies (the higher you
+// climb, the tougher the "opponent") — a continuous version of the
+// easy/medium/hard spread (0.35/0.55/0.85 accuracy, 1100/800/550 ms), tuned
+// slightly forgiving so players still climb while it feels like a fair fight.
+function applyStealthBotSkill() {
+  const t = Math.min(1, Math.max(0, ((currentProfile && currentProfile.trophies) || 0) / 900));
+  triviaState.botChance = 0.28 + t * 0.50; // 0.28 → 0.78 answer accuracy
+  triviaState.botDelay  = 1150 - t * 600;  // 1150ms → 550ms "thinking"
+  triviaState.botStreak = 0;
 }
 
 function closeStream() {
@@ -484,6 +489,8 @@ function renderQuestion() {
   }
 
   triviaState.answered = false;
+  triviaState.botAnsweredThisQ = false;
+  scheduleBotAnswer(); // the invisible opponent starts "thinking" right away
   startQuestionTimer();
 }
 
@@ -491,12 +498,21 @@ function renderQuestion() {
 function startQuestionTimer() {
   const fill = document.getElementById("match-timer-fill");
   let remaining = QUESTION_SECONDS;
+  let lastWhole = Math.ceil(remaining); // for the per-second tick sound
 
   fill.style.width = "100%";
   triviaState.timer = setInterval(function () {
     remaining -= 0.1;
     fill.style.width = Math.max(0, (remaining / QUESTION_SECONDS) * 100) + "%";
     fill.classList.toggle("urgent", remaining <= 5 && !triviaState.answered);
+
+    // one quiet tick per second in the final 5 seconds (unless answered)
+    const whole = Math.ceil(remaining);
+    if (whole !== lastWhole && !triviaState.answered) {
+      lastWhole = whole;
+      if (whole <= 5 && whole >= 1) Sound.playTick();
+    }
+
     if (remaining <= 0 && !triviaState.answered) {
       triviaState.answered = true;
       clearInterval(triviaState.timer);
@@ -516,6 +532,11 @@ function triviaPick(index, q, btn) {
 // finish the current question: score it, tell the opponent, move on
 function finishQuestion(correct, chosenBtn) {
   const q = triviaState.questions[triviaState.qIndex];
+
+  // game feedback sounds (right / wrong / clock ran out)
+  if (correct) Sound.playCorrect();
+  else if (chosenBtn) Sound.playWrong();
+  else Sound.playTimesUp();
 
   // highlight the right answer (green) and the wrong pick (red)
   const buttons = document.querySelectorAll("#match-answers .answer");
@@ -541,17 +562,51 @@ function finishQuestion(correct, chosenBtn) {
     }).catch(function () { /* the opponent will see the final scores anyway */ });
   }
 
-  // in practice mode, the bot "answers" too — how often it's right and how
-  // fast it answers depend on the difficulty you picked
-  if (triviaState.mode === "bot") {
+  // the invisible opponent "answers" too — practice mode uses QuizBot at the
+  // difficulty you picked, a stealth match uses the disguised bot at a skill
+  // matched to your trophies. If it hasn't answered this question already
+  // (see scheduleBotAnswer), it "thinks" a moment and answers right now.
+  if ((triviaState.mode === "bot" || triviaState.stealthBot) && !triviaState.botAnsweredThisQ) {
+    clearTimeout(triviaState.botTimer);
+    const jitter = randomInt(550) - 225; // -225..+325 ms of "thinking"
     setTimeout(function () {
-      if (Math.random() < triviaState.botChance) triviaState.oppScore += 100;
-      updateScoreboard();
-    }, triviaState.botDelay);
+      botAnswer();
+    }, Math.max(320, Math.min(1250, triviaState.botDelay + jitter)));
   }
 
   // short pause so you can see the result, then next question
   setTimeout(function () { triviaNext(); }, 1400);
+}
+
+// score ONE answer for the invisible opponent — 100 points, or 150 on a
+// 3-streak, exactly like a real player's scoring. Guarded so a stale timer
+// (e.g. the reveal-path answer firing after sign-out or a finished match)
+// can never mutate a scoreboard that is no longer on screen.
+function botAnswer() {
+  if (triviaState.ending || !(triviaState.mode === "bot" || triviaState.stealthBot)) return;
+  triviaState.botAnsweredThisQ = true;
+  if (Math.random() < triviaState.botChance) {
+    triviaState.botStreak++;
+    triviaState.oppScore += triviaState.botStreak >= 3 ? 150 : 100;
+  } else {
+    triviaState.botStreak = 0;
+  }
+  updateScoreboard();
+}
+
+// give the invisible opponent an INDEPENDENT brain: it starts "thinking" the
+// moment the question appears, so it can answer BEFORE the player — its score
+// ticks up while you're still reading, just like a fast human opponent. If
+// the player answers first, this pending timer is cancelled and the answer
+// happens during the reveal instead (see finishQuestion).
+function scheduleBotAnswer() {
+  if (!(triviaState.mode === "bot" || triviaState.stealthBot)) return;
+  clearTimeout(triviaState.botTimer);
+  const thinkMs = triviaState.botDelay + randomInt(600) - 100; // -100..+500 ms
+  triviaState.botTimer = setTimeout(function () {
+    if (triviaState.answered) return; // we answered first — the reveal path handles it
+    botAnswer();
+  }, Math.max(400, thinkMs));
 }
 
 function triviaNext() {
@@ -572,6 +627,7 @@ async function endMatch() {
   if (triviaState.ending) return; // the match can only end once (for both players)
   triviaState.ending = true;
   clearInterval(triviaState.timer);
+  clearTimeout(triviaState.botTimer);
   clearQueueTimers();
   closeStream();
 
@@ -703,6 +759,7 @@ function triviaRematch() {
 // clean up anything left running (used when signing out)
 function triviaCleanup() {
   clearInterval(triviaState.timer);
+  clearTimeout(triviaState.botTimer);
   closeStream();
   clearQueueTimers();
   triviaState.mode = null; // stop any in-flight fallback from starting a match

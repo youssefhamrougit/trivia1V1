@@ -15,6 +15,25 @@
 
 const BOT_ID = "00000000-0000-0000-0000-000000000001";
 
+// ---- disguised skill bots (see database/stealth-bots.sql) -----------------
+// These are the "hidden" opponents the app pairs you with when no human joins
+// the queue within 7 seconds. They look like real players (human names,
+// trophies that move) but must never appear on the leaderboard or in friend
+// search — keep this list in sync with the ids in database/stealth-bots.sql.
+const STEALTH_BOT_IDS = [
+  "00000000-0000-0000-0000-0000000000a1", // Nova
+  "00000000-0000-0000-0000-0000000000a2", // Vortex
+  "00000000-0000-0000-0000-0000000000a3", // ShadowFox
+  "00000000-0000-0000-0000-0000000000a4", // PixelRider
+  "00000000-0000-0000-0000-0000000000a5", // EmberBlaze
+  "00000000-0000-0000-0000-0000000000a6", // Quasar
+  "00000000-0000-0000-0000-0000000000a7", // Zephyr
+  "00000000-0000-0000-0000-0000000000a8", // Luna
+  "00000000-0000-0000-0000-0000000000a9", // NeonWolf
+  "00000000-0000-0000-0000-0000000000aa", // Raptor
+];
+const BOT_IDS = [BOT_ID].concat(STEALTH_BOT_IDS);
+
 // ---- username + password auth -------------------------------------------------
 // Supabase GoTrue only signs people up with an email, so we turn the chosen
 // username into a private per-user email:  <username>@triviaduel.local
@@ -26,6 +45,21 @@ function usernameToEmail(username) {
   return String(username || "")
     .trim().toLowerCase()
     .replace(/[^a-z0-9_]/g, "") + "@" + AUTH_DOMAIN;
+}
+
+// the arena the player currently sits in (from their trophies). Matchmaking
+// tilts 4 of the match's 10 questions toward it, so each arena "feels" themed.
+async function _arenaSignature(uid) {
+  let sig = "mixed";
+  const prof = await API._ensureClient().from("profiles").select("trophies").eq("id", uid).limit(1);
+  if (!prof.error && prof.data && prof.data[0]) {
+    const trophies = prof.data[0].trophies || 0;
+    if (trophies >= 540) sig = "Math";
+    else if (trophies >= 400) sig = "History";
+    else if (trophies >= 260) sig = "Football";
+    else if (trophies >= 120) sig = "Science";
+  }
+  return sig;
 }
 
 const API = {
@@ -120,12 +154,12 @@ const API = {
     }
     if (path === "/api/leaderboard") {
       let { data, error } = await sup.from("profiles")
-        .select("*").neq("id", BOT_ID).order("trophies", { ascending: false }).limit(50);
+        .select("*").not("id", "in", BOT_IDS).order("trophies", { ascending: false }).limit(50);
       if (error || !data || data.length === 0) {
         // pre-migration databases still use "elo" — fall back so the screen
         // keeps working until setup-demo.sql is run
         const fb = await sup.from("profiles")
-          .select("*").neq("id", BOT_ID).order("elo", { ascending: false }).limit(50);
+          .select("*").not("id", "in", BOT_IDS).order("elo", { ascending: false }).limit(50);
         if (!fb.error && fb.data && fb.data.length) { data = fb.data; error = null; }
       }
       if (error) throw new Error(error.message);
@@ -145,15 +179,7 @@ const API = {
       if (!uid) throw new Error("Not logged in");
       // arena signature discipline (mirrors the original backend logic): the RPC tilts
       // 4 of the match's 10 questions toward the arena the player is currently in
-      let sig = "mixed";
-      const prof = await sup.from("profiles").select("trophies").eq("id", uid).limit(1);
-      if (!prof.error && prof.data && prof.data[0]) {
-        const trophies = prof.data[0].trophies || 0;
-        if (trophies >= 540) sig = "Math";
-        else if (trophies >= 400) sig = "History";
-        else if (trophies >= 260) sig = "Football";
-        else if (trophies >= 120) sig = "Science";
-      }
+      const sig = await _arenaSignature(uid);
       const { data, error } = await sup.rpc("join_matchmaking", { me: uid, sig: sig });
       if (error) throw new Error(error.message);
       return { match_id: data };
@@ -167,6 +193,18 @@ const API = {
       const uid = await this._uid();
       if (!uid) throw new Error("Not logged in");
       const { data, error } = await sup.rpc("cancel_matchmaking", { me: uid });
+      if (error) throw new Error(error.message);
+      return { match_id: data };
+    }
+
+    // ---- stealth bot: no human joined within the 7-second window — create
+    // a REAL, human-looking match against a skill-matched bot (see
+    // database/stealth-bots.sql). The client simulates the bot's answers.
+    if (path === "/api/trivia/botmatch") {
+      const uid = await this._uid();
+      if (!uid) throw new Error("Not logged in");
+      const sig = await _arenaSignature(uid);
+      const { data, error } = await sup.rpc("start_bot_match", { me: uid, sig: sig });
       if (error) throw new Error(error.message);
       return { match_id: data };
     }
@@ -224,7 +262,7 @@ const API = {
       const { data, error } = await sup.from("profiles")
         .select("id,username,trophies")
         .ilike("username", "%" + q + "%")
-        .neq("id", uid).neq("id", BOT_ID)
+        .neq("id", uid).not("id", "in", BOT_IDS)
         .order("trophies", { ascending: false })
         .limit(10);
       if (error) throw new Error(error.message);
