@@ -150,10 +150,13 @@ function downloadCanvas(canvas, name) {
 }
 
 // ---- the three icons -----------------------------------------------------------
+// NOTE: the downloaded file names must NOT contain "assets/" — a slash in the
+// filename makes Windows save them as "assets_icon-192.png", which the manifest
+// can't find. The files belong in the repo's assets/ folder once downloaded.
 var ICONS = [
-  { name: "assets/icon-192.png",          size: 192, svg: tileSvg,     label: "icon-192.png",     hint: "PWA + small launcher" },
-  { name: "assets/icon-512.png",          size: 512, svg: tileSvg,     label: "icon-512.png",     hint: "High-res launcher (used by the APK build)" },
-  { name: "assets/icon-maskable-512.png", size: 512, svg: maskableSvg, label: "icon-maskable-512.png", hint: "Adaptive icon · full-bleed + safe zone" },
+  { name: "icon-192.png",          size: 192, svg: tileSvg,     label: "icon-192.png",     hint: "PWA + small launcher" },
+  { name: "icon-512.png",          size: 512, svg: tileSvg,     label: "icon-512.png",     hint: "High-res launcher (used by the APK build)" },
+  { name: "icon-maskable-512.png", size: 512, svg: maskableSvg, label: "icon-maskable-512.png", hint: "Adaptive icon · full-bleed + safe zone" },
 ];
 
 var canvases = {};
