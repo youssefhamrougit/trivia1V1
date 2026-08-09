@@ -24,16 +24,36 @@ your app drawer. There's no native codebase; the game logic stays on the web + S
 > PWABuilder's free packages are signed with its own key. If you plan to release widely,
 > see "Signing" below — and consider the Play Store for updates.
 
-## 🚀 One-click local build (`tools/build-apk.bat`)
+## 🚀 One-click build (zero installs — recommended)
 
-On a **Windows** machine with Node.js (+ Android Studio for the final Gradle
-step), double-click `tools/build-apk.bat` — it prepares `dist/`, installs
-Capacitor, creates the Android project, syncs the web app, runs the Gradle
-build and drops `apk/trivia1v1.apk` in place automatically. It prints clear
-help if a prerequisite (Java, Android SDK) is missing, and the files it
-generates (`android/`, `dist/`, `capacitor.config.*`) are gitignored.
+All the build tooling deliberately lives **outside the repo** — it is not part
+of GitHub. The tools folder sits next to your local clone (e.g.
+`triviaduel-tools/`), containing `build-apk.ps1`, a Capacitor alternative and
+a README. In the repo, `tools/build-apk.bat` is just a tiny launcher that
+finds and runs that external script.
+
+- **`build-apk.ps1`** — the recommended route. It asks the **PWABuilder cloud
+  API** to package the live PWA into a signed APK: **nothing to install, ~2-4
+  minutes**. On its first run it also generates the missing PNG launcher icons
+  into `assets/` (drawn from the app's SVG), downloads the signed APK into
+  `apk/trivia1v1.apk`, saves your signing key in `triviaduel-tools/signing-keys/`
+  (outside the repo, where it belongs) and bumps `version.json`.
+- **`build-apk-capacitor.bat`** — the local Capacitor route (needs Node.js +
+  Android Studio) for full control.
+
+Run it with:
+
+```
+powershell -ExecutionPolicy Bypass -File <your-tools-folder>\build-apk.ps1
+```
+
+or just double-click `tools/build-apk.bat` in the repo. It prints the exact
+`git add / commit / push` commands to publish the APK when it's done.
 
 ## 🔧 Local: Capacitor (full control, needs Android Studio)
+
+The one-click version of this route is `build-apk-capacitor.bat` in the tools
+folder **outside** the repo (see above). Manual steps, from the project root:
 
 ```bash
 # from the project root
@@ -71,13 +91,14 @@ Android requires APKs to be signed. Options:
 ## 🧩 Icons
 
 The logo is the **VS duel shield** (`assets/icon.svg` — orange tile, dark
-shield, facing chevrons + bolt). Android launcher icons must be **PNG**, so
-generate them in one click: open `tools/export-icons.html` in any browser
-and hit **Download all 3 PNGs** — it renders `icon-192.png`,
-`icon-512.png` and `icon-maskable-512.png` (full-bleed + safe zone) at the
-exact sizes. Drop them into `assets/` (they're already referenced in
-`manifest.json`, which keeps the SVG for in-app use). PWABuilder rasterises
-the SVG automatically too, but the PNGs give you full control.
+shield, facing chevrons + bolt). Android launcher icons must be **PNG**.
+`build-apk.ps1` generates all three automatically on its first run (`icon-192.png`,
+`icon-512.png` and `icon-maskable-512.png` — full-bleed + safe zone, drawn from
+the SVG), so you only need the manual route below if you want to tweak them by
+hand: open `tools/export-icons.html` in any browser and hit **Download all 3
+PNGs**. Drop them into `assets/` (they're already referenced in `manifest.json`,
+which keeps the SVG for in-app use). PWABuilder rasterises the SVG automatically
+too, but the PNGs give you full control.
 
 ## 🔒 Checksum
 
