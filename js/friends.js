@@ -159,14 +159,14 @@ function renderFriends(wrap, friends, outgoing) {
   }
   let html = '<div class="friends-section"><h3>Your friends <span class="badge">' + friends.length + "</span></h3>";
   for (const f of friends) {
-    const waiting = outgoing.indexOf(f.id) >= 0;
+    const wait = outgoing.find(function (o) { return o.friendId === f.id; });
     html +=
       '<div class="friend-row">' +
       friendAvatar(f) +
       '<div class="friend-info"><b>' + esc(f.username) + "</b>" +
       '<span class="muted small">' + (f.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt=""> trophies</span></div>' +
-      (waiting
-        ? '<button class="mini-btn" disabled>Waiting…</button>'
+      (wait
+        ? '<button class="mini-btn red" title="Cancel the challenge you sent" onclick="cancelChallenge(\'' + wait.matchId + '\', this)">Cancel</button>'
         : '<button class="mini-btn" onclick="challengeFriend(\'' + f.id + '\', this)">1v1</button>') +
       '<button class="mini-btn red" title="Remove friend" onclick="removeFriend(\'' + f.rowId + '\')">✕</button>' +
       "</div>";
@@ -210,7 +210,11 @@ async function challengeFriend(friendId, btn) {
   if (btn) { btn.disabled = true; btn.textContent = "…"; }
   try {
     const res = await API.call("/api/friends/challenge", { method: "POST", body: { friendId: friendId } });
-    if (!res.match_id) { showToast("Couldn't send the challenge.", "err"); return; }
+    if (!res.match_id) {
+      showToast("A challenge to that friend is already pending.", "gold");
+      loadFriends(); // re-render so the button isn't left stuck on "…"
+      return;
+    }
 
     triviaState.mode = "online";
     triviaState.casual = true;
@@ -223,17 +227,80 @@ async function challengeFriend(friendId, btn) {
       else if (ev.type === "match_declined") {
         triviaState.matchId = null;
         closeStream();
+        if (triviaState.mode === "online" && !triviaState.started) triviaState.mode = null;
         showToast("Your friend declined the challenge", "err");
         loadFriends();
       }
     });
-    triviaPollForOpponent(0); // safety net if the stream hiccups
+    // safety net if the stream hiccups. If the friend never answers, the
+    // challenge is expired cleanly (cancel + re-render) instead of being
+    // kicked to the home screen — and it can never be accepted into a match
+    // where the challenger doesn't show up.
+    triviaPollForOpponent(0, function () {
+      // (started => the friend just accepted and the match is already live —
+      //  never expire something that's running)
+      if (!triviaState.matchId || triviaState.mode !== "online" || triviaState.started) return;
+      triviaState.matchId = null;
+      closeStream();
+      triviaState.mode = null;
+      API.call("/api/friends/cancelchallenge", { method: "POST", body: { matchId: res.match_id } })
+        .then(function (r) {
+          // the friend accepted in the same instant — play it out after all
+          if (r && r.match_id && !triviaState.started) {
+            triviaState.mode = "online";
+            triviaState.casual = true;
+            triviaState.started = false;
+            return triviaStartMatch(r.match_id);
+          }
+          showToast("Your friend didn't answer — the challenge expired.", "err");
+        })
+        .catch(function () {
+          // the row is already finished — nothing to clean up, still say so
+          showToast("Your friend didn't answer — the challenge expired.", "err");
+        });
+      loadFriends();
+    });
 
     showToast("Challenge sent — waiting for your friend", "ok");
     loadFriends();
   } catch (err) {
     showToast(err.message || "Couldn't send the challenge.", "err");
     if (btn) { btn.disabled = false; btn.textContent = "1v1"; }
+  }
+}
+
+// I retract a challenge I sent (the friend list shows a Cancel button while
+// one is pending). Race-safe: if the friend accepted at that exact instant,
+// the database hands the match back and we play it instead.
+async function cancelChallenge(matchId, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = "…"; }
+  try {
+    const res = await API.call("/api/friends/cancelchallenge", { method: "POST", body: { matchId: matchId } });
+    if (res && res.match_id) {
+      // the friend accepted in the same instant — we're duelling after all.
+      // (If the stream already started it, triviaStartMatch's guard makes
+      //  this a no-op and the live match keeps running untouched.)
+      if (!triviaState.started) {
+        triviaState.mode = "online";
+        triviaState.casual = true;
+        triviaState.started = false;
+        triviaState.matchId = res.match_id;
+        closeStream();
+        await triviaStartMatch(res.match_id);
+      }
+      return;
+    }
+    triviaState.matchId = null;
+    closeStream();
+    if (triviaState.mode === "online" && !triviaState.started) triviaState.mode = null;
+    showToast("Challenge cancelled", "ok");
+    loadFriends();
+  } catch (err) {
+    const msg = /does not exist|PGRST/i.test(err.message || "")
+      ? "Friends needs a database update — re-run database/friends-bots.sql (see README)."
+      : err.message;
+    showToast(msg || "Couldn't cancel the challenge.", "err");
+    loadFriends();
   }
 }
 

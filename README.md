@@ -17,8 +17,20 @@
 ![license](https://img.shields.io/badge/license-MIT-blue)
 ![status](https://img.shields.io/badge/status-live-brightgreen)
 ![static](https://img.shields.io/badge/static%20site-vanilla%20JS-8b5cf6)
+![download](https://img.shields.io/badge/download-APK-orange)
 
 </div>
+
+---
+
+## 📲 Download for Android
+
+Get TriviaDuel on your phone's home screen — **two ways**:
+
+| | |
+|---|---|
+| 📦 **APK (Android)** | Grab the installer from the [**download page**](download.html) (live at [`/download.html`](https://triviaduel-xi.vercel.app/download.html)). The Download button turns on automatically once `apk/triviaduel.apk` is in the repo — see [`apk/README.md`](apk/README.md) to generate it in ~2 minutes (PWABuilder or Capacitor). |
+| 🌐 **PWA (any phone)** | No file needed. Open [the app](https://triviaduel-xi.vercel.app) and use your browser's **Install app** (Android Chrome) or **Add to Home Screen** (iOS Safari). Same app, offline-capable, full-screen. |
 
 ---
 
@@ -60,8 +72,11 @@ triviaduel/
 ├── manifest.json       # PWA install
 ├── sw.js               # offline support (network-first)
 ├── vercel.json         # Vercel caching headers
+├── download.html       # Android APK download page (checks apk/ at load)
 ├── .env.example        # env var reference (placeholders only)
 ├── assets/             # icons, arena art, UI graphics
+├── apk/                # generated triviaduel.apk + build instructions
+├── content/            # social content kit (Instagram carousels, captions)
 ├── js/
 │   ├── config.js       # Supabase config (project URL + publishable key)
 │   ├── api.js          # Supabase client (auth, RPCs, Realtime)

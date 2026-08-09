@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#14100b" />
+<title>TriviaDuel — Social Content Kit</title>
+
+<!-- Same font family as the app (Nunito) — kept so slides match the TriviaDuel brand. -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+<style>
+/* ============================================================================
+   TriviaDuel Social Content Kit
+   Slide canvas is exactly 1080 x 1350 px (Instagram portrait carousel).
+   The page previews the slides scaled down; "Export PNG" renders them at
+   full native resolution.
+   Design: app-matching warm near-black + orange, with brighter gradient
+   glows so slides pop in the feed.
+============================================================================ */
+
+:root {
+  --bg: #0e0d0b;
+  --bg-2: #14100b;
+  --surface: #1b1916;
+  --surface-2: #24211d;
+  --text: #f3efe8;
+  --muted: #a9a092;
+  --muted-2: #6b655a;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.16);
+
+  --accent: #df7d1f;
+  --accent-bright: #f2a254;
+  --gold: #e0a93e;
+  --green: #7fcf8d;
+  --red: #f17a68;
+  --coral: #f08a6e;
+
+  /* slide accent themes (warm family only — stays on-brand) */
+  --t-orange: #df7d1f;   --t-orange-2: #f2a254;
+  --t-gold:   #e0a93e;   --t-gold-2:   #f3ce7a;
+  --t-green:  #7fcf8d;   --t-green-2:  #b4e6bd;
+  --t-coral:  #f17a68;   --t-coral-2:  #f8a892;
+  --t-amber:  #e89a3c;   --t-amber-2:  #f5b96a;
+
+  --radius: 20px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(900px 500px at 85% -20%, rgba(223, 125, 31, 0.10), transparent 60%),
+    radial-gradient(700px 400px at 0% 110%, rgba(224, 169, 62, 0.06), transparent 55%);
+}
+
+.wrap { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 40px 22px 80px; }
+
+/* ---------------- kit header ---------------- */
+.kit-header { text-align: center; margin-bottom: 14px; animation: rise 0.5s var(--ease); }
+.kit-logo {
+  width: 84px; height: 84px; margin: 0 auto 14px; display: block;
+  filter: drop-shadow(0 8px 20px rgba(223, 125, 31, 0.45));
+}
+.kit-header h1 { font-size: 40px; font-weight: 900; letter-spacing: -0.02em; }
+.kit-header h1 span { color: var(--accent-bright); }
+.kit-header p { margin-top: 8px; color: var(--muted); font-size: 15px; max-width: 620px; margin-left: auto; margin-right: auto; }
+
+.kit-nav {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;
+  margin: 26px 0 34px;
+}
+.kit-nav a {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  padding: 9px 15px;
+  border-radius: 999px;
+  font-size: 13px; font-weight: 800;
+  transition: background 0.2s, border-color 0.2s, transform 0.1s;
+}
+.kit-nav a:hover { background: rgba(223, 125, 31, 0.14); border-color: rgba(223, 125, 31, 0.5); }
+.kit-nav a:active { transform: scale(0.96); }
+
+/* ---------------- section blocks ---------------- */
+.kit-section { margin-top: 58px; }
+.sec-head { text-align: center; margin-bottom: 26px; }
+.sec-head .kicker {
+  display: inline-block;
+  font-size: 12px; font-weight: 900; letter-spacing: 0.14em;
+  color: var(--accent-bright);
+  background: rgba(223, 125, 31, 0.12);
+  border: 1px solid rgba(223, 125, 31, 0.4);
+  padding: 6px 14px; border-radius: 999px;
+  margin-bottom: 12px;
+}
+.sec-head h2 { font-size: 28px; font-weight: 900; letter-spacing: -0.01em; }
+.sec-head p { color: var(--muted); font-size: 14px; margin-top: 6px; }
+
+/* ---------------- carousel stage ---------------- */
+.carousel { text-align: center; }
+
+.preview {
+  position: relative;
+  width: min(420px, 100%);
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 30px;
+  border: 1px solid var(--line-2);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  background: var(--bg-2);
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.stage { position: absolute; top: 0; left: 0; width: 1080px; height: 1350px; transform-origin: top left; }
+
+/* ============ SLIDE DESIGN SYSTEM (1080 x 1350) ============ */
+.slide {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  padding: 96px 88px;
+  opacity: 0; visibility: hidden;
+  transform: translateY(14px) scale(0.995);
+  transition: opacity 0.4s var(--ease), transform 0.4s var(--ease), visibility 0s linear 0.4s;
+  /* background-color + background-image split: html2canvas renders this reliably */
+  background-color: #14100b;
+  background-image:
+    radial-gradient(115% 85% at 88% -12%, var(--glow), transparent 55%),
+    radial-gradient(90% 65% at -12% 112%, rgba(224, 169, 62, 0.10), transparent 55%);
+  color: var(--text);
+}
+.slide.active { opacity: 1; visibility: visible; transform: translateY(0) scale(1); transition-delay: 0s; z-index: 2; }
+
+.t-orange { --c: var(--t-orange); --c2: var(--t-orange-2); --glow: rgba(223, 125, 31, 0.32); --c-soft: rgba(223, 125, 31, 0.14); --c-line: rgba(223, 125, 31, 0.55); }
+.t-gold   { --c: var(--t-gold);   --c2: var(--t-gold-2);   --glow: rgba(224, 169, 62, 0.30); --c-soft: rgba(224, 169, 62, 0.14); --c-line: rgba(224, 169, 62, 0.55); }
+.t-green  { --c: var(--t-green);  --c2: var(--t-green-2);  --glow: rgba(127, 207, 141, 0.26); --c-soft: rgba(127, 207, 141, 0.14); --c-line: rgba(127, 207, 141, 0.55); }
+.t-coral  { --c: var(--t-coral);  --c2: var(--t-coral-2);  --glow: rgba(241, 122, 104, 0.30); --c-soft: rgba(241, 122, 104, 0.14); --c-line: rgba(241, 122, 104, 0.55); }
+.t-amber  { --c: var(--t-amber);  --c2: var(--t-amber-2);  --glow: rgba(232, 154, 60, 0.30); --c-soft: rgba(232, 154, 60, 0.14); --c-line: rgba(232, 154, 60, 0.55); }
+
+/* top row: mini logo + kicker chip + counter */
+.slide-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.mini-logo { width: 64px; height: 64px; flex-shrink: 0; filter: drop-shadow(0 6px 14px rgba(223, 125, 31, 0.35)); }
+.chip {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 26px; font-weight: 900; letter-spacing: 0.10em;
+  color: var(--c2);
+  background: var(--c-soft);
+  border: 2px solid var(--c-line);
+  padding: 14px 28px; border-radius: 999px;
+}
+.chip .chip-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--c); box-shadow: 0 0 18px var(--glow); }
+.slide-count {
+  font-size: 28px; font-weight: 900; color: var(--muted);
+  background: var(--surface);
+  border: 2px solid var(--line-2);
+  border-radius: 999px;
+  padding: 10px 22px;
+  white-space: nowrap;
+}
+
+/* middle content */
+.slide-mid { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 34px; min-height: 0; }
+
+.emoji-tile {
+  width: 300px; height: 300px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 158px; line-height: 1;
+  border-radius: 64px;
+  background-color: var(--c);
+  background-image: linear-gradient(160deg, var(--c), var(--c2));
+  box-shadow: 0 26px 60px var(--glow), inset 0 -14px 30px rgba(0, 0, 0, 0.18);
+  position: relative;
+}
+.emoji-tile::after {
+  content: ""; position: absolute; inset: 14px;
+  border-radius: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.25);
+}
+.emoji-tile.small { width: 230px; height: 230px; font-size: 118px; border-radius: 52px; }
+
+.big-fact {
+  font-size: 88px; font-weight: 900; line-height: 1.12; letter-spacing: -0.015em;
+  max-width: 880px;
+}
+.big-fact .hl { color: var(--c2); }
+.big-fact .hl-line { display: block; color: var(--c2); }
+.fact-sub { font-size: 42px; font-weight: 600; color: var(--muted); line-height: 1.45; max-width: 840px; }
+.fact-sub b { color: var(--text); }
+
+/* bottom hint row */
+.slide-bottom {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.hint {
+  display: inline-flex; align-items: center; gap: 14px;
+  font-size: 28px; font-weight: 800; color: var(--c2);
+}
+.hint .arrow {
+  width: 62px; height: 62px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--c-line);
+  color: var(--c2);
+  font-size: 30px; font-weight: 900;
+  animation: nudge 1.6s var(--ease) infinite;
+}
+@keyframes nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(8px); }
+}
+.brand-line { font-size: 24px; font-weight: 800; color: var(--muted-2); }
+.brand-line .dot { color: var(--c2); }
+
+/* cover slides */
+.cover-title {
+  font-size: 148px; font-weight: 900; line-height: 0.98; letter-spacing: -0.02em;
+  margin-top: 8px;
+}
+.cover-title .line { display: block; }
+.cover-title .hl { color: var(--c2); }
+.cover-title.small { font-size: 102px; }
+.cover-sub { font-size: 46px; font-weight: 700; color: var(--muted); line-height: 1.4; max-width: 800px; }
+
+/* CTA slides */
+.cta-pill {
+  display: inline-flex; align-items: center; gap: 18px;
+  background-color: var(--c);
+  background-image: linear-gradient(160deg, var(--c), var(--c2));
+  color: #14100b;
+  font-size: 44px; font-weight: 900; letter-spacing: -0.01em;
+  padding: 30px 52px; border-radius: 999px;
+  box-shadow: 0 22px 55px var(--glow);
+}
+.cta-pill .mini-bolt { font-size: 40px; }
+.cta-url { font-size: 34px; font-weight: 800; color: var(--c2); }
+.cta-url .lock { opacity: 0.55; }
+.ladder-row { display: flex; align-items: center; gap: 18px; }
+.ladder-step {
+  width: 40px; height: 40px; border-radius: 12px;
+  border: 3px solid var(--line-2);
+  background: var(--surface);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.ladder-step.on { border-color: var(--c); background: var(--c-soft); box-shadow: 0 0 22px var(--glow); }
+.ladder-label { font-size: 26px; font-weight: 800; color: var(--muted); }
+
+/* quiz slides */
+.quiz-question { font-size: 84px; font-weight: 900; line-height: 1.15; letter-spacing: -0.015em; max-width: 880px; }
+.quiz-question .hl { color: var(--c2); }
+.opt-list { display: flex; flex-direction: column; gap: 26px; width: 100%; max-width: 880px; }
+.opt {
+  display: flex; align-items: center; gap: 26px;
+  text-align: left;
+  background: var(--surface);
+  border: 3px solid var(--line-2);
+  border-radius: 26px;
+  padding: 26px 30px;
+  font-size: 42px; font-weight: 700;
+}
+.opt .letter {
+  width: 74px; height: 74px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 20px;
+  background: var(--c-soft);
+  border: 3px solid var(--c-line);
+  color: var(--c2);
+  font-size: 34px; font-weight: 900;
+}
+/* answer slides */
+.answer-tile {
+  width: 230px; height: 230px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 60px;
+  background-color: #7fcf8d;
+  background-image: linear-gradient(160deg, #7fcf8d, #b4e6bd);
+  box-shadow: 0 26px 60px rgba(127, 207, 141, 0.35), inset 0 -14px 30px rgba(0, 0, 0, 0.18);
+  font-size: 140px; font-weight: 900; color: #14331c;
+  position: relative;
+}
+.answer-tile::after {
+  content: ""; position: absolute; inset: 14px;
+  border-radius: 44px;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+}
+.answer-kicker { font-size: 32px; font-weight: 900; letter-spacing: 0.16em; color: var(--muted); }
+.answer-opt {
+  display: flex; align-items: center; gap: 22px;
+  background: rgba(127, 207, 141, 0.12);
+  border: 3px solid var(--green);
+  border-radius: 26px;
+  padding: 26px 30px;
+  font-size: 52px; font-weight: 900;
+  color: var(--green);
+}
+.answer-opt .letter {
+  width: 72px; height: 72px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 20px;
+  background: rgba(127, 207, 141, 0.2);
+  border: 3px solid var(--green);
+  color: var(--green);
+  font-size: 32px; font-weight: 900;
+}
+.answer-opt .tick { margin-left: auto; }
+.answer-note { font-size: 38px; font-weight: 600; color: var(--muted); line-height: 1.5; max-width: 840px; }
+.answer-note b { color: var(--text); }
+
+/* ============ controls ============ */
+.controls {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  margin-top: 24px;
+}
+.cbtn {
+  width: 54px; height: 54px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 50%;
+  font-size: 20px; font-weight: 900;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.1s;
+}
+.cbtn:hover:not(:disabled) { background: rgba(223, 125, 31, 0.14); border-color: rgba(223, 125, 31, 0.5); }
+.cbtn:active:not(:disabled) { transform: scale(0.92); }
+.cbtn:disabled { opacity: 0.3; cursor: default; }
+
+.dots { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; max-width: 420px; }
+.dot {
+  width: 14px; height: 14px; border-radius: 99px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  cursor: pointer;
+  transition: all 0.25s var(--ease);
+  padding: 0;
+}
+.dot:hover { background: rgba(223, 125, 31, 0.4); }
+.dot.current { width: 42px; background: var(--accent); border-color: var(--accent); }
+
+.counter {
+  margin-top: 14px;
+  font-size: 13px; font-weight: 800; color: var(--muted);
+  letter-spacing: 0.08em;
+}
+.counter b { color: var(--accent-bright); }
+
+/* quiz topic picker */
+.topic-picker {
+  display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+.tp-label { font-size: 12px; font-weight: 900; letter-spacing: 0.12em; color: var(--muted); }
+.tp-opts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.tp-opt {
+  border: 1px solid var(--line-2);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit; font-size: 13px; font-weight: 800;
+  padding: 9px 16px; border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.1s;
+}
+.tp-opt:hover { background: rgba(223, 125, 31, 0.14); border-color: rgba(223, 125, 31, 0.5); }
+.tp-opt:active { transform: scale(0.96); }
+.tp-opt.active { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3); }
+
+/* export row */
+.export-row {
+  display: flex; justify-content: center; flex-wrap: wrap; gap: 10px;
+  margin-top: 18px;
+}
+.e-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-family: inherit;
+  font-size: 14px; font-weight: 800;
+  padding: 13px 20px;
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+  transition: transform 0.1s, background 0.2s, opacity 0.2s;
+}
+.e-btn:hover { background: var(--accent-bright); }
+.e-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+.e-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.e-btn.ghost {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.e-btn.ghost:hover { background: var(--surface-2); }
+.e-btn .ico { width: 16px; height: 16px; }
+
+/* ---------------- captions ---------------- */
+.caption-block {
+  max-width: 720px; margin: 34px auto 0; text-align: left;
+}
+.caption-block h3 {
+  font-size: 17px; font-weight: 900; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 8px;
+}
+.caption-block h3 .tag { color: var(--accent-bright); font-size: 12px; letter-spacing: 0.12em; }
+.caption-block p.lead { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+.copy-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-top: 12px;
+}
+.copy-card pre {
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px; font-weight: 600;
+  line-height: 1.65;
+  color: var(--text);
+  white-space: pre-wrap; word-break: break-word;
+}
+.copy-btn {
+  position: absolute; top: 12px; right: 12px;
+  border: 1px solid rgba(223, 125, 31, 0.5);
+  background: rgba(223, 125, 31, 0.12);
+  color: var(--accent-bright);
+  font-family: inherit; font-size: 12px; font-weight: 800;
+  padding: 7px 13px; border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.2s;
+}
+.copy-btn:hover { background: rgba(223, 125, 31, 0.22); }
+.copy-btn:active { transform: scale(0.94); }
+.copy-btn.done { border-color: rgba(127, 207, 141, 0.5); background: rgba(127, 207, 141, 0.15); color: var(--green); }
+
+/* ---------------- text content (reel / tips) ---------------- */
+.text-card {
+  max-width: 720px; margin: 16px auto 0; text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px 24px;
+}
+.text-card h4 { font-size: 16px; font-weight: 900; margin-bottom: 8px; color: var(--accent-bright); }
+.text-card p, .text-card li { font-size: 14.5px; line-height: 1.7; color: var(--muted); }
+.text-card ul { padding-left: 20px; margin-top: 6px; }
+.text-card .row {
+  display: flex; gap: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 10px;
+}
+.text-card .row .time {
+  flex-shrink: 0; font-weight: 900; color: var(--accent-bright); font-size: 13.5px; min-width: 52px;
+}
+.text-card .row p { font-size: 13.5px; }
+
+/* ---------------- modal + toast ---------------- */
+.modal {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.25s, visibility 0s linear 0.25s;
+}
+.modal.show { opacity: 1; visibility: visible; transition: opacity 0.25s; }
+.modal-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  padding: 18px;
+  max-width: 520px; width: 100%;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  transform: scale(0.92) translateY(10px);
+  transition: transform 0.3s var(--ease);
+}
+.modal.show .modal-card { transform: scale(1) translateY(0); }
+.modal-card h3 { font-size: 18px; font-weight: 900; margin-bottom: 4px; }
+.modal-card p.hint { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+.modal-card img { width: 100%; border-radius: 12px; border: 1px solid var(--line-2); display: block; }
+.modal-card .m-actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.modal-close {
+  position: absolute; top: 10px; right: 10px;
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--line-2); background: var(--bg-2);
+  color: var(--muted); font-size: 15px; font-weight: 900; cursor: pointer;
+}
+
+#toast {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px);
+  z-index: 90;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  color: var(--text);
+  font-size: 13px; font-weight: 800;
+  padding: 12px 22px; border-radius: 999px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.ok { border-color: rgba(127, 207, 141, 0.5); color: var(--green); }
+#toast.err { border-color: rgba(241, 122, 104, 0.5); color: var(--red); }
+
+.kit-footer { text-align: center; margin-top: 60px; color: var(--muted-2); font-size: 13px; line-height: 1.7; }
+.kit-footer b { color: var(--muted); }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 560px) {
+  .kit-header h1 { font-size: 30px; }
+  .sec-head h2 { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= HEADER ================= -->
+  <header class="kit-header">
+    <svg class="kit-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" aria-label="TriviaDuel logo">
+      <defs>
+        <linearGradient id="kh-tile" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#f5a94f"/><stop offset="0.55" stop-color="#e07a17"/><stop offset="1" stop-color="#c75f0e"/>
+        </linearGradient>
+        <linearGradient id="kh-shield" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#2b2217"/><stop offset="1" stop-color="#120d08"/>
+        </linearGradient>
+      </defs>
+      <rect width="512" height="512" rx="112" fill="url(#kh-tile)"/>
+      <path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z" fill="url(#kh-shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/>
+      <path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z" fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/>
+      <path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+      <g transform="translate(256 256) scale(0.6) translate(-256 -256)"><path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/></g>
+    </svg>
+    <h1>Trivia<span>Duel</span> · Social Content Kit</h1>
+    <p>Ready-to-post Instagram carousels, captions, a Reel script and posting tips — every slide designed at exactly <b style="color:var(--accent-bright)">1080 × 1350&nbsp;px</b>, on-brand with the app.</p>
+
+    <nav class="kit-nav">
+      <a href="#series-facts">⚡ Did You Know?</a>
+      <a href="#series-quiz">🧠 Can You Get 5/5?</a>
+      <a href="#captions">📝 Captions</a>
+      <a href="#reel-script">🎬 Reel script</a>
+      <a href="#tips">💡 Tips</a>
+    </nav>
+  </header>
+
+  <!-- ======================================================================
+       CAROUSEL A — "DID YOU KNOW?"  (7 slides)
+  ======================================================================= -->
+  <section class="kit-section" id="series-facts">
+    <div class="sec-head">
+      <span class="kicker">CAROUSEL 01 — TRIVIA SERIES</span>
+      <h2>⚡ Did You Know?</h2>
+      <p>7 slides · fun-facts series · swipe through in order</p>
+    </div>
+
+    <div class="carousel" id="carousel-facts">
+      <div class="preview">
+        <div class="stage">
+          <!-- 1 · COVER -->
+          <article class="slide active t-orange">
+            <div class="slide-top">
+              <svg class="mini-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ml-tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5a94f"/><stop offset="0.55" stop-color="#e07a17"/><stop offset="1" stop-color="#c75f0e"/></linearGradient><linearGradient id="ml-shield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2217"/><stop offset="1" stop-color="#120d08"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#ml-tile)"/><path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z" fill="url(#ml-shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/><path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z" fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/><path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(256 256) scale(0.6) translate(-256 -256)"><path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/></g></svg>
+              <span class="chip"><span class="chip-dot"></span>DID YOU KNOW?</span>
+              <span class="slide-count">01</span>
+            </div>
+            <div class="slide-mid">
+              <div class="emoji-tile">⚡</div>
+              <h2 class="cover-title">
+                <span class="line">DID YOU</span>
+                <span class="line hl">KNOW?</span>
+              </h2>
+              <p class="cover-sub">5 brain-melting facts from the world of trivia</p>
+            </div>
+            <div class="slide-bottom">
+              <span class="brand-line">TRIVIADUEL <span class="dot">·</span> TRIVIA SERIES 01</span>
+              <span class="hint">Swipe <span class="arrow">→</span></span>
+            </div>
+          </article>
+
+          <!-- 2 · FACT 01 -->
+          <article class="slide t-orange">
+            <div class="slide-top">
+              <svg class="mini-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ml-tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5a94f"/><stop offset="0.55" stop-color="#e07a17"/><stop offset="1" stop-color="#c75f0e"/></linearGradient><linearGradient id="ml-shield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2217"/><stop offset="1" stop-color="#120d08"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#ml-tile)"/><path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z" fill="url(#ml-shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/><path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z" fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/><path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(256 256) scale(0.6) translate(-256 -256)"><path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/></g></svg>
+              <span class="chip">DID YOU KNOW?</span>
+              <span class="slide-count">1 / 5</span>
+            </div>
+            <div class="slide-mid">
+              <div class="emoji-tile">⚡</div>
+              <p class="big-fact">Lightning strikes Earth about <span class="hl">8 million</span> times a day.</p>
+              <p class="fact-sub">That's roughly <b>90 strikes every second</b> — somewhere on the planet.</p>
+            </div>
+            <div class="slide-bottom">
+              <span class="brand-line">TRIVIADUEL <span class="dot">·</span> FACT 01</span>
+              <span class="hint">Next <span class="arrow">→</span></span>
+            </div>
+          </article>
+
+          <!-- 3 · FACT 02 -->
+          <article class="slide t-gold">
+            <div class="slide-top">
+              <svg class="mini-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ml-tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5a94f"/><stop offset="0.55" stop-color="#e07a17"/><stop offset="1" stop-color="#c75f0e"/></linearGradient><linearGradient id="ml-shield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2217"/><stop offset="1" stop-color="#120d08"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#ml-tile)"/><path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z" fill="url(#ml-shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/><path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z" fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/><path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(256 256) scale(0.6) translate(-256 -256)"><path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/></g></svg>
+              <span class="chip">DID YOU KNOW?</span>
+              <span class="slide-count">2 / 5</span>
+            </div>
+            <div class="slide-mid">
+              <div class="emoji-tile">🍯</div>
+              <p class="big-fact">Honey <span class="hl">never spoils.</span></p>
+              <p class="fact-sub">Archaeologists found <b>3,000-year-old honey</b> in Egyptian tombs — still perfectly edible.</p>
+            </div>
+            <div class="slide-bottom">
+              <span class="brand-line">TRIVIADUEL <span class="dot">·</span> FACT 02</span>
+              <span class="hint">Next <span class="arrow">→</span></span>
+            </div>
+          </article>
+
+          <!-- 4 · FACT 03 -->
+          <article class="slide t-green">
+            <div class="slide-top">
+              <svg class="mini-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ml-tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5a94f"/><stop offset="0.55" stop-color="#e07a17"/><stop offset="1" stop-color="#c75f0e"/></linearGradient><linearGradient id="ml-shield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2217"/><stop offset="1" stop-color="#120d08"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#ml-tile)"/><path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z" fill="url(#ml-shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/><path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z" fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/><path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(256 256) scale(0.6) translate(-256 -256)"><path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/></g></svg>
+              <span class="chip">DID YOU KNOW?</span>
+              <span class="slide-count">3 / 5</span>
+            </div>
+            <div class="slide-mid">
+              <div class="emoji-tile">🐙</div>
+              <p class="big-fact">Octopuses have <span class="hl">three hearts</span> and blue blood.</p>
+              <p class="fact-sub"><b>Two hearts pump blood to the gills</b>; one pumps it to the rest of the body.</p>
+            </div>
+            <div class="slide-bottom">
+              <span class="brand-line">TRIVIADUEL <span class="dot">·</span> FACT 03</span>
+              <span class="hint">Next <span class="arrow">→</span></span>
+            </div>
+          </article>
+
+          <!-- 5 · FACT 04 -->
+          <article class="slide t-coral">
+            <div class="slide-top">
+              <svg class="mini-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ml-tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5a94f"/><stop offset="0.55" stop-color="#e07a17"/><stop offset="1" stop-color="#c75f0e"/></linearGradient><linearGradient id="ml-shield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2217"/><stop offset="1" stop-color="#120d08"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#ml-tile)"/><path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z" fill="url(#ml-shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/><path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z" fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/><path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(256 256) scale(0.6) translate(-256 -256)"><path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/></g></svg>
+              <span class="chip">DID YOU KNOW?</span>
+              <span class="slide-count">4 / 5</span>
+            </div>
+            <div class="slide-mid">
+              <div class="emoji-tile">🍌</div>
+              <p class="big-fact">Bananas are <span class="hl">berries</span>. Strawberries aren't.</p>
+              <p class="fact-sub">Botanically, a berry grows from a single flower with <b>one ovary</b> — strawberries miss the cut.</p>
+            </div>
+            <div class="slide-bottom">
+              <span class="brand-line">TRIVIADUEL <span class="dot">·</span> FACT 04</span>
+              <span class="hint">Next <span class="arrow">→</span></span>
+            </div>
+          </article>
+
+          <!-- 6 · FACT 05 -->
+          <article class="slide t-amber">
+            <div class="slide-top">
+              <svg class="mini-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ml-tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5a94f"/><stop offset="0.55" stop-color="#e07a17"/><stop offset="1" stop-color="#c75f0e"/></linearGradient><linearGradient id="ml-shield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2217"/><stop offset="1" stop-color="#120d08"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#ml-tile)"/><path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z" fill="url(#ml-shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/><path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z" fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/><path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(256 256) scale(0.6) translate(-256 -256)"><path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/></g></svg>
+              <span class="chip">DID YOU KNOW?</span>
+              <span class="slide-count">5 / 5</span>
+            </div>
+            <div class="slide-mid">
+              <div class="emoji-tile">🪐</div>
+              <p class="big-fact">A day on Venus lasts <span class="hl">longer than a year</span> on Venus.</p>
+              <p class="fact-sub">One spin takes <b>243 Earth days</b> — its trip around the Sun takes just 225.</p>
+            </div>
+            <div class="slide-bottom">
+              <span class="brand-line">TRIVIADUEL <span class="dot">·</span> FACT 05</span>
+              <span class="hint">Next <span class="arrow">→</span></span>
+            </div>
+          </article>
+
+          <!-- 7 · CTA -->
+          <article class="slide t-orange">
+            <div class="slide-top">
+              <svg class="mini-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="ml-tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5a94f"/><stop offset="0.55" stop-color="#e07a17"/><stop offset="1" stop-color="#c75f0e"/></linearGradient><linearGradient id="ml-shield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2217"/><stop offset="1" stop-color="#120d08"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#ml-tile)"/><path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z" fill="url(#ml-shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/><path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z" fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/><path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><g transform="translate(256 256) scale(0.6) translate(-256 -256)"><path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/></g></svg>
+              <span class="chip"><span class="chip-dot"></span>PLAY FREE</span>
+              <span class="slide-count">07</span>
+            </div>
+            <div class="slide-mid">
+              <div class="emoji-tile small">🧠</div>
+              <p class="cover-sub">Think you know trivia?</p>
+              <h2 class="cover-title"><span class="line">PROVE</span><span class="line hl">IT.</span></h2>
+              <div class="cta-pill"><span class="mini-bolt">⚡</span> Play TriviaDuel — free</div>
+              <div class="ladder-row">
+                <div class="ladder-step on">🥇</div>
+                <div class="ladder-step on">⚔️</div>
+                <div class="ladder-step on">🏆</div>
+                <div class="ladder-step on">🔥</div>
+                <div class="ladder-step on">🌟</div>
+                <div class="ladder-step on">👑</div>
+                <div class="ladder-step">?</div>
+                <span class="ladder-label">7 arenas to climb</span>
+              </div>
+            </div>
+            <div class="slide-bottom">
+              <span class="brand-line">ANSWER FAST. BEAT STRANGERS. <span class="dot">·</span> CLIMB THE LADDER.</span>
+              <span class="cta-url">🔗 triviaduel-xi.vercel.app</span>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="cbtn" data-nav="facts" data-dir="-1" aria-label="Previous slide">←</button>
+        <div class="dots" id="dots-facts"></div>
+        <button class="cbtn" data-nav="facts" data-dir="1" aria-label="Next slide">→</button>
+      </div>
+      <p class="counter">Slide <b id="cnt-facts">1</b> of 7 · posts as carousel positions 1–7</p>
+
+      <div class="export-row">
+        <button class="e-btn" data-export="facts"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Export this slide PNG</button>
+        <button class="e-btn ghost" data-export-all="facts">⬇ Export all 7 PNGs</button>
+        <button class="e-btn ghost" data-fullsize="facts">🔍 Open full size</button>
+      </div>
+
+      <div class="caption-block" id="caption-facts">
+        <h3>📝 Caption — copy &amp; paste <span class="tag">CAPTION A</span></h3>
+        <p class="lead">Click the button to copy, then paste into your Instagram post.</p>
+        <div class="copy-card">
+          <button class="copy-btn" data-copy="caption-facts-text">Copy</button>
+          <pre id="caption-facts-text">Think you know trivia? ⚡ Here are 5 facts that will make you the smartest person in the group chat 🧠
+
+Swipe through — the last one is the wildest 👉
+
+Which fact surprised you the most? Drop it in the comments 👇
+
+⚔️ Play TriviaDuel and put your brain to the test — free, no downloads, just tap the link in our bio.
+
+#TriviaDuel #DidYouKnow #FunFacts #Trivia #BrainTeasers #LearnSomethingNew #QuizTime #RandomFacts #TriviaNight #DailyFacts</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       CAROUSEL B — "CAN YOU GET 5/5?"  (12 slides, data-driven topic packs)
+       Slides are rendered by JS from the QUIZ_PACKS list at the bottom of
+       this file — switch topic with the picker, or add new packs.
+  ======================================================================= -->
+  <section class="kit-section" id="series-quiz">
+    <div class="sec-head">
+      <span class="kicker">CAROUSEL 02 — QUIZ SERIES</span>
+      <h2>🧠 Can You Get 5/5?</h2>
+      <p>12 slides · swipe-to-reveal quiz · 3 topic packs — switch topic, export, post weekly</p>
+    </div>
+
+    <div class="carousel" id="carousel-quiz">
+      <div class="topic-picker">
+        <span class="tp-label">QUIZ TOPIC</span>
+        <div class="tp-opts" id="quiz-topics"></div>
+      </div>
+
+      <div class="preview">
+        <div class="stage"><!-- quiz slides are rendered here by JS --></div>
+      </div>
+
+      <div class="controls">
+        <button class="cbtn" data-nav="quiz" data-dir="-1" aria-label="Previous slide">←</button>
+        <div class="dots" id="dots-quiz"></div>
+        <button class="cbtn" data-nav="quiz" data-dir="1" aria-label="Next slide">→</button>
+      </div>
+      <p class="counter">Slide <b id="cnt-quiz">1</b> of 12 · posts as carousel positions 1–12</p>
+
+      <div class="export-row">
+        <button class="e-btn" data-export="quiz"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg> Export this slide PNG</button>
+        <button class="e-btn ghost" data-export-all="quiz">⬇ Export all 12 PNGs</button>
+        <button class="e-btn ghost" data-fullsize="quiz">🔍 Open full size</button>
+      </div>
+
+      <div class="caption-block" id="caption-quiz">
+        <h3>📝 Caption — copy &amp; paste <span class="tag">CAPTION B</span></h3>
+        <p class="lead">Updates automatically with the selected topic — click Copy, then paste into your post.</p>
+        <div class="copy-card">
+          <button class="copy-btn" data-copy="caption-quiz-text">Copy</button>
+          <pre id="caption-quiz-text"></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= CAPTIONS / ALT TEXT ================= -->
+  <section class="kit-section" id="captions">
+    <div class="sec-head">
+      <span class="kicker">EXTRA COPY</span>
+      <h2>📝 More copy to paste</h2>
+    </div>
+
+    <div class="caption-block" style="margin-top:0">
+      <div class="copy-card">
+        <button class="copy-btn" data-copy="alt-facts">Copy</button>
+        <h3>Alt text — Carousel A</h3>
+        <pre id="alt-facts">Carousel with 7 slides: "Did You Know?" — 5 trivia facts about lightning, honey, octopuses, bananas and Venus, ending with a call to play TriviaDuel, a free 1v1 trivia game.</pre>
+      </div>
+      <div class="copy-card">
+        <button class="copy-btn" data-copy="alt-quiz">Copy</button>
+        <h3>Alt text — Carousel B <span class="tag" id="alt-quiz-tag"></span></h3>
+        <pre id="alt-quiz"></pre>
+      </div>
+      <div class="copy-card">
+        <button class="copy-btn" data-copy="first-comment">Copy</button>
+        <h3>First comment (pinned)</h3>
+        <pre id="first-comment">⚡ Psst — a bonus fact for the comment section: your brain uses about 20 watts of power while you're reading this. 🧠
+Play free: triviaduel-xi.vercel.app</pre>
+      </div>
+      <div class="copy-card">
+        <button class="copy-btn" data-copy="bio">Copy</button>
+        <h3>Instagram bio suggestion</h3>
+        <pre id="bio">⚔️ TriviaDuel — 1v1 trivia battles
+🧠 10 questions · 15 seconds each
+👊 Beat strangers. Climb the ladder.
+🔗 Play free → triviaduel-xi.vercel.app</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= REEL SCRIPT ================= -->
+  <section class="kit-section" id="reel-script">
+    <div class="sec-head">
+      <span class="kicker">BONUS — VIDEO</span>
+      <h2>🎬 Reel script: "3 Facts in 15 Seconds"</h2>
+      <p>Vertical 9:16 · 15–20s · use the exported slides as full-screen b-roll frames</p>
+    </div>
+
+    <div class="text-card">
+      <h4>Storyboard — 15 seconds, hook first</h4>
+      <div class="row"><span class="time">0:00–0:02</span><p><b>Hook.</b> On-screen: "You still think honey expires? 🍯" (big bold text, orange bg). Audio: energetic voiceover or trending sound.</p></div>
+      <div class="row"><span class="time">0:02–0:07</span><p><b>Fact #1.</b> Slide: honey never spoils — 3,000-year-old honey from Egyptian tombs is still edible. On-screen: "HONEY NEVER SPOILS 🍯".</p></div>
+      <div class="row"><span class="time">0:07–0:12</span><p><b>Fact #2.</b> Slide: octopuses have three hearts and blue blood. On-screen: "3 HEARTS. BLUE BLOOD. 🐙" with a zoom-in.</p></div>
+      <div class="row"><span class="time">0:12–0:15</span><p><b>CTA.</b> Slide: "PROVE IT." + Play TriviaDuel pill. Voiceover: "Think you know trivia? Prove it — free, link in bio."</p></div>
+    </div>
+
+    <div class="text-card">
+      <h4>Idea #2 — "VS Match POV" (30s)</h4>
+      <div class="row"><span class="time">0:00–0:03</span><p>Hook: two phones side by side, "10 questions. 15 seconds each. Winner takes 20 trophies."</p></div>
+      <div class="row"><span class="time">0:03–0:25</span><p>Record a real match: question pops up, rapid answers, score ticking. Add a "quiz bot" cameo as a joke opponent.</p></div>
+      <div class="row"><span class="time">0:25–0:30</span><p>Victory screen + "You next? ⚡ Link in bio."</p></div>
+    </div>
+
+    <div class="text-card">
+      <h4>On-screen text style guide</h4>
+      <ul>
+        <li>Big, bold, centered — 1–3 words per beat, like the slides.</li>
+        <li>Background: the warm near-black + orange from the app (use the exported slide PNGs for consistency).</li>
+        <li>Keep captions on, and always end on the "Play TriviaDuel — free" pill.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= TIPS ================= -->
+  <section class="kit-section" id="tips">
+    <div class="sec-head">
+      <span class="kicker">STRATEGY</span>
+      <h2>💡 Posting tips</h2>
+    </div>
+
+    <div class="text-card">
+      <ul>
+        <li><b>Post in order:</b> upload slides 1→7 (or 1→12) exactly as numbered. Slide 1 is your cover — it does the scrolling for you.</li>
+        <li><b>Post the fun-facts carousel on weekdays</b> (Mon/Wed/Fri) and the quiz on weekends — quizzes get more saves because people come back to test friends.</li>
+        <li><b>Rotate quiz topics weekly</b> — Geography one week, General Mix the next, Classic after that. Regulars stay hooked when the questions keep changing.</li>
+        <li><b>Best times:</b> 7–9pm local time on weekdays; 10am–12pm on weekends.</li>
+        <li><b>End each post with a question</b> ("Which fact surprised you? / What's your score?") — comments push the post to new feeds.</li>
+        <li><b>Pin the first comment</b> with the app link (copy above).</li>
+        <li><b>Stories:</b> share the cover slide with a "Think you know trivia?" poll sticker — 2-option poll drives taps to the carousel.</li>
+        <li><b>To get PNG files:</b> use the Export buttons (opens a preview — then Download), or open a slide at full size and screenshot it at 100% zoom.</li>
+        <li><b>Switch up facts weekly</b> — new facts + new quiz every week keeps the series alive.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer class="kit-footer">
+    <b>TriviaDuel — Social Content Kit</b><br />
+    Slides are 1080 × 1350 px (Instagram portrait carousel) · app link: triviaduel-xi.vercel.app<br />
+    Edit the facts in the HTML above, or add new quiz topics to the <code style="color:var(--accent-bright)">QUIZ_PACKS</code> list in the script at the bottom of this file.
+  </footer>
+</div>
+
+<!-- ================= EXPORT MODAL ================= -->
+<div class="modal" id="export-modal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+    <h3 id="modal-title">Exported slide</h3>
+    <p class="hint" id="modal-hint">Full 1080 × 1350 PNG — right-click the image to save, or use Download.</p>
+    <img id="modal-img" alt="Exported slide preview" />
+    <div class="m-actions">
+      <button class="e-btn" id="modal-download">⬇ Download PNG</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+/* ============================================================================
+   TriviaDuel content kit — carousel navigation + PNG export + quiz topic packs
+============================================================================ */
+
+var CAROUSELS = {};        // name -> { preview, stage, slides, dots, index }
+var CURRENT_QUIZ_PACK = null;
+
+/* ---------- reusable logo mark (matches assets/icon.svg) ---------- */
+var LOGO_SVG = '<svg class="mini-logo" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">' +
+  '<defs><linearGradient id="ls-tile" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5a94f"/><stop offset="0.55" stop-color="#e07a17"/><stop offset="1" stop-color="#c75f0e"/></linearGradient>' +
+  '<linearGradient id="ls-shield" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2217"/><stop offset="1" stop-color="#120d08"/></linearGradient></defs>' +
+  '<rect width="512" height="512" rx="112" fill="url(#ls-tile)"/>' +
+  '<path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z" fill="url(#ls-shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/>' +
+  '<path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z" fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/>' +
+  '<path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>' +
+  '<path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>' +
+  '<g transform="translate(256 256) scale(0.6) translate(-256 -256)"><path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/></g>' +
+'</svg>';
+
+/* ---------- quiz topic packs ----------
+   Add a new pack to post a fresh quiz next week. Each pack needs:
+   - slug     : used in exported file names (keep it lowercase, no spaces)
+   - name     : shown on the topic picker and cover chip
+   - emoji    : big tile on the cover slide
+   - coverSub : subtitle under "CAN YOU GET 5/5?"
+   - caption  : the Instagram caption (paste-ready, \n for line breaks)
+   - alt      : alt text for the carousel
+   - questions: 5 questions, each with 4 options, the index of the correct
+     answer, and a fun fact for the answer slide. Wrap any words you want
+     highlighted in ~tildes~ (e.g. "~8 million~").
+--------------------------------------------------------------------------- */
+var QUIZ_ACCENTS = ['t-orange', 't-gold', 't-green', 't-coral', 't-amber'];
+var QUIZ_LETTERS = 'ABCD';
+
+var QUIZ_PACKS = [
+  {
+    slug: 'geography',
+    name: 'Geography',
+    emoji: '🌍',
+    coverSub: '5 geography questions · 4 options each · no cheating',
+    caption: 'Can you get 5/5 on Geography? 🌍 No peeking at the answers — swipe and test yourself!\n\nThe average TriviaDuel player scores 7/10 in a real match. Think you can do better? 😏\n\nDrop your score in the comments 👇\n\n⚔️ Play TriviaDuel free → tap the link in our bio. Answer fast. Beat strangers. Climb the ladder.\n\n#TriviaDuel #QuizChallenge #GeographyQuiz #WorldTrivia #CapitalCities #GuessTheAnswer #GeographyNerd #TestYourKnowledge #PubQuiz',
+    alt: 'Carousel quiz "Can You Get 5/5?" — five geography questions with four options each, answers revealed on the following slide, ending with a call to play TriviaDuel.',
+    questions: [
+      { q: 'What is the ~capital of Australia~?', opts: ['Sydney', 'Melbourne', 'Canberra', 'Perth'], correct: 2, note: 'Canberra was purpose-built in 1913 — a compromise between Sydney and Melbourne.' },
+      { q: 'Which country has the ~most lakes~ in the world?', opts: ['Canada', 'United States', 'Russia', 'Brazil'], correct: 0, note: 'Canada holds more lakes than the rest of the world combined — over 2 million.' },
+      { q: 'Which river flows ~through Paris~?', opts: ['Thames', 'Seine', 'Rhine', 'Loire'], correct: 1, note: 'The Seine splits Paris in two — the Left Bank and the Right Bank.' },
+      { q: 'Which is the ~smallest country~ by area?', opts: ['Monaco', 'Vatican City', 'San Marino', 'Liechtenstein'], correct: 1, note: 'Vatican City is just 0.44 km² — you can walk across it in about 20 minutes.' },
+      { q: 'Mount Everest sits on the border of Nepal and ~which country~?', opts: ['India', 'Bhutan', 'China', 'Pakistan'], correct: 2, note: 'The summit straddles Nepal and Tibet — 8,849 m above sea level.' }
+    ]
+  },
+  {
+    slug: 'general-mix',
+    name: 'General Mix',
+    emoji: '🧠',
+    coverSub: '5 general-knowledge questions · 4 options each',
+    caption: 'Can you get 5/5? 🤔 No peeking at the answers — swipe and test yourself!\n\nThe average TriviaDuel player scores 7/10 in a real match. Think you can do better? 😏\n\nDrop your score in the comments 👇\n\n⚔️ Play TriviaDuel free → tap the link in our bio. Answer fast. Beat strangers. Climb the ladder.\n\n#TriviaDuel #QuizChallenge #BrainTeaser #GuessTheAnswer #Trivia #Quiz #TestYourKnowledge #GameNight #PubQuiz #CanYouGet5OutOf5',
+    alt: 'Carousel quiz "Can You Get 5/5?" — five general-knowledge questions with four options each, answers revealed on the following slide, ending with a call to play TriviaDuel.',
+    questions: [
+      { q: 'How many colors are in a ~rainbow~?', opts: ['5', '6', '7', '8'], correct: 2, note: 'Red, orange, yellow, green, blue, indigo, violet — ROYGBIV.' },
+      { q: 'Which is the ~tallest animal~ in the world?', opts: ['Elephant', 'Giraffe', 'Hippo', 'Rhinoceros'], correct: 1, note: 'Male giraffes can reach 5.5 m — about as tall as a two-story house.' },
+      { q: 'What is the ~hardest natural substance~ on Earth?', opts: ['Steel', 'Diamond', 'Quartz', 'Titanium'], correct: 1, note: 'Diamonds score a perfect 10 on the Mohs hardness scale.' },
+      { q: 'Which animal is the ~fastest land animal~?', opts: ['Lion', 'Horse', 'Cheetah', 'Greyhound'], correct: 2, note: 'Cheetahs can sprint up to 100 km/h — but only in short bursts.' },
+      { q: 'How many strings does a ~standard guitar~ have?', opts: ['Four', 'Five', 'Six', 'Seven'], correct: 2, note: 'Six strings, tuned E-A-D-G-B-E — the same as it has been for centuries.' }
+    ]
+  },
+  {
+    slug: 'classic',
+    name: 'Classic',
+    emoji: '❓',
+    coverSub: '5 classic questions · 4 options each · no cheating',
+    caption: 'Can you get 5/5? 🤔 No peeking at the answers — swipe and test yourself!\n\nThe average TriviaDuel player scores 7/10 in a real match. Think you can do better? 😏\n\nDrop your score in the comments 👇\n\n⚔️ Play TriviaDuel free → tap the link in our bio. Answer fast. Beat strangers. Climb the ladder.\n\n#TriviaDuel #QuizChallenge #BrainTeaser #GuessTheAnswer #Trivia #Quiz #TestYourKnowledge #GameNight #PubQuiz #CanYouGet5OutOf5',
+    alt: 'Carousel quiz "Can You Get 5/5?" — five classic trivia questions with four options each, answers revealed on the following slide, ending with a call to play TriviaDuel.',
+    questions: [
+      { q: 'What is the only mammal capable of ~true flight~?', opts: ['Bat', 'Flying squirrel', 'Sugar glider', 'Colugo'], correct: 0, note: 'Bats are the only mammals that truly fly — their wings are modified hands.' },
+      { q: 'Which is the ~largest ocean~ on Earth?', opts: ['Atlantic', 'Indian', 'Pacific', 'Arctic'], correct: 2, note: "It covers more than a third of Earth's surface — bigger than all the land combined." },
+      { q: 'Which element has the chemical symbol ~"Au"~?', opts: ['Silver', 'Gold', 'Aluminum', 'Argon'], correct: 1, note: '"Au" comes from aurum, the Latin word for gold.' },
+      { q: 'Which country gifted the ~Statue of Liberty~ to the USA?', opts: ['Spain', 'France', 'Italy', 'United Kingdom'], correct: 1, note: 'It was a gift to mark the 100th anniversary of American independence.' },
+      { q: 'How many hearts does an ~octopus~ have?', opts: ['One', 'Two', 'Three', 'Four'], correct: 2, note: 'Two pump blood to the gills; the third keeps the body going.' }
+    ]
+  }
+];
+
+/* ---------- scale each stage to fit its preview ---------- */
+function fitStages() {
+  document.querySelectorAll('.preview').forEach(function (pv) {
+    var stage = pv.querySelector('.stage');
+    var avail = pv.clientWidth;
+    if (!avail) return;
+    var s = Math.min(1, avail / 1080);
+    pv.style.height = Math.round(1350 * s) + 'px';
+    stage.style.transform = 'scale(' + s + ')';
+  });
+}
+
+/* ---------- carousel engine ---------- */
+function buildCarousel(name, sectionEl) {
+  var preview = sectionEl.querySelector('.preview');
+  var stage = sectionEl.querySelector('.stage');
+  var slides = Array.prototype.slice.call(stage.children);
+  var dotsEl = sectionEl.querySelector('.dots');
+  var counterEl = sectionEl.querySelector('.counter b');
+  var dots = [];
+
+  var c = { name: name, preview: preview, slides: slides, index: 0, last: slides.length - 1 };
+
+  slides.forEach(function (slide, i) {
+    var d = document.createElement('button');
+    d.className = 'dot' + (i === 0 ? ' current' : '');
+    d.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+    d.addEventListener('click', function () { go(i); });
+    dotsEl.appendChild(d);
+    dots.push(d);
+  });
+
+  function show() {
+    slides.forEach(function (s, i) { s.classList.toggle('active', i === c.index); });
+    dots.forEach(function (d, i) { d.classList.toggle('current', i === c.index); });
+    if (counterEl) counterEl.textContent = String(c.index + 1);
+    var back = sectionEl.querySelector('[data-nav="' + name + '"][data-dir="-1"]');
+    var fwd = sectionEl.querySelector('[data-nav="' + name + '"][data-dir="1"]');
+    if (back) back.disabled = c.index === 0;
+    if (fwd) fwd.disabled = c.index === c.last;
+  }
+
+  function go(i) {
+    c.index = Math.max(0, Math.min(c.last, i));
+    show();
+  }
+
+  c.go = go;
+  c.show = show;
+
+  // buttons
+  sectionEl.querySelectorAll('[data-nav="' + name + '"]').forEach(function (btn) {
+    btn.addEventListener('click', function () { go(c.index + Number(btn.getAttribute('data-dir'))); });
+  });
+
+  // click on the slide preview advances (suppressed right after a swipe)
+  var lastSwipeAt = 0;
+  preview.addEventListener('click', function (e) {
+    if (e.target.closest('button')) return;
+    if (Date.now() - lastSwipeAt < 400) return;
+    go(c.index + 1);
+  });
+
+  // keyboard access for the clickable preview
+  preview.setAttribute('role', 'button');
+  preview.setAttribute('tabindex', '0');
+  preview.setAttribute('aria-label', 'Slide preview — press Enter for the next slide');
+  preview.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); go(c.index + 1); }
+    else if (e.key === 'ArrowLeft') { go(c.index - 1); }
+  });
+
+  // touch swipe
+  var startX = null;
+  preview.addEventListener('touchstart', function (e) { startX = e.touches[0].clientX; }, { passive: true });
+  preview.addEventListener('touchend', function (e) {
+    if (startX === null) return;
+    var dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) { go(c.index + (dx < 0 ? 1 : -1)); lastSwipeAt = Date.now(); }
+    startX = null;
+  }, { passive: true });
+
+  CAROUSELS[name] = c;
+  show();
+}
+
+/* ---------- quiz slide rendering ---------- */
+function hlText(q) {
+  // segments wrapped in ~ ~ are wrapped in a highlight span
+  var parts = q.split('~');
+  var html = '';
+  for (var i = 0; i < parts.length; i++) {
+    if (parts[i] === '') continue;
+    html += (i % 2 === 1) ? '<span class="hl">' + parts[i] + '</span>' : parts[i];
+  }
+  return html;
+}
+
+function renderQuizSlides(stage, pack) {
+  var slides = '';
+
+  // cover
+  slides += '<article class="slide active t-orange">' +
+    '<div class="slide-top">' + LOGO_SVG +
+    '<span class="chip"><span class="chip-dot"></span>' + pack.name.toUpperCase() + ' QUIZ</span>' +
+    '<span class="slide-count">02</span></div>' +
+    '<div class="slide-mid">' +
+      '<div class="emoji-tile">' + pack.emoji + '</div>' +
+      '<h2 class="cover-title"><span class="line">CAN YOU</span><span class="line hl">GET 5/5?</span></h2>' +
+      '<p class="cover-sub">' + pack.coverSub + '</p>' +
+    '</div>' +
+    '<div class="slide-bottom"><span class="brand-line">TRIVIADUEL <span class="dot">·</span> QUIZ SERIES 02</span>' +
+    '<span class="hint">Swipe <span class="arrow">→</span></span></div>' +
+  '</article>';
+
+  // questions + answers
+  pack.questions.forEach(function (item, i) {
+    var n = i + 1;
+    var accent = QUIZ_ACCENTS[i % QUIZ_ACCENTS.length];
+    var opts = item.opts.map(function (o, j) {
+      return '<div class="opt"><span class="letter">' + QUIZ_LETTERS[j] + '</span> ' + o + '</div>';
+    }).join('');
+
+    slides += '<article class="slide ' + accent + '">' +
+      '<div class="slide-top">' + LOGO_SVG +
+      '<span class="chip">QUESTION ' + n + '</span><span class="slide-count">' + n + ' / 5</span></div>' +
+      '<div class="slide-mid">' +
+        '<p class="quiz-question">' + hlText(item.q) + '</p>' +
+        '<div class="opt-list">' + opts + '</div>' +
+      '</div>' +
+      '<div class="slide-bottom"><span class="brand-line">TRIVIADUEL <span class="dot">·</span> Q' + n + '</span>' +
+      '<span class="hint">Think you know? <span class="arrow">→</span></span></div>' +
+    '</article>';
+
+    slides += '<article class="slide t-green">' +
+      '<div class="slide-top">' + LOGO_SVG +
+      '<span class="chip">ANSWER ' + n + '</span><span class="slide-count">' + n + ' / 5</span></div>' +
+      '<div class="slide-mid">' +
+        '<div class="answer-tile">✔</div>' +
+        '<p class="answer-kicker">THE ANSWER IS</p>' +
+        '<div class="answer-opt"><span class="letter">' + QUIZ_LETTERS[item.correct] + '</span> ' + item.opts[item.correct] + ' <span class="tick">✔</span></div>' +
+        '<p class="answer-note">' + item.note + '</p>' +
+      '</div>' +
+      '<div class="slide-bottom"><span class="brand-line">TRIVIADUEL <span class="dot">·</span> Q' + n + '</span>' +
+      '<span class="hint">' + (n === 5 ? 'Last slide' : 'Next question') + ' <span class="arrow">→</span></span></div>' +
+    '</article>';
+  });
+
+  // CTA
+  slides += '<article class="slide t-orange">' +
+    '<div class="slide-top">' + LOGO_SVG +
+    '<span class="chip"><span class="chip-dot"></span>PLAY FREE</span><span class="slide-count">12</span></div>' +
+    '<div class="slide-mid">' +
+      '<div class="emoji-tile small">🏆</div>' +
+      '<p class="cover-sub">3/5 or better? You\'d beat most players.</p>' +
+      '<h2 class="cover-title small"><span class="line">PUT IT</span><span class="line hl">TO THE TEST.</span></h2>' +
+      '<div class="cta-pill"><span class="mini-bolt">⚡</span> Play TriviaDuel — free</div>' +
+      '<p class="fact-sub">Every match is a real quiz — <b>10 questions, 15 seconds each, live vs a stranger.</b></p>' +
+    '</div>' +
+    '<div class="slide-bottom"><span class="brand-line">ANSWER FAST. BEAT STRANGERS. <span class="dot">·</span> CLIMB THE LADDER.</span>' +
+    '<span class="cta-url">🔗 triviaduel-xi.vercel.app</span></div>' +
+  '</article>';
+
+  stage.innerHTML = slides;
+}
+
+/* ---------- topic picker ---------- */
+function buildQuizPicker() {
+  var wrap = document.getElementById('quiz-topics');
+  if (!wrap) return;
+  QUIZ_PACKS.forEach(function (pack, i) {
+    var b = document.createElement('button');
+    b.className = 'tp-opt' + (i === 0 ? ' active' : '');
+    b.type = 'button';
+    b.textContent = pack.emoji + ' ' + pack.name;
+    b.setAttribute('aria-pressed', i === 0 ? 'true' : 'false');
+    b.addEventListener('click', function () { selectPack(i); });
+    wrap.appendChild(b);
+  });
+}
+
+function selectPack(i) {
+  if (i < 0 || i >= QUIZ_PACKS.length) return;
+  if (CURRENT_QUIZ_PACK && CURRENT_QUIZ_PACK === QUIZ_PACKS[i]) return; // already active
+  CURRENT_QUIZ_PACK = QUIZ_PACKS[i];
+  rebuildQuiz();
+  document.querySelectorAll('#quiz-topics .tp-opt').forEach(function (b, j) {
+    b.classList.toggle('active', j === i);
+    b.setAttribute('aria-pressed', j === i ? 'true' : 'false');
+  });
+  toast('Quiz topic: ' + CURRENT_QUIZ_PACK.name);
+}
+
+function updateQuizCopy() {
+  var capEl = document.getElementById('caption-quiz-text');
+  var altEl = document.getElementById('alt-quiz');
+  var tagEl = document.getElementById('alt-quiz-tag');
+  if (capEl) capEl.textContent = CURRENT_QUIZ_PACK.caption;
+  if (altEl) altEl.textContent = CURRENT_QUIZ_PACK.alt;
+  if (tagEl) tagEl.textContent = CURRENT_QUIZ_PACK.name;
+}
+
+function rebuildQuiz() {
+  var sectionEl = document.getElementById('carousel-quiz');
+  if (!sectionEl) return;
+  var stage = sectionEl.querySelector('.stage');
+  var preview = sectionEl.querySelector('.preview');
+  var controls = sectionEl.querySelector('.controls');
+
+  // fresh slides for the selected pack
+  stage.innerHTML = '';
+  renderQuizSlides(stage, CURRENT_QUIZ_PACK);
+
+  // replace preview + controls so old event listeners are dropped
+  var newPreview = preview.cloneNode(true);
+  preview.parentNode.replaceChild(newPreview, preview);
+
+  var newControls = document.createElement('div');
+  newControls.className = 'controls';
+  newControls.innerHTML =
+    '<button class="cbtn" data-nav="quiz" data-dir="-1" aria-label="Previous slide">←</button>' +
+    '<div class="dots" id="dots-quiz"></div>' +
+    '<button class="cbtn" data-nav="quiz" data-dir="1" aria-label="Next slide">→</button>';
+  controls.parentNode.replaceChild(newControls, controls);
+
+  buildCarousel('quiz', sectionEl);
+  fitStages();
+  updateQuizCopy();
+}
+
+/* ---------- exports ---------- */
+function slideFileName(carouselName, i, total, slugOverride) {
+  var num = String(i + 1).padStart(2, '0');
+  var label = '';
+  if (i === 0) {
+    label = '-cover';
+  } else if (i === total - 1) {
+    label = '-cta';
+  } else if (carouselName === 'quiz') {
+    var q = Math.ceil(i / 2);
+    label = (i % 2 === 1) ? '-q' + q : '-a' + q;
+  }
+  if (carouselName === 'facts') return 'td-did-you-know-' + num + label + '.png';
+  var slug = slugOverride || (CURRENT_QUIZ_PACK ? CURRENT_QUIZ_PACK.slug : 'quiz');
+  return 'td-quiz-' + slug + '-' + num + label + '.png';
+}
+
+function ensureFonts() {
+  if (document.fonts && document.fonts.ready) return document.fonts.ready;
+  return Promise.resolve();
+}
+
+function captureSlide(slideEl) {
+  // html2canvas: strip the preview scaling inside the cloned document so the
+  // canvas is rendered at the native 1080 x 1350 layout.
+  return html2canvas(slideEl, {
+    scale: 1,
+    width: 1080,
+    height: 1350,
+    backgroundColor: '#14100b',
+    useCORS: true,
+    logging: false,
+    onclone: function (doc) {
+      doc.querySelectorAll('.preview').forEach(function (p) {
+        p.style.transform = 'none';
+        p.style.width = '1080px';
+        p.style.height = '1350px';
+        p.style.overflow = 'visible';
+      });
+      doc.querySelectorAll('.stage').forEach(function (st) {
+        st.style.transform = 'none';
+      });
+      doc.querySelectorAll('.slide').forEach(function (s) {
+        s.style.visibility = 'visible';
+        s.style.opacity = '1';
+        s.style.transform = 'none'; // non-active slides are offset/scaled in the live doc
+      });
+    }
+  });
+}
+
+function downloadCanvas(canvas, filename) {
+  var link = document.createElement('a');
+  link.download = filename;
+  link.href = canvas.toDataURL('image/png');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/* ---------- modal ---------- */
+var modal = document.getElementById('export-modal');
+var modalImg = document.getElementById('modal-img');
+var modalTitle = document.getElementById('modal-title');
+var modalHint = document.getElementById('modal-hint');
+var modalDownload = document.getElementById('modal-download');
+var lastCanvas = null, lastName = null;
+
+function openModal(canvas, filename, index, total) {
+  lastCanvas = canvas; lastName = filename;
+  modalImg.src = canvas.toDataURL('image/png');
+  modalTitle.textContent = 'Exported — slide ' + index + ' of ' + total;
+  modalHint.textContent = filename + ' · 1080 × 1350 PNG';
+  modal.classList.add('show');
+}
+modalDownload.addEventListener('click', function () {
+  if (lastCanvas) { downloadCanvas(lastCanvas, lastName); toast('Saved ' + lastName, 'ok'); }
+});
+document.getElementById('modal-close').addEventListener('click', function () { modal.classList.remove('show'); });
+modal.addEventListener('click', function (e) { if (e.target === modal) modal.classList.remove('show'); });
+
+/* ---------- toast ---------- */
+var toastEl = document.getElementById('toast');
+var toastTimer = null;
+function toast(msg, kind) {
+  toastEl.textContent = msg;
+  toastEl.className = 'show' + (kind ? ' ' + kind : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { toastEl.className = ''; }, 2600);
+}
+
+/* ---------- export actions ---------- */
+async function exportSlideByName(carouselName, i) {
+  var c = CAROUSELS[carouselName];
+  if (!c) return;
+  if (!window.html2canvas) {
+    toast('Export needs internet to load html2canvas — use "Open full size" + screenshot instead', 'err');
+    return;
+  }
+  await ensureFonts();
+  try {
+    var canvas = await captureSlide(c.slides[i]);
+    openModal(canvas, slideFileName(carouselName, i, c.slides.length), i + 1, c.slides.length);
+  } catch (err) {
+    console.error('Export failed', err);
+    toast('Export failed — try "Open full size" + screenshot instead', 'err');
+  }
+}
+
+async function exportAllByName(carouselName) {
+  var c = CAROUSELS[carouselName];
+  if (!c) return;
+  var btn = document.querySelector('[data-export-all="' + carouselName + '"]');
+  if (!window.html2canvas) {
+    toast('Export needs internet to load html2canvas — use "Open full size" + screenshot instead', 'err');
+    return;
+  }
+  // snapshot the pack slug so mid-export topic switches can't mix filenames
+  var slug = CURRENT_QUIZ_PACK ? CURRENT_QUIZ_PACK.slug : '';
+  btn.disabled = true;
+  try {
+    await ensureFonts();
+    for (var i = 0; i < c.slides.length; i++) {
+      toast('Exporting ' + (i + 1) + ' of ' + c.slides.length + '…');
+      var canvas = await captureSlide(c.slides[i]);
+      downloadCanvas(canvas, slideFileName(carouselName, i, c.slides.length, slug));
+      // small pause so the browser queues downloads cleanly
+      await new Promise(function (r) { setTimeout(r, 350); });
+    }
+    toast('Done — ' + c.slides.length + ' PNGs downloaded', 'ok');
+  } catch (err) {
+    console.error('Export all failed', err);
+    toast('Export failed — try "Open full size" + screenshot instead', 'err');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* ---------- open full-size slide in a new tab (screenshot fallback) ---------- */
+function openFullSize(carouselName, i) {
+  var c = CAROUSELS[carouselName];
+  if (!c) return;
+  var slide = c.slides[i];
+  var style = document.querySelector('style').textContent;
+  var html =
+    '<!DOCTYPE html><html><head><meta charset="utf-8"/>' +
+    '<link rel="preconnect" href="https://fonts.googleapis.com">' +
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">' +
+    '<style>html,body{margin:0;padding:0;background:#14100b}' + style + '</style>' +
+    '</head><body>' +
+    '<div style="width:1080px;height:1350px;position:relative">' + slide.outerHTML + '</div>' +
+    '</body></html>';
+  var url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
+  window.open(url, '_blank');
+}
+
+/* ---------- wire up buttons ---------- */
+document.querySelectorAll('[data-export]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var name = btn.getAttribute('data-export');
+    var c = CAROUSELS[name];
+    if (!c) return;
+    exportSlideByName(name, c.index);
+  });
+});
+document.querySelectorAll('[data-export-all]').forEach(function (btn) {
+  btn.addEventListener('click', function () { exportAllByName(btn.getAttribute('data-export-all')); });
+});
+document.querySelectorAll('[data-fullsize]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var name = btn.getAttribute('data-fullsize');
+    openFullSize(name, CAROUSELS[name].index);
+  });
+});
+
+/* ---------- copy buttons ---------- */
+document.querySelectorAll('[data-copy]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var el = document.getElementById(btn.getAttribute('data-copy'));
+    var text = el ? el.textContent.trim() : '';
+    function done() {
+      btn.textContent = 'Copied!';
+      btn.classList.add('done');
+      toast('Copied to clipboard', 'ok');
+      setTimeout(function () {
+        btn.textContent = 'Copy';
+        btn.classList.remove('done');
+      }, 1800);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text, done); });
+    } else {
+      fallbackCopy(text, done);
+    }
+  });
+});
+function fallbackCopy(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+/* ---------- keyboard ---------- */
+document.addEventListener('keydown', function (e) {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  if (e.key === 'ArrowLeft') { CAROUSELS.quiz.go(CAROUSELS.quiz.index - 1); }
+  else if (e.key === 'ArrowRight') { CAROUSELS.quiz.go(CAROUSELS.quiz.index + 1); }
+  else if (e.key === 'Escape') { modal.classList.remove('show'); }
+});
+
+/* ---------- init ---------- */
+CURRENT_QUIZ_PACK = QUIZ_PACKS[0];
+buildQuizPicker();
+buildCarousel('facts', document.getElementById('carousel-facts'));
+var quizSection = document.getElementById('carousel-quiz');
+renderQuizSlides(quizSection.querySelector('.stage'), CURRENT_QUIZ_PACK);
+buildCarousel('quiz', quizSection);
+updateQuizCopy();
+window.addEventListener('resize', fitStages);
+window.addEventListener('load', fitStages);
+fitStages();
+</script>
+</body>
+</html>

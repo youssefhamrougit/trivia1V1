@@ -1,0 +1,5 @@
+{
+  "version": "v1.1.0",
+  "notes": "New VS duel shield logo + PNG app icons; 1v1 friend challenges now expire cleanly and can be cancelled.",
+  "min_android": "7.0"
+}

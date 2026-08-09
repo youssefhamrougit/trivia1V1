@@ -175,6 +175,17 @@ begin
   if me is null then return null; end if;
   if challengee is null or challengee = me then return null; end if;
 
+  -- first sweep away any stale challenge between this pair (e.g. one the
+  -- challenger abandoned, or that was never answered and the client
+  -- expired) so a dead row can never block a fresh challenge. 10 minutes
+  -- is comfortably longer than the client's ~90-second accept window.
+  update public.matches m
+  set status = 'finished'
+  where m.status = 'challenged'
+    and m.created_at < now() - interval '10 minutes'
+    and ((m.player1 = me and m.challengee = challengee)
+      or (m.player1 = challengee and m.challengee = me));
+
   -- only one pending challenge between the same pair at a time
   if exists (
     select 1 from public.matches m
@@ -198,7 +209,41 @@ $$;
 
 
 -- ============================================================================
---  6) RPC: finish_match — now takes a `ranked` flag.
+--  6) RPC: cancel_challenge(match_id)
+--     The CHALLENGER retracts a pending challenge (the friend list shows a
+--     Cancel button while one is pending). Mirrors cancel_matchmaking's
+--     race-safety: if the friend accepted at the exact instant, the match is
+--     already 'active' — return its id so the challenger plays it instead.
+--     Returns the match id if it went active, or null when cancelled.
+-- ============================================================================
+create or replace function public.cancel_challenge(match_id uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  me uuid := auth.uid();
+  m  public.matches%rowtype;
+begin
+  if me is null then return null; end if;
+
+  select * into m from public.matches where id = match_id;
+  if not found then return null; end if;
+
+  -- only the challenger can cancel, and only while it's still pending
+  if m.player1 <> me then return null; end if;
+  if m.status = 'active' then return m.id; end if;   -- they just accepted!
+  if m.status = 'challenged' then
+    update public.matches set status = 'finished' where id = match_id;
+  end if;
+  return null;
+end;
+$$;
+
+
+-- ============================================================================
+--  7) RPC: finish_match — now takes a `ranked` flag.
 --
 --     ranked = true  (default, normal matchmaking): winner +20 / loser -20
 --     ranked = false (friend duels): the winner is recorded, but NO trophies
@@ -270,7 +315,7 @@ $$;
 
 
 -- ============================================================================
---  7) TABLE: bot_config — Practice-vs-QuizBot difficulty settings.
+--  8) TABLE: bot_config — Practice-vs-QuizBot difficulty settings.
 --     The app reads this table; if it's missing it falls back to built-in
 --     defaults, so practice still works before you run this file.
 -- ============================================================================

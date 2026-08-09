@@ -111,9 +111,27 @@ create policy "read questions"
   using (auth.uid() is not null);
 
 drop policy if exists "read own matches" on public.matches;
-create policy "read own matches"
-  on public.matches for select
-  using (auth.uid() in (player1, player2));
+-- the friend-challenge column comes from friends-bots.sql; if it exists (this
+-- file was run AFTER that one), keep the policies challenge-aware so running
+-- setup-demo again can never break friend challenges.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'matches' and column_name = 'challengee'
+  ) then
+    execute $pol$
+      create policy "read own matches" on public.matches for select
+      using (auth.uid() in (player1, player2) or challengee = auth.uid())
+    $pol$;
+  else
+    execute $pol$
+      create policy "read own matches" on public.matches for select
+      using (auth.uid() in (player1, player2))
+    $pol$;
+  end if;
+end;
+$$;
 
 drop policy if exists "create match" on public.matches;
 create policy "create match"
@@ -121,12 +139,31 @@ create policy "create match"
   with check (player1 = auth.uid());
 
 drop policy if exists "update matches" on public.matches;
-create policy "update matches"
-  on public.matches for update
-  using (
-    (auth.uid() in (player1, player2))
-    or (status = 'waiting' and player2 is null)
-  );
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'matches' and column_name = 'challengee'
+  ) then
+    execute $pol$
+      create policy "update matches" on public.matches for update
+      using (
+        (auth.uid() in (player1, player2))
+        or (status = 'waiting' and player2 is null)
+        or (status = 'challenged' and challengee = auth.uid() and player2 is null)
+      )
+    $pol$;
+  else
+    execute $pol$
+      create policy "update matches" on public.matches for update
+      using (
+        (auth.uid() in (player1, player2))
+        or (status = 'waiting' and player2 is null)
+      )
+    $pol$;
+  end if;
+end;
+$$;
 
 
 -- ============================================================================

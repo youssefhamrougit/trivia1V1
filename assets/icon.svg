@@ -1,9 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- warm rounded tile -->
-  <rect width="512" height="512" rx="120" fill="#df7d1f"/>
-  <!-- friendly lightning bolt (thick, rounded joins) -->
-  <path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#ffffff" stroke="#ffffff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/>
-  <!-- "trivia?" sticker badge -->
-  <circle cx="356" cy="352" r="62" fill="#faf7f0"/>
-  <text x="356" y="352" font-family="Arial, Helvetica, sans-serif" font-size="78" font-weight="900" fill="#3b352c" text-anchor="middle" dominant-baseline="central">?</text>
+  <!-- ============================================================
+       TriviaDuel — "VS duel shield" logo
+       A tournament badge: warm orange tile, dark shield, two facing
+       chevrons (the duel / "VS") framing a lightning bolt (speed).
+       The mark stays inside the central ~66% so it also works as an
+       Android maskable launcher icon (full-bleed background below).
+  ============================================================ -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f5a94f"/>
+      <stop offset="0.55" stop-color="#e07a17"/>
+      <stop offset="1" stop-color="#c75f0e"/>
+    </linearGradient>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b2217"/>
+      <stop offset="1" stop-color="#120d08"/>
+    </linearGradient>
+  </defs>
+
+  <!-- warm app tile -->
+  <rect width="512" height="512" rx="112" fill="url(#tile)"/>
+
+  <!-- the shield badge (the "duel" arena) -->
+  <path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z"
+        fill="url(#shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/>
+  <path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z"
+        fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/>
+
+  <!-- two facing chevrons = the "VS" -->
+  <path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- the lightning bolt down the middle -->
+  <g transform="translate(256 256) scale(0.6) translate(-256 -256)">
+    <path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z"
+          fill="#ffffff" stroke="#ffffff" stroke-width="26"
+          stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
 </svg>

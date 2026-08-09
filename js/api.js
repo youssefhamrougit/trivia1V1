@@ -247,7 +247,7 @@ const API = {
 
       const requests = reqRes.data || [];
       const accepted = accRes.data || [];
-      const outgoing = (outRes.data || []).map(function (m) { return m.challengee; });
+      const outgoing = (outRes.data || []).map(function (m) { return { friendId: m.challengee, matchId: m.id }; });
 
       // fetch the other party's profile for every row in one batched call
       const otherIds = requests.map(function (r) { return r.requester; });
@@ -267,7 +267,7 @@ const API = {
           const oid = f.requester === uid ? f.addressee : f.requester;
           return { rowId: f.id, id: oid, ...(profiles[oid] || {}) };
         }),
-        outgoing: outgoing, // friend ids who have a pending challenge from us
+        outgoing: outgoing, // { friendId, matchId } for each challenge we sent
       };
     }
     if (path === "/api/friends/accept") {
@@ -331,6 +331,16 @@ const API = {
         .eq("id", body.matchId).eq("challengee", uid).eq("status", "challenged");
       if (error) throw new Error(error.message);
       return { ok: true };
+    }
+    if (path === "/api/friends/cancelchallenge") {
+      // the challenger retracts a pending challenge (or it expired). The RPC
+      // marks it finished — unless the friend accepted at the same instant,
+      // in which case it hands the match back and we play it.
+      const uid = await this._uid();
+      if (!uid) throw new Error("Not logged in");
+      const { data, error } = await sup.rpc("cancel_challenge", { match_id: body.matchId });
+      if (error) throw new Error(error.message);
+      return { match_id: data }; // null = cancelled · an id = it just went active
     }
 
     // ---- live answer relay: write my score onto the match row. The opponent

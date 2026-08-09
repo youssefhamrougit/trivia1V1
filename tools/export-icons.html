@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0e0d0b" />
+<title>TriviaDuel — Export app icons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+/* Same design language as the app + download page: warm near-black, orange accent. */
+:root {
+  --bg: #0e0d0b; --surface: #1b1916; --surface-2: #24211d; --surface-3: #2e2a24;
+  --line: rgba(255,255,255,0.08); --line-2: rgba(255,255,255,0.16);
+  --text: #f3efe8; --muted: #a9a092; --muted-2: #6b655a;
+  --accent: #df7d1f; --accent-bright: #f2a254; --gold: #e0a93e; --green: #7fcf8d;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+.wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px 70px; }
+h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.01em; }
+h1 span { color: var(--accent-bright); }
+p.lead { color: var(--muted); margin-top: 8px; font-size: 14.5px; line-height: 1.6; }
+p.lead code { background: var(--surface-2); padding: 1px 7px; border-radius: 6px; color: var(--accent-bright); font-size: 12.5px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-top: 30px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+  padding: 18px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 14px 40px rgba(0,0,0,0.35);
+}
+.card canvas { width: 128px; height: 128px; border-radius: 18px; border: 1px solid var(--line-2); background: #fff; margin: 0 auto; display: block; }
+.card .label { font-size: 14px; font-weight: 900; margin-top: 12px; }
+.card .hint { font-size: 12px; color: var(--muted); margin-top: 3px; min-height: 30px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: none; background: var(--accent); color: #fff;
+  font-family: inherit; font-size: 14px; font-weight: 900;
+  padding: 12px 20px; border-radius: 12px; cursor: pointer;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.35); transition: transform 0.1s, background 0.2s;
+}
+.btn:hover { background: var(--accent-bright); }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.35); }
+.btn.ghost { background: var(--surface); color: var(--text); border: 1px solid var(--line-2); box-shadow: 0 2px 0 rgba(0,0,0,0.3); }
+.btn.ghost:hover { background: var(--surface-2); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 26px; }
+.note {
+  margin-top: 26px; background: var(--surface); border: 1px dashed var(--line-2);
+  border-radius: 14px; padding: 16px 18px; font-size: 13.5px; color: var(--muted); line-height: 1.7;
+}
+.note b { color: var(--gold); }
+.note code { background: var(--surface-3); padding: 1px 7px; border-radius: 6px; color: var(--accent-bright); font-size: 12px; }
+#toast {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-20px);
+  background: var(--surface); border: 1px solid rgba(127,207,141,0.5); color: var(--green);
+  font-size: 13px; font-weight: 800; padding: 12px 22px; border-radius: 999px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5); opacity: 0; pointer-events: none;
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease); z-index: 10; white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TriviaDuel — <span>export app icons</span></h1>
+  <p class="lead">
+    This page renders the <code>assets/icon.svg</code> "VS duel shield" logo at the exact sizes the
+    Android APK build needs, then downloads them straight into your Downloads folder. Move the files to
+    <code>assets/</code> (the manifest already references them) and you're ready to build.
+  </p>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="actions">
+    <button class="btn ghost" id="btn-single">Save current selection</button>
+    <button class="btn" id="btn-all">⬇ Download all 3 PNGs</button>
+  </div>
+
+  <div class="note">
+    <b>Why maskable?</b> Android crops launcher icons into circles/squircles. The maskable icon has a
+    full-bleed background with the logo inside the central ~66% safe zone, so nothing gets chopped.
+    The 192/512 versions keep the rounded tile for anything that still uses a classic square icon.
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ============================================================================
+   TriviaDuel icon exporter — zero dependencies.
+   Renders the SVG logo (embedded below, identical to assets/icon.svg) onto
+   canvases at the sizes Android needs, then downloads real PNGs.
+============================================================================ */
+
+// ---- the logo, exactly as in assets/icon.svg -------------------------------
+var DEFS =
+  '<linearGradient id="t" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f5a94f"/><stop offset="0.55" stop-color="#e07a17"/><stop offset="1" stop-color="#c75f0e"/></linearGradient>' +
+  '<linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2217"/><stop offset="1" stop-color="#120d08"/></linearGradient>';
+
+// the shield + VS chevrons + bolt (no tile) — reused for the maskable icon
+var MARK =
+  '<path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z" fill="url(#s)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/>' +
+  '<path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z" fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/>' +
+  '<path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>' +
+  '<path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>' +
+  '<g transform="translate(256 256) scale(0.6) translate(-256 -256)"><path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z" fill="#fff" stroke="#fff" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/></g>';
+
+// rounded-tile icon (classic launcher style)
+function tileSvg() {
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs>' + DEFS + '</defs>' +
+    '<rect width="512" height="512" rx="112" fill="url(#t)"/>' + MARK + '</svg>';
+}
+// full-bleed square background + mark in the safe zone (Android maskable)
+function maskableSvg() {
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs>' + DEFS + '</defs>' +
+    '<rect width="512" height="512" fill="url(#t)"/>' +
+    '<g transform="translate(256 256) scale(0.74) translate(-256 -256)">' + MARK + '</g></svg>';
+}
+
+// ---- rendering ---------------------------------------------------------------
+function svgToImage(svg) {
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    img.onload = function () { resolve(img); };
+    img.onerror = reject;
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  });
+}
+
+async function renderIcon(svg, size) {
+  var img = await svgToImage(svg);
+  var c = document.createElement("canvas");
+  c.width = size; c.height = size;
+  c.getContext("2d").drawImage(img, 0, 0, size, size);
+  return c;
+}
+
+function downloadCanvas(canvas, name) {
+  canvas.toBlob(function (blob) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 400);
+  }, "image/png");
+}
+
+// ---- the three icons -----------------------------------------------------------
+var ICONS = [
+  { name: "assets/icon-192.png",          size: 192, svg: tileSvg,     label: "icon-192.png",     hint: "PWA + small launcher" },
+  { name: "assets/icon-512.png",          size: 512, svg: tileSvg,     label: "icon-512.png",     hint: "High-res launcher (used by the APK build)" },
+  { name: "assets/icon-maskable-512.png", size: 512, svg: maskableSvg, label: "icon-maskable-512.png", hint: "Adaptive icon · full-bleed + safe zone" },
+];
+
+var canvases = {};
+var selected = 0;
+
+async function buildCards() {
+  var wrap = document.getElementById("cards");
+  for (var i = 0; i < ICONS.length; i++) {
+    var ic = ICONS[i];
+    var card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML =
+      '<canvas width="128" height="128"></canvas>' +
+      '<div class="label">' + ic.label + '</div>' +
+      '<div class="hint">' + ic.hint + '</div>' +
+      '<button class="btn ghost" data-i="' + i + '" style="margin-top:12px">Save</button>';
+    wrap.appendChild(card);
+    var canvas = card.querySelector("canvas");
+    canvases[i] = await renderIcon(ic.svg(), 128);
+    canvas.getContext("2d").drawImage(canvases[i], 0, 0, 128, 128);
+    // cache the real-size canvas for download
+    canvases[i] = await renderIcon(ic.svg(), ic.size);
+  }
+}
+
+document.getElementById("btn-single").addEventListener("click", function () {
+  var ic = ICONS[selected];
+  downloadCanvas(canvases[selected], ic.name);
+  toast("Saved " + ic.name);
+});
+
+document.getElementById("btn-all").addEventListener("click", function () {
+  for (var i = 0; i < ICONS.length; i++) downloadCanvas(canvases[i], ICONS[i].name);
+  toast("Downloaded all 3 — move them into assets/");
+});
+
+document.getElementById("cards").addEventListener("click", function (e) {
+  var b = e.target.closest("[data-i]");
+  if (!b) return;
+  selected = Number(b.dataset.i);
+  downloadCanvas(canvases[selected], ICONS[selected].name);
+  toast("Saved " + ICONS[selected].name);
+});
+
+var toastTimer = null;
+function toast(msg) {
+  var t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+}
+
+buildCards();
+</script>
+</body>
+</html>

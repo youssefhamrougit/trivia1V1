@@ -137,10 +137,14 @@ function triviaFindMatch() {
     });
 }
 
-// keep checking whether an opponent has joined (up to ~60 seconds)
-function triviaPollForOpponent(attempt) {
+// keep checking whether an opponent has joined (up to ~60 seconds — or ~90
+// seconds for a friend challenge). `onGiveUp` lets the caller decide what
+// happens when the wait runs out: the friends tab expires the challenge in
+// place instead of bailing to the home screen.
+function triviaPollForOpponent(attempt, onGiveUp) {
   if (!triviaState.matchId || triviaState.mode !== "online") return;
-  if (attempt > 40) {
+  if (attempt > (triviaState.casual ? 60 : 40)) {
+    if (typeof onGiveUp === "function") { onGiveUp(); return; }
     // give up quietly: go home and show the message there
     setError("trivia-error", triviaState.casual
       ? "Your friend didn't accept the challenge. Try again!"
