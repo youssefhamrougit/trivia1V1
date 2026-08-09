@@ -44,7 +44,7 @@ trivia1v1 is a mobile-first **1v1 trivia game** that runs entirely in the browse
 |---|---|
 | ⚔️ **Matchmaking** | Pair with a stranger (same 10 questions) or practice vs. QuizBot — Easy / Medium / Hard |
 | 🔴 **Live relay** | Scores push between phones instantly via Supabase Realtime |
-| 🏆 **Trophy ladder** | Win +20 / lose −20 (1:1), arena follows your current trophies, skill-matched pairings (60-trophy band), arena-themed questions |
+| 🏆 **Trophy ladder** | Win +20 / lose −20 (1:1), arena follows your current trophies, skill-matched pairings (60-trophy band), arena-themed questions — every match mixes all 4 categories |
 | 🤝 **Friends** | Search by username, send/accept requests, and 1v1-challenge friends (casual duels — no trophies) |
 | 📊 **Leaderboard** | Top 50 players by trophies |
 | 🔐 **Auth** | Username + password (or one-tap guest) via Supabase Auth |
@@ -86,7 +86,8 @@ trivia1v1/
 │   └── friends.js      # the Friends tab (requests, 1v1 challenges)
 └── database/
     ├── schema.sql      # tables + security + functions (run first)
-    ├── seed.sql        # 40 questions + the practice bot (run second)
+    ├── seed.sql        # 40 starter questions + the practice bot (run second)
+    ├── questions-bank.sql # 440 more questions — the full 480-question bank
     ├── setup-demo.sql  # idempotent migration for existing projects
     └── friends-bots.sql # ⚠️ REQUIRED: friends + bot difficulty + username auth
 ```
@@ -103,9 +104,10 @@ trivia1v1/
 
 The app is a static site that talks to Supabase directly — which means **one file + one dashboard toggle** are required for the newer features:
 
-1. **Run `database/friends-bots.sql`** in the Supabase SQL Editor. It creates the `friends` table, the `bot_config` table, the `matches.challengee` column + `'challenged'` status, and the `send_friend_request` / `create_challenge` RPCs — and upgrades `finish_match` with a `ranked` flag. Safe to re-run.
-2. **Turn OFF “Confirm email”** — Supabase dashboard → *Authentication → Providers → Email*. Sign-up then logs you straight in and claims your username.
-3. **Old email accounts**: accounts created before this change won't log in by username (their email isn't `username@triviaduel.local` — that domain is functional and intentionally unchanged). Recreate them, or rename their email in the dashboard to `<username>@triviaduel.local`.
+1. **Run `database/questions-bank.sql`** in the Supabase SQL Editor. It adds 440 questions (110 per category, Science / Math / Football / History) to the 40 in `seed.sql` — a 480-question bank. Safe to re-run.
+2. **Run `database/friends-bots.sql`** in the Supabase SQL Editor. It creates the `friends` table, the `bot_config` table, the `matches.challengee` column + `'challenged'` status, and the `send_friend_request` / `create_challenge` RPCs — and upgrades `finish_match` with a `ranked` flag. Safe to re-run.
+3. **Turn OFF “Confirm email”** — Supabase dashboard → *Authentication → Providers → Email*. Sign-up then logs you straight in and claims your username.
+4. **Old email accounts**: accounts created before this change won't log in by username (their email isn't `username@triviaduel.local` — that domain is functional and intentionally unchanged). Recreate them, or rename their email in the dashboard to `<username>@triviaduel.local`.
 
 Until you run the SQL, the app degrades gracefully: practice bots still work with built-in difficulty defaults, and the Friends tab shows a hint instead of crashing.
 

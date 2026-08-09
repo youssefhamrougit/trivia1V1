@@ -132,7 +132,9 @@ const API = {
       return data || [];
     }
     if (path.indexOf("/api/questions") === 0) {
-      const { data, error } = await sup.from("questions").select("*").limit(200);
+      // limit 1000 so the whole bank (480 questions) is reachable — the
+      // practice mode needs to see every category to build varied matches
+      const { data, error } = await sup.from("questions").select("*").limit(1000);
       if (error) throw new Error(error.message);
       return data || [];
     }
@@ -142,7 +144,7 @@ const API = {
       const uid = await this._uid();
       if (!uid) throw new Error("Not logged in");
       // arena signature discipline (mirrors the original backend logic): the RPC tilts
-      // half the match's questions toward the arena the player is currently in
+      // 4 of the match's 10 questions toward the arena the player is currently in
       let sig = "mixed";
       const prof = await sup.from("profiles").select("trophies").eq("id", uid).limit(1);
       if (!prof.error && prof.data && prof.data[0]) {

@@ -1,7 +1,13 @@
 -- ============================================================================
 --  seed.sql — Trivia1v1 seed data
---  Creates a bot user and 40 questions across exactly 4 categories:
+--  Creates a bot user and 40 starter questions across exactly 4 categories:
 --  Science, Math, Football, History (10 each).
+--
+--  ⚠️  Run database/questions-bank.sql afterwards for the full bank of
+--  480 questions (440 more). Then refresh the matchmaking RPCs so every match
+--  mixes all 4 categories: on a FRESH project re-run schema.sql, on an
+--  EXISTING project re-run setup-demo.sql, and re-run friends-bots.sql either
+--  way (it redefines create_challenge / finish_match).
 -- ============================================================================
 
 -- Create the bot user

@@ -223,7 +223,7 @@ async function loadMyProfile() {
   }
 }
 
-// ---- the Profile screen (top-right chip on the home screen) ----------
+// ---- the Profile screen (the chip in the top-left corner on the home screen) --
 
 async function loadProfile() {
   if (!currentProfile) await loadMyProfile();

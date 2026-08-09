@@ -94,15 +94,6 @@ h1 { font-size: 30px; }
 /* ---------- top bar ---------- */
 .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 8px; }
 
-/* ---------- user chip (home) ---------- */
-.user-chip { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.user-chip-text { min-width: 0; }
-.user-chip-text b {
-  display: block; font-family: 'Nunito', sans-serif; font-size: 15px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.user-chip-text span { font-size: 11px; font-weight: 700; color: var(--muted); }
-
 /* ---------- avatar rings ---------- */
 .ring {
   width: 46px; height: 46px; flex-shrink: 0;

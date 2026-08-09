@@ -177,6 +177,7 @@ declare
   me     uuid := auth.uid();
   picked bigint[];
   new_id uuid;
+  rest   text[];  -- the 4 categories shuffled, for the variety mix
 begin
   if me is null then return null; end if;
   if challengee_id is null or challengee_id = me then return null; end if;
@@ -202,8 +203,25 @@ begin
     return null;
   end if;
 
-  select array(select id from public.questions order by random() limit 10)
-  into picked;
+  -- every challenge mixes all 4 categories (3/3/2/2 split), shuffled so the
+  -- categories stay interleaved through the whole match
+  select array(
+    select cat
+    from unnest(ARRAY['Science','Math','Football','History']) as cat
+    order by random()
+  ) into rest;
+
+  select array(
+    select id from (
+      (select id from public.questions where category = rest[1] order by random() limit 3)
+      union all
+      (select id from public.questions where category = rest[2] order by random() limit 3)
+      union all
+      (select id from public.questions where category = rest[3] order by random() limit 2)
+      union all
+      (select id from public.questions where category = rest[4] order by random() limit 2)
+    ) t order by random()
+  ) into picked;
 
   insert into public.matches (player1, challengee, status, question_ids)
   values (me, challengee_id, 'challenged', picked)

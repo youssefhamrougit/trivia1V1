@@ -201,6 +201,7 @@ declare
   found_id uuid;
   picked   bigint[];
   mine     integer;
+  rest     text[];  -- the 4 categories shuffled, for the variety mix
 begin
   -- never trust the client: derive the identity from the JWT instead
   me := auth.uid();
@@ -231,22 +232,48 @@ begin
     return found_id;
   end if;
 
-  -- the creator's arena has a signature discipline: half the questions come
-  -- from it, half from the whole bank. Keeps every match 10 questions while
-  -- making each arena "feel" themed.
+  -- EVERY match now mixes all 4 categories, so no game is a wall of one
+  -- topic (with the big bank in questions-bank.sql each category has plenty
+  -- of questions to draw from):
+  --   • themed arenas keep a 4-question tilt from their own category, plus
+  --     2 questions from each of the other three (4/2/2/2)
+  --   • mixed matches draw a 3/3/2/2 split across the 4 categories
+  -- The final 10 are shuffled so the categories interleave all match long.
   if sig is null or sig not in ('Science','Math','Football','History') then
     sig := 'mixed';
   end if;
 
+  -- shuffle the category list (for 'mixed' this is all 4 categories)
+  select array(
+    select cat
+    from unnest(ARRAY['Science','Math','Football','History']) as cat
+    where cat <> sig
+    order by random()
+  ) into rest;
+
   if sig = 'mixed' then
     select array(
-      select id from public.questions order by random() limit 10
+      select id from (
+        (select id from public.questions where category = rest[1] order by random() limit 3)
+        union all
+        (select id from public.questions where category = rest[2] order by random() limit 3)
+        union all
+        (select id from public.questions where category = rest[3] order by random() limit 2)
+        union all
+        (select id from public.questions where category = rest[4] order by random() limit 2)
+      ) t order by random()
     ) into picked;
   else
     select array(
-      (select id from public.questions where category = sig order by random() limit 5)
-      union
-      (select id from public.questions where category <> sig order by random() limit 5)
+      select id from (
+        (select id from public.questions where category = sig order by random() limit 4)
+        union all
+        (select id from public.questions where category = rest[1] order by random() limit 2)
+        union all
+        (select id from public.questions where category = rest[2] order by random() limit 2)
+        union all
+        (select id from public.questions where category = rest[3] order by random() limit 2)
+      ) t order by random()
     ) into picked;
   end if;
 

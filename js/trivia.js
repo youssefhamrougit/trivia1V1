@@ -305,16 +305,11 @@ async function triviaStartBot(diff, fromFallback) {
 
   await applyBotDifficulty(diff);
 
-  // grab all questions from Supabase and pick 10 random ones
+  // grab all questions from Supabase and build a varied 10: every match
+  // mixes all 4 categories (3/3/2/2), exactly like online matchmaking
   try {
-    const allQs = await API.call("/api/questions?limit=200");
-    const pool = allQs.slice();
-    const questions = [];
-    for (let i = 0; i < QUESTIONS_PER_MATCH && pool.length > 0; i++) {
-      const idx = randomInt(pool.length);
-      questions.push(pool.splice(idx, 1)[0]);
-    }
-    triviaStartBotGame(questions);
+    const allQs = await API.call("/api/questions?limit=1000");
+    triviaStartBotGame(pickMatchQuestions(allQs));
   } catch (err) {
     setError("trivia-error", "Could not load questions: " + err.message);
     go("screen-trivia-home");
@@ -346,6 +341,40 @@ function triviaStartBotGame(questions) {
   showArenaInMatch();
   go("screen-trivia-match");
   renderQuestion();
+}
+
+// build a 10-question match that ALWAYS mixes all 4 categories (this is the
+// "question flow" improvement, mirroring the join_matchmaking RPC): the
+// categories are shuffled, the first two get 3 questions each and the last
+// two get 2 each (3/3/2/2), then the whole list is shuffled so the
+// categories interleave through the match instead of clustering.
+function pickMatchQuestions(pool) {
+  const byCat = {};
+  pool.forEach(function (q) {
+    (byCat[q.category] = byCat[q.category] || []).push(q);
+  });
+  const cats = ["Science", "Math", "Football", "History"].filter(function (c) {
+    return byCat[c] && byCat[c].length > 0;
+  });
+  // shuffle the category order (Fisher-Yates)
+  for (let i = cats.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    const t = cats[i]; cats[i] = cats[j]; cats[j] = t;
+  }
+  const out = [];
+  cats.forEach(function (c, i) {
+    const want = i < 2 ? 3 : 2;
+    const src = byCat[c].slice();
+    for (let n = 0; n < want && src.length > 0; n++) {
+      out.push(src.splice(randomInt(src.length), 1)[0]);
+    }
+  });
+  // shuffle the final 10 so the categories stay interleaved
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    const t = out[i]; out[i] = out[j]; out[j] = t;
+  }
+  return out;
 }
 
 // ---- bot difficulty -------------------------------------------------------
@@ -692,9 +721,7 @@ async function loadTriviaHome() {
   animateNumber(document.getElementById("trivia-wins"), currentProfile.wins || 0, 500);
   animateNumber(document.getElementById("trivia-losses"), currentProfile.losses || 0, 500);
 
-  // player avatar initial in the top bar + the Profile chip
-  const av = document.getElementById("home-avatar");
-  if (av) av.textContent = (currentProfile.username || "?").charAt(0).toUpperCase();
+  // player avatar initial in the Profile chip (top-left corner)
   const chipAv = document.getElementById("home-chip-avatar");
   if (chipAv) chipAv.textContent = (currentProfile.username || "?").charAt(0).toUpperCase();
 
