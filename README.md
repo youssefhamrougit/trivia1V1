@@ -29,7 +29,7 @@ Get Trivia1v1 on your phone's home screen — **two ways**:
 
 | | |
 |---|---|
-| 📦 **APK (Android)** | Grab the installer from the [**download page**](download.html) (live at [`/download.html`](https://trivia1-v1.vercel.app/download.html)). The Download button turns on automatically once `apk/trivia1v1.apk` is in the repo — see [`apk/README.md`](apk/README.md) to generate it in ~2 minutes. The build tooling lives **outside** the repo, in the `triviaduel-tools` folder on your Desktop. |
+| 📦 **APK (Android)** | **Direct download:** [**Install the Android app**](https://tangerine-chaja-22963b.netlify.app/) — grab `Trivia1v1.apk` from the Netlify download page (sideload it: tap Install APK, allow "unknown apps", done). To build your own copy instead, use the tooling in the `triviaduel-tools` folder (see [`apk/README.md`](apk/README.md)). |
 | 🌐 **PWA (any phone)** | No file needed. Open [the app](https://trivia1-v1.vercel.app) and use your browser's **Install app** (Android Chrome) or **Add to Home Screen** (iOS Safari). Same app, offline-capable, full-screen. |
 
 ---
