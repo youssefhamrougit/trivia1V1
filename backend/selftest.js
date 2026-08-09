@@ -1,4 +1,4 @@
-// selftest.js — exercises the full TriviaDuel API flow against the running
+// selftest.js — exercises the full Trivia1v1 API flow against the running
 // C++ backend. Run:  node selftest.js
 const BASE = "http://localhost:3000";
 

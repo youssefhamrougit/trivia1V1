@@ -1,5 +1,5 @@
 -- ============================================================================
---  schema.sql — TriviaDuel database
+--  schema.sql — Trivia1v1 database
 --  Tables: profiles, questions, matches
 --
 --  HOW TO USE:

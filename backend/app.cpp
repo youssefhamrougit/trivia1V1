@@ -1,5 +1,5 @@
 // ============================================================================
-//  app.cpp — the TriviaDuel API, in C++.
+//  app.cpp — the Trivia1v1 API, in C++.
 //
 //  Browser  ->  this C++ server  ->  Supabase (database + auth)
 //
@@ -238,7 +238,7 @@ void setupRoutes(http::Server& srv) {
   // ---- status: used by the setup screen -----------------------------------
   srv.routes["GET /api/status"] = [](const http::Request&) {
     Value v = Value::mkObj();
-    v.o["name"] = Value::mkStr("TriviaDuel");
+    v.o["name"] = Value::mkStr("Trivia1v1");
     v.o["backend"] = Value::mkStr("C++17 + OpenSSL");
     v.o["configured"] = Value::mkBool(supabase.configured());
     return R::json(200, jx::dump(v));

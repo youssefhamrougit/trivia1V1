@@ -1,5 +1,5 @@
 -- ============================================================================
---  seed.sql — TriviaDuel seed data
+--  seed.sql — Trivia1v1 seed data
 --  Creates a bot user and 40 questions across exactly 4 categories:
 --  Science, Math, Football, History (10 each).
 -- ============================================================================

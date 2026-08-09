@@ -1,5 +1,5 @@
 // ============================================================================
-//  server.js — TriviaDuel local static server (zero dependencies)
+//  server.js — Trivia1v1 local static server (zero dependencies)
 //
 //  Serves the whole project folder on http://localhost:8080 so you can test
 //  the app exactly like it would run on Vercel (this also fixes the manifest
@@ -57,6 +57,6 @@ http
     }
   })
   .listen(PORT, () => {
-    console.log("TriviaDuel is running at http://localhost:" + PORT);
+    console.log("Trivia1v1 is running at http://localhost:" + PORT);
     console.log("Press Ctrl+C to stop the server.");
   });

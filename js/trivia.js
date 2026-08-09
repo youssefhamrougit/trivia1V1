@@ -1,5 +1,5 @@
 // ============================================================================
-//  trivia.js — the TriviaDuel game
+//  trivia.js — the Trivia1v1 game
 //
 //  THE FLOW:
 //    tap "Find Match"  ->  Supabase pairs us with a stranger
@@ -651,7 +651,7 @@ async function endMatch() {
 
 // share a bragging scorecard to a friend
 function shareResult() {
-  const text = "I scored " + triviaState.myScore + " in TriviaDuel! Can you beat me?";
+  const text = "I scored " + triviaState.myScore + " in Trivia1v1! Can you beat me?";
   if (navigator.share) {
     navigator.share({ text: text }).catch(function () {});
   } else {

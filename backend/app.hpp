@@ -1,5 +1,5 @@
 // ============================================================================
-//  app.hpp — the TriviaDuel API. Everything the browser needs, in C++.
+//  app.hpp — the Trivia1v1 API. Everything the browser needs, in C++.
 // ============================================================================
 #pragma once
 

@@ -38,8 +38,8 @@ const API = {
     if (this._supabase) return false;
     if (!window.supabase) throw new Error("Service is temporarily unavailable — please try again.");
     this._supabase = window.supabase.createClient(
-      window.TRIVIADUEL_CONFIG.SUPABASE_URL,
-      window.TRIVIADUEL_CONFIG.SUPABASE_ANON_KEY
+      window.TRIVIA1V1_CONFIG.SUPABASE_URL,
+      window.TRIVIA1V1_CONFIG.SUPABASE_ANON_KEY
     );
     const { data } = await this._supabase.auth.getSession();
     const s = data && data.session;

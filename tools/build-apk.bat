@@ -1,10 +1,10 @@
 @echo off
 setlocal
 REM ============================================================================
-REM  build-apk.bat — one-click TriviaDuel Android build
+REM  build-apk.bat — one-click Trivia1v1 Android build
 REM
 REM  Packages the web app (index.html, js/, assets/, manifest, sw) into a real
-REM  Android project with Capacitor and compiles apk/triviaduel.apk.
+REM  Android project with Capacitor and compiles apk/trivia1v1.apk.
 REM
 REM  Requirements on THIS machine (your own PC, not the repo):
 REM    - Node.js + npm          https://nodejs.org  (v18+)
@@ -21,7 +21,7 @@ cd /d "%~dp0.."
 set "ROOT=%CD%"
 
 echo.
-echo  === TriviaDuel Android build ===
+echo  === Trivia1v1 Android build ===
 echo.
 
 REM ---- 0) prerequisites -----------------------------------------------------
@@ -62,7 +62,7 @@ REM    (Capacitor 5 writes capacitor.config.json; Capacitor 6+ writes .ts —
 REM     only run cap init when neither exists, or it fails "already initialized")
 echo  [3/6] Initialising the Capacitor project ...
 if not exist capacitor.config.json if not exist capacitor.config.ts (
-  call npx cap init TriviaDuel io.triviaduel.app --web-dir=dist
+  call npx cap init Trivia1v1 io.trivia1v1.app --web-dir=dist
 )
 if not exist android (
   call npx cap add android
@@ -83,9 +83,9 @@ cd "%ROOT%"
 
 REM ---- 6) copy the APK into place -------------------------------------------
 if exist android\app\build\outputs\apk\debug\app-debug.apk (
-  copy /y android\app\build\outputs\apk\debug\app-debug.apk apk\triviaduel.apk >nul
+  copy /y android\app\build\outputs\apk\debug\app-debug.apk apk\trivia1v1.apk >nul
   echo.
-  echo  [6/6] Done!  apk\triviaduel.apk  is ready.
+  echo  [6/6] Done!  apk\trivia1v1.apk  is ready.
   echo         The download page will now show the Download button.
   echo         (Bump the version field in apk/version.json if you want.)
   echo         Tip: this debug APK is signed with Android's debug key - fine
@@ -95,7 +95,7 @@ if exist android\app\build\outputs\apk\debug\app-debug.apk (
 
 echo.
 echo  [WARN] The build finished but the APK wasn't found where expected.
-echo         Check android\app\build\outputs\apk\ for the file and copy it to apk\triviaduel.apk.
+echo         Check android\app\build\outputs\apk\ for the file and copy it to apk\trivia1v1.apk.
 exit /b 1
 
 :deps_fail

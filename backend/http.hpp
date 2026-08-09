@@ -407,7 +407,7 @@ public:
     // 3) send the request
     std::string req = method + " " + path + " HTTP/1.1\r\n";
     req += "Host: " + host + "\r\n";
-    req += "User-Agent: TriviaDuel-CPP/1.0\r\n";
+    req += "User-Agent: Trivia1v1-CPP/1.0\r\n";
     req += "Connection: close\r\n";
     for (const auto& kv : headers) req += kv.first + ": " + kv.second + "\r\n";
     if (!body.empty()) req += "Content-Length: " + std::to_string(body.size()) + "\r\n";

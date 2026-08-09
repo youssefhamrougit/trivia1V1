@@ -1,5 +1,5 @@
 /* ============================================================================
-   style.css — TriviaDuel
+   style.css — Trivia1v1
    iOS-dark-mode energy: warm near-black background, layered dark surfaces,
    warm off-white text, one friendly orange accent. Still no neon, no glow
    gradients. Buttons feel pressable, cards look like cards, and it stays
@@ -243,20 +243,7 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
 }
 .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 
-/* ---------- feature chips (auth) ---------- */
-.feature-chips {
-  display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;
-  margin: 26px 0 4px; animation: rise 0.5s var(--ease) 0.08s both;
-}
-.f-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: 12px; font-weight: 700; color: var(--muted);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 999px; padding: 7px 13px;
-}
-.f-chip img { width: 14px; height: 14px; opacity: 0.85; }
-.auth-card { animation: rise 0.5s var(--ease) 0.16s both; }
+.auth-card { margin-top: 30px; animation: rise 0.5s var(--ease) 0.16s both; }
 .guest { margin-top: 4px; }
 
 /* ---------- arena card (home) ---------- */

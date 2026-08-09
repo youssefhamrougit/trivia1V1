@@ -10,7 +10,7 @@
 //  app look "stuck" after changes.
 // ============================================================================
 
-const CACHE = "trivia-duel-v5";
+const CACHE = "trivia-1v1-v1";
 
 self.addEventListener("install", function (event) {
   event.waitUntil(

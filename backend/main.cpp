@@ -1,5 +1,5 @@
 // ============================================================================
-//  main.cpp — the TriviaDuel C++ backend entry point.
+//  main.cpp — the Trivia1v1 C++ backend entry point.
 //
 //  Run from the project root:   backend/app.exe
 //  (or build it first:          cd backend && make)
@@ -85,7 +85,7 @@ int main() {
   if (port <= 0) port = 3000;
 
   std::cout << "==================================================\n";
-  std::cout << "  TriviaDuel — C++ backend\n";
+  std::cout << "  Trivia1v1 — C++ backend\n";
   std::cout << "  Port: " << port << "\n";
   std::cout << "  Supabase: " << (supabase.configured() ? "configured" : "NOT CONFIGURED (paste keys into backend/config.ini)") << "\n";
   std::cout << "==================================================\n";

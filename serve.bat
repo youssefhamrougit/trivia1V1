@@ -1,9 +1,9 @@
 @echo off
-title TriviaDuel server
+title Trivia1v1 server
 cd /d "%~dp0"
 
 echo.
-echo   TriviaDuel - local server
+echo   Trivia1v1 - local server
 echo   URL:  http://localhost:8080
 echo   Close this window to stop the server.
 echo.

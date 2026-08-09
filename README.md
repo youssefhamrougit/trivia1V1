@@ -25,11 +25,11 @@
 
 ## 📲 Download for Android
 
-Get TriviaDuel on your phone's home screen — **two ways**:
+Get Trivia1v1 on your phone's home screen — **two ways**:
 
 | | |
 |---|---|
-| 📦 **APK (Android)** | Grab the installer from the [**download page**](download.html) (live at [`/download.html`](https://triviaduel-xi.vercel.app/download.html)). The Download button turns on automatically once `apk/triviaduel.apk` is in the repo — see [`apk/README.md`](apk/README.md) to generate it in ~2 minutes (PWABuilder or Capacitor). |
+| 📦 **APK (Android)** | Grab the installer from the [**download page**](download.html) (live at [`/download.html`](https://triviaduel-xi.vercel.app/download.html)). The Download button turns on automatically once `apk/trivia1v1.apk` is in the repo — see [`apk/README.md`](apk/README.md) to generate it in ~2 minutes (PWABuilder or Capacitor). |
 | 🌐 **PWA (any phone)** | No file needed. Open [the app](https://triviaduel-xi.vercel.app) and use your browser's **Install app** (Android Chrome) or **Add to Home Screen** (iOS Safari). Same app, offline-capable, full-screen. |
 
 ---
@@ -75,7 +75,7 @@ trivia1v1/
 ├── download.html       # Android APK download page (checks apk/ at load)
 ├── .env.example        # env var reference (placeholders only)
 ├── assets/             # icons, arena art, UI graphics
-├── apk/                # generated triviaduel.apk + build instructions
+├── apk/                # generated trivia1v1.apk + build instructions
 ├── content/            # social content kit (Instagram carousels, captions)
 ├── js/
 │   ├── config.js       # Supabase config (project URL + publishable key)
@@ -105,7 +105,7 @@ The app is a static site that talks to Supabase directly — which means **one f
 
 1. **Run `database/friends-bots.sql`** in the Supabase SQL Editor. It creates the `friends` table, the `bot_config` table, the `matches.challengee` column + `'challenged'` status, and the `send_friend_request` / `create_challenge` RPCs — and upgrades `finish_match` with a `ranked` flag. Safe to re-run.
 2. **Turn OFF “Confirm email”** — Supabase dashboard → *Authentication → Providers → Email*. Sign-up then logs you straight in and claims your username.
-3. **Old email accounts**: accounts created before this change won't log in by username (their email isn't `username@trivia1v1.local`). Recreate them, or rename their email in the dashboard to `<username>@trivia1v1.local`.
+3. **Old email accounts**: accounts created before this change won't log in by username (their email isn't `username@triviaduel.local` — that domain is functional and intentionally unchanged). Recreate them, or rename their email in the dashboard to `<username>@triviaduel.local`.
 
 Until you run the SQL, the app degrades gracefully: practice bots still work with built-in difficulty defaults, and the Friends tab shows a hint instead of crashing.
 

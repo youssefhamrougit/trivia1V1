@@ -1,5 +1,5 @@
 // ============================================================================
-//  app.js — the "main" file for TriviaDuel
+//  app.js — the "main" file for Trivia1v1
 //
 //  What it does:
 //    1. On startup: connect to Supabase and check whether you are already

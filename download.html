@@ -4,8 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="theme-color" content="#0e0d0b" />
-<title>TriviaDuel — Download for Android</title>
-<meta name="description" content="Download the TriviaDuel APK for Android, or install the PWA on any phone. Answer fast, beat strangers, climb the ladder." />
+<title>Trivia1v1 — Download for Android</title>
+<meta name="description" content="Download the Trivia1v1 APK for Android, or install the PWA on any phone. Answer fast, beat strangers, climb the ladder." />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,9 +13,9 @@
 
 <style>
 /* ============================================================================
-   download.html — TriviaDuel Android download page
+   download.html — Trivia1v1 Android download page
    Same design language as the app: warm near-black, orange accent, Nunito.
-   The APK section checks /apk/triviaduel.apk at load and adapts:
+   The APK section checks /apk/trivia1v1.apk at load and adapts:
    file present  -> show size + Download button (enabled)
    file missing  -> show "coming soon" + build instructions
 ============================================================================ */
@@ -309,8 +309,8 @@ footer a:hover { color: var(--text); }
   <!-- ================= TOP BAR ================= -->
   <header class="top">
     <div class="top-brand">
-      <img src="assets/icon.svg" alt="TriviaDuel logo" />
-      <span>Trivia<b>Duel</b></span>
+      <img src="assets/icon.svg" alt="Trivia1v1 logo" />
+      <span>Trivia<b>1v1</b></span>
     </div>
     <nav>
       <a href="#download">Download</a>
@@ -322,11 +322,11 @@ footer a:hover { color: var(--text); }
   <!-- ================= HERO ================= -->
   <section class="hero">
     <div class="logo-tile"><img src="assets/icon.svg" alt="" /></div>
-    <h1>TriviaDuel <span>for Android</span></h1>
+    <h1>Trivia1v1 <span>for Android</span></h1>
     <p class="tag">Answer fast. Beat strangers. Climb the ladder — now installable on your home screen. Same live 1v1 battles, same 15-second rounds.</p>
 
     <div class="hero-ctas">
-      <a class="btn" id="apk-btn" href="apk/triviaduel.apk" aria-disabled="true">
+      <a class="btn" id="apk-btn" href="apk/trivia1v1.apk" aria-disabled="true">
         <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
         <span id="apk-btn-label">Checking for APK…</span>
       </a>
@@ -356,17 +356,17 @@ footer a:hover { color: var(--text); }
       <div class="dl-head">
         <div class="dl-ico">🤖</div>
         <div>
-          <b>TriviaDuel APK</b>
+          <b>Trivia1v1 APK</b>
           <span id="dl-sub">Latest Android build</span>
         </div>
       </div>
 
       <div class="file-row">
         <div>
-          <div class="file-name" id="file-name">triviaduel.apk</div>
+          <div class="file-name" id="file-name">trivia1v1.apk</div>
           <div class="file-meta" id="file-meta">…</div>
         </div>
-        <a class="mini-btn" id="dl-btn" href="apk/triviaduel.apk" aria-disabled="true">⬇ Download</a>
+        <a class="mini-btn" id="dl-btn" href="apk/trivia1v1.apk" aria-disabled="true">⬇ Download</a>
       </div>
 
       <!-- state: APK present -->
@@ -374,17 +374,17 @@ footer a:hover { color: var(--text); }
         <h4>INSTALL STEPS — ANDROID</h4>
         <div class="step"><span class="n">1</span><p><b>Download the APK</b> with the button above. You may see a warning — it's a normal sideloading prompt.</p></div>
         <div class="step"><span class="n">2</span><p>Open the file. If Android blocks it, allow <b>“Install unknown apps”</b> for your browser or file manager.</p></div>
-        <div class="step"><span class="n">3</span><p>Done — TriviaDuel appears in your app drawer. Open it, tap <b>Continue as guest</b>, and you're in a match.</p></div>
+        <div class="step"><span class="n">3</span><p>Done — Trivia1v1 appears in your app drawer. Open it, tap <b>Continue as guest</b>, and you're in a match.</p></div>
       </div>
 
       <!-- state: APK not built yet -->
       <div class="soon-box" id="dl-soon">
         <b>⚠ The APK isn't in the repo yet.</b><br />
-        TriviaDuel is a web app (PWA), so there's no compiled Android package until you generate one — it takes about 2 minutes:
+        Trivia1v1 is a web app (PWA), so there's no compiled Android package until you generate one — it takes about 2 minutes:
         <ol>
           <li>Open <a href="https://www.pwabuilder.com" target="_blank" rel="noopener">pwabuilder.com</a> → enter <code>https://triviaduel-xi.vercel.app</code>.</li>
           <li>Pick <b>Android</b> → <b>Generate package</b> → download the ZIP.</li>
-          <li>Extract <code>app-release.apk</code> and drop it into the repo as <code>apk/triviaduel.apk</code>.</li>
+          <li>Extract <code>app-release.apk</code> and drop it into the repo as <code>apk/trivia1v1.apk</code>.</li>
           <li>Or, on Windows: double-click <code>tools/build-apk.bat</code> — it automates the whole Capacitor build (needs Node.js + Android Studio).</li>
           <li>This page then enables the download button automatically. Full instructions: <a href="apk/README.md">apk/README.md</a>.</li>
         </ol>
@@ -415,7 +415,7 @@ footer a:hover { color: var(--text); }
       <div class="pwa-card">
         <div class="os">🖥️</div>
         <b>Desktop</b>
-        <p>In Chrome or Edge, click the install icon in the address bar (or the ⋮ menu → <b>Install TriviaDuel</b>).</p>
+        <p>In Chrome or Edge, click the install icon in the address bar (or the ⋮ menu → <b>Install Trivia1v1</b>).</p>
       </div>
     </div>
 
@@ -427,7 +427,7 @@ footer a:hover { color: var(--text); }
   <!-- ================= FEATURES ================= -->
   <section class="block" id="features">
     <div class="sec-head">
-      <span class="kicker">WHY TRIVIADUEL</span>
+      <span class="kicker">WHY TRIVIA1V1</span>
       <h2>Everything you get</h2>
     </div>
     <div class="feats">
@@ -449,7 +449,7 @@ footer a:hover { color: var(--text); }
 
     <details class="faq">
       <summary>What is an APK, and is this one safe?</summary>
-      <div class="faq-body">An APK is the standard Android app package. This APK simply wraps the same TriviaDuel web app you'd open in a browser — there's no separate codebase. Only download it from this page, and compare the file checksum in <a href="apk/README.md" style="color:var(--accent-bright)">apk/README.md</a> if you want to be extra careful.</div>
+      <div class="faq-body">An APK is the standard Android app package. This APK simply wraps the same Trivia1v1 web app you'd open in a browser — there's no separate codebase. Only download it from this page, and compare the file checksum in <a href="apk/README.md" style="color:var(--accent-bright)">apk/README.md</a> if you want to be extra careful.</div>
     </details>
     <details class="faq">
       <summary>What's the difference between the APK and the PWA?</summary>
@@ -457,7 +457,7 @@ footer a:hover { color: var(--text); }
     </details>
     <details class="faq">
       <summary>How do updates work?</summary>
-      <div class="faq-body">The web version updates automatically. For the APK, download the newest <code>triviaduel.apk</code> from this page and install over the old one — your progress (trophies, friends) is stored online, so nothing is lost.</div>
+      <div class="faq-body">The web version updates automatically. For the APK, download the newest <code>trivia1v1.apk</code> from this page and install over the old one — your progress (trophies, friends) is stored online, so nothing is lost.</div>
     </details>
     <details class="faq">
       <summary>Why isn't this on the Google Play Store?</summary>
@@ -471,7 +471,7 @@ footer a:hover { color: var(--text); }
 
   <!-- ================= FOOTER ================= -->
   <footer>
-    <b style="color:var(--muted)">TriviaDuel</b> · answer fast, beat strangers, climb the ladder ⚡<br />
+    <b style="color:var(--muted)">Trivia1v1</b> · answer fast, beat strangers, climb the ladder ⚡<br />
     <a href="https://triviaduel-xi.vercel.app">Play in browser</a> · <a href="apk/README.md">Build the APK</a><br />
     MIT licensed · not affiliated with Google Play
   </footer>
@@ -482,7 +482,7 @@ footer a:hover { color: var(--text); }
    download.html — APK availability check + PWA install prompt
 ============================================================================ */
 (function () {
-  var APK_URL = 'apk/triviaduel.apk';
+  var APK_URL = 'apk/trivia1v1.apk';
   var VERSION_URL = 'apk/version.json';
 
   var apkBtn = document.getElementById('apk-btn');

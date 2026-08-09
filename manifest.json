@@ -1,6 +1,6 @@
 {
-  "name": "TriviaDuel",
-  "short_name": "TriviaDuel",
+  "name": "Trivia1v1",
+  "short_name": "Trivia1v1",
   "description": "Battle strangers live, 1v1. 10 questions, 15 seconds each, bragging rights.",
   "start_url": "./index.html",
   "display": "standalone",

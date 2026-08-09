@@ -1,10 +1,10 @@
-# 📦 TriviaDuel APK
+# 📦 Trivia1v1 APK
 
-The download page (`download.html`) looks for **`apk/triviaduel.apk`**. Drop the generated
+The download page (`download.html`) looks for **`apk/trivia1v1.apk`**. Drop the generated
 file here and the page's Download button turns on automatically (it checks on load and
 shows the real file size + version from [`version.json`](version.json)).
 
-TriviaDuel is a **PWA** — a web app with a manifest + service worker — so the APK is just
+Trivia1v1 is a **PWA** — a web app with a manifest + service worker — so the APK is just
 a thin Android wrapper that opens the app full-screen, offline-capable, with an icon in
 your app drawer. There's no native codebase; the game logic stays on the web + Supabase.
 
@@ -17,7 +17,7 @@ your app drawer. There's no native codebase; the game logic stays on the web + S
 3. Click **Android** → **Generate package** → download the ZIP.
 4. Extract the release APK (the file inside is named something like `app-release-signed.apk`) and copy it here:
    ```
-   apk/triviaduel.apk
+   apk/trivia1v1.apk
    ```
 5. (Optional) bump the `version` field in [`version.json`](version.json), then push.
 
@@ -29,7 +29,7 @@ your app drawer. There's no native codebase; the game logic stays on the web + S
 On a **Windows** machine with Node.js (+ Android Studio for the final Gradle
 step), double-click `tools/build-apk.bat` — it prepares `dist/`, installs
 Capacitor, creates the Android project, syncs the web app, runs the Gradle
-build and drops `apk/triviaduel.apk` in place automatically. It prints clear
+build and drops `apk/trivia1v1.apk` in place automatically. It prints clear
 help if a prerequisite (Java, Android SDK) is missing, and the files it
 generates (`android/`, `dist/`, `capacitor.config.*`) are gitignored.
 
@@ -40,7 +40,7 @@ generates (`android/`, `dist/`, `capacitor.config.*`) are gitignored.
 npm i -D @capacitor/cli
 npm i @capacitor/core @capacitor/android
 
-npx cap init TriviaDuel io.triviaduel.app --web-dir=.
+npx cap init Trivia1v1 io.trivia1v1.app --web-dir=.
 npx cap add android
 npx cap sync android
 npx cap open android        # builds the APK in Android Studio
@@ -58,7 +58,7 @@ android/app/build/outputs/apk/debug/app-debug.apk     # debug build
 android/app/build/outputs/apk/release/app-release.apk # signed release
 ```
 
-Copy it to `apk/triviaduel.apk` and update `version.json`.
+Copy it to `apk/trivia1v1.apk` and update `version.json`.
 
 ## ✍️ Signing (recommended for wide distribution)
 
@@ -85,6 +85,6 @@ If you want to publish a checksum for users to verify against, generate it after
 the file and add it to `version.json`:
 
 ```bash
-sha256sum apk/triviaduel.apk    # Linux / Git Bash
-certutil -hashfile apk\triviaduel.apk SHA256   # Windows cmd
+sha256sum apk/trivia1v1.apk    # Linux / Git Bash
+certutil -hashfile apk\trivia1v1.apk SHA256   # Windows cmd
 ```
