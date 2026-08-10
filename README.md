@@ -103,17 +103,6 @@ trivia1v1/
 
 **⬜ Roadmap** — rate limiting & abuse protection, AI-generated questions, short-lived Realtime tokens for guest abuse, challenge expiry cleanup.
 
-## 🔧 Supabase setup checklist (you must do this once)
-
-The app is a static site that talks to Supabase directly — which means **one file + one dashboard toggle** are required for the newer features:
-
-1. **Run `database/questions-bank.sql`** in the Supabase SQL Editor. It adds 440 questions (110 per category, Science / Math / Football / History) to the 40 in `seed.sql` — a 480-question bank. Safe to re-run.
-2. **Run `database/stealth-bots.sql`** — creates the disguised, skill-matched bot opponents (`start_bot_match` RPC + 10 human-looking bot profiles). When no human joins the queue within 7 seconds, the app matches you with the bot whose trophies sit nearest yours — it looks and plays exactly like a human, trophies included. Safe to re-run.
-3. **Run `database/friends-bots.sql`** — creates the `friends` table, the `bot_config` table, the `matches.challengee` column + `'challenged'` status, and the `send_friend_request` / `create_challenge` RPCs — and upgrades `finish_match` with a `ranked` flag. Safe to re-run.
-4. **Turn OFF “Confirm email”** — Supabase dashboard → *Authentication → Providers → Email*. Sign-up then logs you straight in and claims your username.
-5. **Old email accounts**: accounts created before this change won't log in by username (their email isn't `username@triviaduel.local` — that domain is functional and intentionally unchanged). Recreate them, or rename their email in the dashboard to `<username>@triviaduel.local`.
-
-Until you run the SQL, the app degrades gracefully: practice bots still work with built-in difficulty defaults, and the Friends tab shows a hint instead of crashing.
 
 ## 📄 License
 
