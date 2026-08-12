@@ -13,6 +13,8 @@
 --      • re-creates RLS policies (drop first)
 --      • fills any missing question category (idempotent — safe to re-run)
 --      • adds realtime tables only if not already published
+--      • upgrades the game to the SECURE server-verified answer pipeline
+--        (match_answers / submit_answer / match_score + the score revoke)
 --
 --  HOW TO USE:
 --    1. supabase.com -> your project -> SQL Editor
@@ -337,13 +339,206 @@ $$;
 
 
 -- ============================================================================
---  FUNCTION: finish_match
+--  SECURITY UPGRADE: match_answers + submit_answer (server-verified pipeline)
+--
+--  Brings an EXISTING project up to the same secure state as schema.sql:
+--  every answer is recorded server-side and validated against the real
+--  question, scores are recomputed by the database, and the client can no
+--  longer write the score columns directly. This is what closes the
+--  score-forgery hole. Deploy the matching client (js/api.js) at the same
+--  time — see database/README.md.
+-- ============================================================================
+create table if not exists public.match_answers (
+  id          bigint generated always as identity primary key,
+  match_id    uuid not null references public.matches(id) on delete cascade,
+  player_id   uuid not null references public.profiles(id),
+  question_id bigint not null references public.questions(id),
+  choice      integer,               -- the option picked (0-3) · -1 = timed out
+  correct     boolean not null,
+  created_at  timestamptz default now(),
+  unique (match_id, player_id, question_id)  -- one answer per player per question
+);
+
+alter table public.match_answers enable row level security;
+
+drop policy if exists "read own answers" on public.match_answers;
+create policy "read own answers"
+  on public.match_answers for select
+  using (player_id = auth.uid());
+
+-- no insert/update/delete policies: answers can ONLY be written by the
+-- submit_answer RPC (security definer), which validates each one first
+
+-- stop clients from painting their own score columns on the live scoreboard —
+-- only the server-side RPCs may write them now
+revoke update (score1, score2) on public.matches from anon, authenticated;
+
+create index if not exists idx_match_answers_lookup on public.match_answers(match_id, player_id, question_id);
+
+
+-- ============================================================================
+--  FUNCTION: match_score
+--  Recomputes ONE player's score from their recorded answers — the only place
+--  scores come from. Same definition as schema.sql (create or replace = safe
+--  to re-run).
+-- ============================================================================
+create or replace function public.match_score(p_match uuid, p_player uuid)
+returns integer
+language plpgsql
+stable
+set search_path = public
+as $$
+declare
+  qids   bigint[];
+  qid    bigint;
+  streak integer := 0;
+  total  integer := 0;
+  c      boolean;
+begin
+  -- only people in the match may read its scoring (scores are visible via
+  -- Realtime anyway; this keeps randoms from probing arbitrary matches)
+  if auth.uid() is null
+     or not exists (
+       select 1 from public.matches
+       where id = p_match and auth.uid() in (player1, player2)
+     ) then
+    return 0;
+  end if;
+
+  select question_ids into qids from public.matches where id = p_match;
+  if qids is null then return 0; end if;
+
+  foreach qid in array qids loop
+    select correct into c
+    from public.match_answers
+    where match_id = p_match and player_id = p_player and question_id = qid;
+    if c is true then
+      streak := streak + 1;
+      total := total + case when streak >= 3 then 150 else 100 end;
+    else
+      streak := 0;   -- wrong, timed out, or unanswered resets the streak
+    end if;
+  end loop;
+
+  return total;
+end;
+$$;
+
+
+-- ============================================================================
+--  FUNCTION: submit_answer
+--  The ONLY way an answer enters the game. Same definition as schema.sql.
+--  The client sends just the option it picked (0-3, or -1 if the clock ran
+--  out); the server checks it against the question's correct_index, records
+--  it, and recomputes the score.
+-- ============================================================================
+create or replace function public.submit_answer(
+  me uuid,
+  match_id uuid,
+  question_id bigint,
+  choice integer
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  m           public.matches%rowtype;
+  q           public.questions%rowtype;
+  opp         uuid;
+  opp_bot     boolean;
+  my_correct  boolean;
+  bot_correct boolean;
+  bot_chance  numeric;
+  p_trophies  integer := 0;
+begin
+  -- never trust the client: derive the identity from the JWT instead
+  me := auth.uid();
+  if me is null then return null; end if;
+
+  select * into m from public.matches where id = match_id;
+  if not found then return null; end if;
+  if m.status <> 'active' then return null; end if;  -- the match already ended
+  if me not in (m.player1, m.player2) then return null; end if;
+
+  select * into q from public.questions where id = question_id;
+  if not found or not (question_id = any(m.question_ids)) then return null; end if;
+
+  -- record the answer (idempotent: a retry returns the SAME result)
+  insert into public.match_answers (match_id, player_id, question_id, choice, correct)
+  values (
+    match_id, me, question_id, choice,
+    coalesce((choice between 0 and 3) and (choice = q.correct_index), false)
+  )
+  on conflict (match_id, player_id, question_id) do nothing;
+
+  -- read back the recorded answer (the FIRST one wins on retries)
+  select correct into my_correct
+  from public.match_answers
+  where match_id = match_id and player_id = me and question_id = question_id;
+  my_correct := coalesce(my_correct, false);
+
+  -- is the opponent a disguised bot? then the SERVER rolls its answer for
+  -- this question too (skill follows OUR trophies, same curve the client
+  -- uses to pick the bot), so even the bot's score is server-computed
+  opp := case when m.player1 = me then m.player2 else m.player1 end;
+  select is_bot into opp_bot from public.profiles where id = opp;
+
+  if coalesce(opp_bot, false) and not exists (
+    select 1 from public.match_answers
+    where match_id = match_id and player_id = opp and question_id = question_id
+  ) then
+    select trophies into p_trophies from public.profiles where id = me;
+    bot_chance := 0.28 + least(1.0, greatest(0.0, coalesce(p_trophies, 0)::numeric / 900)) * 0.50;
+    bot_correct := random() < bot_chance;
+    insert into public.match_answers (match_id, player_id, question_id, choice, correct)
+    values (
+      match_id, opp, question_id,
+      case when bot_correct then q.correct_index else -1 end,
+      bot_correct
+    )
+    on conflict (match_id, player_id, question_id) do nothing;
+  end if;
+
+  -- refresh the live score columns from the answers (authoritative)
+  if me = m.player1 then
+    update public.matches set score1 = public.match_score(match_id, m.player1)
+    where id = match_id;
+    if coalesce(opp_bot, false) then
+      update public.matches set score2 = public.match_score(match_id, m.player2)
+      where id = match_id;
+    end if;
+  else
+    update public.matches set score2 = public.match_score(match_id, me)
+    where id = match_id;
+    if coalesce(opp_bot, false) then
+      update public.matches set score1 = public.match_score(match_id, m.player1)
+      where id = match_id;
+    end if;
+  end if;
+
+  return jsonb_build_object(
+    'correct',    my_correct,
+    'correct_index', q.correct_index,
+    'score',      public.match_score(match_id, me),
+    'opp_score',  case when me = m.player1
+                     then public.match_score(match_id, m.player2)
+                     else public.match_score(match_id, m.player1) end
+  );
+end;
+$$;
+
+
+-- ============================================================================
+--  FUNCTION: finish_match — the SECURE v3 (identical to schema.sql and
+--  friends-bots.sql). Winner is decided PURELY from the recorded answers
+--  (match_score) — the client no longer submits any scores.
 -- ============================================================================
 create or replace function public.finish_match(
   match_id uuid,
   me       uuid,
-  s1       integer,
-  s2       integer
+  ranked   boolean default true
 )
 returns void
 language plpgsql
@@ -353,30 +548,28 @@ as $$
 declare
   m         public.matches%rowtype;
   winner_id uuid;
+  s1        integer;
+  s2        integer;
 begin
   -- never trust the client: derive the identity from the JWT instead
   me := auth.uid();
   if me is null then return; end if;
 
-  select * into m from public.matches where id = match_id;
+  -- lock the row so two players finishing at the same instant can't double-move
+  select * into m from public.matches where id = match_id for update;
   if not found then return; end if;
-
   if me not in (m.player1, m.player2) then return; end if;
 
-  -- merge scores first so the second finisher's last answer still counts
-  -- (with "ends for both", the first finisher ends the match for everyone)
-  update public.matches
-  set score1 = greatest(m.score1, s1),
-      score2 = greatest(m.score2, s2)
-  where id = match_id;
+  -- the ONLY source of truth: recompute both scores from the recorded answers
+  s1 := public.match_score(match_id, m.player1);
+  s2 := public.match_score(match_id, m.player2);
+  update public.matches set score1 = s1, score2 = s2 where id = match_id;
 
-  if m.status = 'finished' then return; end if;
+  if m.status = 'finished' then return; end if;  -- idempotent: no double move
 
-  select * into m from public.matches where id = match_id;
-
-  if m.score1 > m.score2 then
+  if s1 > s2 then
     winner_id := m.player1;
-  elsif m.score2 > m.score1 then
+  elsif s2 > s1 then
     winner_id := m.player2;
   else
     winner_id := null;
@@ -386,7 +579,7 @@ begin
   set status = 'finished', winner = winner_id
   where id = match_id;
 
-  if winner_id is not null then
+  if winner_id is not null and ranked then
     -- 1:1 trophies: winner +20, loser -20. Your arena follows your CURRENT
     -- trophies, so dropping below a threshold takes you back down.
     update public.profiles

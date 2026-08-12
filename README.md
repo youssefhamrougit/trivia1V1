@@ -47,6 +47,7 @@ trivia1v1 is a mobile-first **1v1 trivia game** that runs entirely in the browse
 | 🏆 **Trophy ladder** | Win +20 / lose −20 (1:1), arena follows your current trophies, skill-matched pairings (60-trophy band), arena-themed questions — every match mixes all 4 categories |
 | 🤝 **Friends** | Search by username, send/accept requests, and 1v1-challenge friends (casual duels — no trophies) |
 | 📊 **Leaderboard** | Top 50 players by trophies |
+| 📈 **Stats** | Per-category answer accuracy + your recent match history (Profile → Stats) |
 | 🔐 **Auth** | Username + password (or one-tap guest) via Supabase Auth |
 | 🔊 **Sound** | Synthesized effects for right/wrong answers + the countdown clock (Web Audio, no audio files) — mute toggle on the home + match screens |
 | 📱 **PWA** | Installable on phones, offline-ready (network-first service worker) |
@@ -58,7 +59,7 @@ trivia1v1 is a mobile-first **1v1 trivia game** that runs entirely in the browse
 | **Frontend** | Vanilla HTML5 + CSS3 + JavaScript (ES2022) — no frameworks, no build step |
 | **Backend** | None of our own — **Supabase** handles everything (GoTrue auth, PostgREST, Postgres RPCs, Realtime) |
 | **Database** | Supabase (Postgres) with **Row Level Security** — the anon key is public by design, RLS is the real gate |
-| **Game logic** | Postgres functions (`join_matchmaking`, `finish_match`) + `profiles` / `questions` / `matches` tables |
+| **Game logic** | Postgres functions (`join_matchmaking`, `submit_answer`, `finish_match`) + `profiles` / `questions` / `matches` / `match_answers` tables — answers are validated and scored **server-side** |
 | **Hosting** | **Vercel** — pure static deployment, zero servers, zero build |
 | **PWA** | Web app manifest + network-first service worker |
 
@@ -72,7 +73,7 @@ trivia1v1/
 ├── style.css           # design system (dark + neon)
 ├── manifest.json       # PWA install
 ├── sw.js               # offline support (network-first)
-├── vercel.json         # Vercel caching headers
+├── vercel.json         # Vercel caching + security headers (CSP)
 ├── download.html       # Android APK download page (checks apk/ at load)
 ├── .env.example        # env var reference (placeholders only)
 ├── assets/             # icons, arena art, UI graphics
@@ -92,14 +93,16 @@ trivia1v1/
     ├── questions-bank.sql # 440 more questions — the full 480-question bank
     ├── stealth-bots.sql # disguised skill-matched bot opponents (run after seed)
     ├── setup-demo.sql  # idempotent migration for existing projects
-    └── friends-bots.sql # ⚠️ REQUIRED: friends + bot difficulty + username auth
+    ├── friends-bots.sql # ⚠️ REQUIRED: friends + bot difficulty + username auth
+    ├── match-stats.sql  # OPTIONAL: Stats screen (per-category accuracy)
+    └── README.md        # ⚠️ READ FIRST: install order, security model, dashboard checklist
 ```
 
 ## 🗺️ Status
 
 ✅ **Live** — a complete, playable 1v1 game in production.
 
-**Shipped** — live matchmaking, real-time score relay, 7-arena ladder, bot practice with Easy/Medium/Hard, friends + 1v1 challenges, leaderboard, username/password or guest auth, PWA install.
+**Shipped** — live matchmaking, real-time score relay, 7-arena ladder, bot practice with Easy/Medium/Hard, friends + 1v1 challenges, leaderboard, per-category accuracy + match history, username/password or guest auth, PWA install.
 
 **⬜ Roadmap** — rate limiting & abuse protection, AI-generated questions, short-lived Realtime tokens for guest abuse, challenge expiry cleanup.
 

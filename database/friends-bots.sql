@@ -9,7 +9,11 @@
 --     supabase.com -> your project -> SQL Editor -> paste -> RUN
 --
 --  Safe to re-run (idempotent). Requires schema.sql (or setup-demo.sql) to
---  already be applied — it needs the profiles / questions / matches tables.
+--  already be applied — it needs the profiles / questions / matches tables
+--  AND the server-verified answer pipeline (match_answers / match_score /
+--  submit_answer), because its finish_match v3 scores from those. Running
+--  this file on an old database WITHOUT first applying setup-demo.sql would
+--  leave finish_match pointing at a missing match_score — see README.md.
 -- ============================================================================
 
 
@@ -267,17 +271,22 @@ $$;
 
 
 -- ============================================================================
---  7) RPC: finish_match — now takes a `ranked` flag.
+--  7) RPC: finish_match — the SECURE v3 definition (identical to schema.sql).
+--
+--     Winner is decided PURELY from the recorded answers (match_score / the
+--     match_answers table from schema.sql / setup-demo.sql) — the client no
+--     longer submits scores, so forged finals are impossible.
 --
 --     ranked = true  (default, normal matchmaking): winner +20 / loser -20
 --     ranked = false (friend duels): the winner is recorded, but NO trophies
---     move. Backwards compatible with the old call signature.
+--     move.
+--
+--     NOTE: this file and schema.sql / setup-demo.sql now define the SAME
+--     function, so the last one run wins and they're all identical.
 -- ============================================================================
 create or replace function public.finish_match(
   match_id uuid,
   me       uuid,
-  s1       integer,
-  s2       integer,
   ranked   boolean default true
 )
 returns void
@@ -288,30 +297,28 @@ as $$
 declare
   m         public.matches%rowtype;
   winner_id uuid;
+  s1        integer;
+  s2        integer;
 begin
   -- never trust the client: derive the identity from the JWT instead
   me := auth.uid();
   if me is null then return; end if;
 
-  select * into m from public.matches where id = match_id;
+  -- lock the row so two players finishing at the same instant can't double-move
+  select * into m from public.matches where id = match_id for update;
   if not found then return; end if;
-
   if me not in (m.player1, m.player2) then return; end if;
 
-  -- merge scores first so the second finisher's last answer still counts
-  -- (with "ends for both", the first finisher ends the match for everyone)
-  update public.matches
-  set score1 = greatest(m.score1, s1),
-      score2 = greatest(m.score2, s2)
-  where id = match_id;
+  -- the ONLY source of truth: recompute both scores from the recorded answers
+  s1 := public.match_score(match_id, m.player1);
+  s2 := public.match_score(match_id, m.player2);
+  update public.matches set score1 = s1, score2 = s2 where id = match_id;
 
-  if m.status = 'finished' then return; end if;
+  if m.status = 'finished' then return; end if;  -- idempotent: no double move
 
-  select * into m from public.matches where id = match_id;
-
-  if m.score1 > m.score2 then
+  if s1 > s2 then
     winner_id := m.player1;
-  elsif m.score2 > m.score1 then
+  elsif s2 > s1 then
     winner_id := m.player2;
   else
     winner_id := null;

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0e0d0b" />
+  <title>Trivia1v1 — Android APK</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <div class="brand">
+      <div class="brand-logo">
+        <img src="assets/icon.svg" alt="Trivia1v1" />
+      </div>
+      <h1 class="brand-name">Trivia<span>1v1</span></h1>
+      <p class="muted">Install the Android app on your phone.</p>
+    </div>
+
+    <div class="card">
+      <h3>Android APK</h3>
+      <p class="muted small">Version <b id="apk-version">…</b> · Android 7.0+</p>
+      <p class="muted small" id="apk-notes"></p>
+      <a class="btn"
+         style="display:block; text-align:center; text-decoration:none;"
+         href="https://tangerine-chaja-22963b.netlify.app/">
+        Open the APK download page
+      </a>
+      <button class="btn ghost" onclick="history.back()">← Back to the game</button>
+    </div>
+
+    <div class="card">
+      <h3>How to install</h3>
+      <ol class="muted small">
+        <li>Tap <b>Open the APK download page</b> above.</li>
+        <li>Download <b>Trivia1v1.apk</b> to your phone.</li>
+        <li>Tap the file and allow “Install unknown apps” when asked.</li>
+        <li>Done — the same game, full-screen, no browser tab needed.</li>
+      </ol>
+      <p class="muted small">
+        Prefer the PWA? Open the game in Chrome and choose
+        <b>Add to Home screen</b> — no file needed.
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+    // show the current APK version + notes from apk/version.json (silent if missing)
+    fetch("apk/version.json")
+      .then(function (r) { return r.json(); })
+      .then(function (v) {
+        var el = document.getElementById("apk-version");
+        var notes = document.getElementById("apk-notes");
+        if (el) el.textContent = v.version || "latest";
+        if (notes && v.notes) notes.textContent = v.notes;
+      })
+      .catch(function () {});
+  </script>
+</body>
+</html>

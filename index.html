@@ -133,6 +133,8 @@
         <div class="stat"><img class="stat-icon" src="assets/icons/skull.svg" alt="" /><b id="profile-losses">0</b><span>Losses</span></div>
       </div>
 
+      <button class="btn ghost" onclick="go('screen-stats')"><img class="btn-icon" src="assets/icons/trophy.svg" alt="" /> Stats &amp; history</button>
+
       <button class="btn ghost profile-signout" onclick="authSignOut()"><img class="btn-icon" src="assets/icons/gamepad.svg" alt="" /> Sign out</button>
     </section>
 
@@ -269,6 +271,20 @@
       <h1 class="screen-title"><img class="title-icon" src="assets/icons/trophy.svg" alt="" /> Leaderboard</h1>
       <p class="muted">Top players by trophies</p>
       <div id="leaderboard-list" class="leaderboard"></div>
+    </section>
+
+    <!-- ================================================================
+         SCREEN: STATS (per-category accuracy + match history)
+    ================================================================= -->
+    <section id="screen-stats" class="screen">
+      <div class="topbar">
+        <button class="chip" onclick="go('screen-profile')">← Back</button>
+        <h1 class="friends-title">Stats</h1>
+        <span></span>
+      </div>
+
+      <div id="stats-accuracy"></div>
+      <div id="stats-history"></div>
     </section>
 
   </div>

@@ -39,6 +39,7 @@ let triviaState = {
   botDelay: 1600,    // bot "thinking" delay in ms (from bot_config)
   answered: false,   // have we picked an answer this question?
   stream: null,      // the live Realtime subscription for this match / queue
+  pendingAnswer: null, // the in-flight /api/trivia/answer call (awaited before finishing)
   timer: null,       // the per-question countdown
   starting: false,   // guard so the match can't start twice (concurrency)
   started: false,    // true once the match has begun — stops the queue poller
@@ -453,6 +454,25 @@ function updateStreak() {
   }
 }
 
+// fire-and-forget: log ONE answered question to the answer_log table so the
+// Stats screen can show per-category accuracy. Works for online matches AND
+// practice (the mode column keeps them separable later). Never throws — if
+// the table isn't set up yet (database/match-stats.sql) the call just fails
+// silently and the stats screen shows "no data".
+function recordAnswerStat(q, correct) {
+  if (!q || q.id === undefined || q.id === null) return;
+  API.call("/api/stats/answer", {
+    method: "POST",
+    body: {
+      match_id: triviaState.mode === "online" ? triviaState.matchId : null,
+      question_id: q.id,
+      category: q.category,
+      correct: !!correct,
+      mode: triviaState.mode === "online" ? "online" : "bot",
+    },
+  }).catch(function () { /* stats table missing or offline — no big deal */ });
+}
+
 function renderQuestion() {
   clearInterval(triviaState.timer);
   const q = triviaState.questions[triviaState.qIndex];
@@ -516,7 +536,7 @@ function startQuestionTimer() {
     if (remaining <= 0 && !triviaState.answered) {
       triviaState.answered = true;
       clearInterval(triviaState.timer);
-      finishQuestion(false, null); // out of time = wrong answer
+      finishQuestion(false, null, -1); // out of time = wrong answer (choice -1)
     }
   }, 100);
 }
@@ -526,11 +546,13 @@ function triviaPick(index, q, btn) {
   if (triviaState.answered) return;
   triviaState.answered = true;
   clearInterval(triviaState.timer);
-  finishQuestion(index === q.correct_index, btn);
+  finishQuestion(index === q.correct_index, btn, index);
 }
 
-// finish the current question: score it, tell the opponent, move on
-function finishQuestion(correct, chosenBtn) {
+// finish the current question: score it, tell the opponent, move on.
+// pickIndex is the option the player chose (0-3), or -1 if the clock ran
+// out — the secure path (submit_answer) needs it to validate the answer.
+function finishQuestion(correct, chosenBtn, pickIndex) {
   const q = triviaState.questions[triviaState.qIndex];
 
   // game feedback sounds (right / wrong / clock ran out)
@@ -554,13 +576,24 @@ function finishQuestion(correct, chosenBtn) {
   updateScoreboard();
   updateStreak();
 
-  // write our new score to Supabase; Realtime relays it to the opponent (online only)
+  // write our answer to Supabase; Realtime relays the score to the opponent
+  // (online only). The secure path validates the pick server-side; `score`
+  // is only used by the legacy fallback on older databases.
   if (triviaState.mode === "online" && triviaState.matchId) {
-    API.call("/api/trivia/answer", {
+    triviaState.pendingAnswer = API.call("/api/trivia/answer", {
       method: "POST",
-      body: { match_id: triviaState.matchId, score: triviaState.myScore },
+      body: {
+        match_id: triviaState.matchId,
+        question_id: q.id,
+        choice: pickIndex == null ? -1 : pickIndex,
+        score: triviaState.myScore,
+      },
     }).catch(function () { /* the opponent will see the final scores anyway */ });
   }
+
+  // stats: log this answer so the Stats screen can show per-category
+  // accuracy (fire-and-forget — the game never breaks if it fails)
+  recordAnswerStat(q, correct);
 
   // the invisible opponent "answers" too — practice mode uses QuizBot at the
   // difficulty you picked, a stealth match uses the disguised bot at a skill
@@ -637,6 +670,16 @@ async function endMatch() {
   let ranked = false; // did the database actually move trophies this time?
 
   if (online) {
+    // give the last answer relay a moment to land before finishing — the
+    // server's finish_match scores from match_answers, so it must see the
+    // final answer or the recorded score would come up one question short.
+    if (triviaState.pendingAnswer) {
+      await Promise.race([
+        triviaState.pendingAnswer,
+        new Promise(function (resolve) { setTimeout(resolve, 1200); }),
+      ]);
+      triviaState.pendingAnswer = null;
+    }
     try {
       // the database decides the winner and moves trophies (unless this is a
       // casual friend duel — then the winner is recorded but no trophies move).

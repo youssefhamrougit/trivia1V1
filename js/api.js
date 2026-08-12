@@ -383,11 +383,138 @@ const API = {
       return { match_id: data }; // null = cancelled · an id = it just went active
     }
 
-    // ---- live answer relay: write my score onto the match row. The opponent
-    // hears about it through Supabase Realtime (API.stream), not SSE ----------
+    // ---- stats: per-category accuracy (answer_log, see match-stats.sql) ------
+    // one row per answered question, written fire-and-forget from the match.
+    // Silently no-ops when the answer_log table hasn't been created yet, so
+    // the game never breaks because of a missing stats migration.
+    if (path === "/api/stats/answer") {
+      const uid = await this._uid();
+      if (!uid) throw new Error("Not logged in");
+      const { error } = await sup.from("answer_log")
+        .insert({
+          player_id: uid,
+          match_id: body.match_id || null,
+          question_id: body.question_id,
+          category: String(body.category || "Other"),
+          correct: !!body.correct,
+          mode: body.mode === "bot" ? "bot" : "online",
+        })
+        .onConflict("player_id,match_id,question_id")
+        .ignore(); // never double-count an answer (see match-stats.sql)
+      if (error) {
+        if (/does not exist|PGRST/i.test(error.message)) return { ok: false };
+        throw new Error(error.message);
+      }
+      return { ok: true };
+    }
+
+    // the whole log for one player, aggregated into overall + per-category
+    // accuracy. Pages through the rows because PostgREST caps a single
+    // request at 1000 (10 pages = ~1000 matches of history).
+    if (path === "/api/stats") {
+      const uid = await this._uid();
+      if (!uid) throw new Error("Not logged in");
+      const rows = [];
+      for (let page = 0; page < 10; page++) {
+        const { data, error } = await sup.from("answer_log")
+          .select("category, correct")
+          .eq("player_id", uid)
+          .range(page * 1000, page * 1000 + 999);
+        if (error) {
+          if (/does not exist|PGRST/i.test(error.message)) {
+            return { total: 0, correct: 0, by_category: {} };
+          }
+          throw new Error(error.message);
+        }
+        rows.push.apply(rows, data || []);
+        if (!data || data.length < 1000) break;
+      }
+      const by_category = {};
+      let total = 0;
+      let correct = 0;
+      rows.forEach(function (r) {
+        const c = r.category || "Other";
+        if (!by_category[c]) by_category[c] = { total: 0, correct: 0 };
+        by_category[c].total += 1;
+        total += 1;
+        if (r.correct) {
+          by_category[c].correct += 1;
+          correct += 1;
+        }
+      });
+      return { total: total, correct: correct, by_category: by_category };
+    }
+
+    // ---- match history: my finished matches, most recent first ---------------
+    if (path === "/api/matches/history") {
+      const uid = await this._uid();
+      if (!uid) throw new Error("Not logged in");
+      const { data, error } = await sup.from("matches")
+        .select("id,player1,player2,winner,score1,score2,created_at")
+        .or("player1.eq." + uid + ",player2.eq." + uid)
+        .eq("status", "finished")
+        .not("player2", "is", null)   // skip declined / cancelled challenge rows
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw new Error(error.message);
+
+      // fetch the opponent's username for every row in one batched call
+      const oppIds = [];
+      (data || []).forEach(function (m) {
+        const oid = m.player1 === uid ? m.player2 : m.player1;
+        if (oid && oppIds.indexOf(oid) === -1) oppIds.push(oid);
+      });
+      const profiles = {};
+      if (oppIds.length) {
+        const p = await sup.from("profiles").select("id,username").in("id", oppIds);
+        if (!p.error && p.data) p.data.forEach(function (x) { profiles[x.id] = x; });
+      }
+
+      return (data || []).map(function (m) {
+        const iAmP1 = m.player1 === uid;
+        const opp = profiles[iAmP1 ? m.player2 : m.player1] || { username: "Player" };
+        return {
+          id: m.id,
+          created_at: m.created_at,
+          opp_name: opp.username,
+          my_score: iAmP1 ? m.score1 : m.score2,
+          opp_score: iAmP1 ? m.score2 : m.score1,
+          i_won: m.winner === uid,
+          tie: m.winner == null,
+        };
+      });
+    }
+
+    // ---- live answer relay: the opponent hears about it through Supabase
+    // Realtime (API.stream). On the secure schema this goes through the
+    // server-verified submit_answer RPC; older databases (no match_answers
+    // table) still use the legacy direct score write, so the game keeps
+    // working until the DB is upgraded (see database/README.md).
     if (path === "/api/trivia/answer") {
       const uid = await this._uid();
       if (!uid) throw new Error("Not logged in");
+
+      // secure path (schema.sql / setup-demo.sql): the server validates the
+      // pick against the real question, records it, and recomputes the score
+      // columns from match_answers — a forged client can't inflate anything.
+      if (body.question_id != null) {
+        const r = await sup.rpc("submit_answer", {
+          me: uid,
+          match_id: body.match_id,
+          question_id: body.question_id,
+          choice: body.choice == null ? -1 : body.choice, // -1 = timed out
+        });
+        if (!r.error) return { ok: true, submit: true };
+        // only fall back when the RPC itself is missing (PostgREST: "Could
+        // not find the function … in the schema cache") — never mask a real
+        // error from a deployed-but-broken function
+        if (!/could not find the function|does not exist/i.test(r.error.message)) {
+          throw new Error(r.error.message);
+        }
+        // submit_answer isn't deployed yet — fall through to the legacy path
+      }
+
+      // legacy path (older databases): write the score column directly
       const { data: rows, error: er } = await sup.from("matches")
         .select("player1,score1,score2").eq("id", body.match_id).limit(1);
       if (er) throw new Error(er.message);
@@ -409,14 +536,25 @@ const API = {
       // ranked = true (normal matchmaking) moves trophies; friend duels pass
       // ranked = false so the winner is recorded but no trophies change.
       const ranked = body.ranked !== false;
-      const { error } = await sup.rpc("finish_match", {
+
+      // v3 finish_match (the secure one) recomputes both scores from the
+      // recorded answers — no s1/s2 needed. Older databases still have the
+      // legacy (s1/s2) signature, so retry that way if v3 isn't deployed yet.
+      let res = await sup.rpc("finish_match", {
         match_id: body.match_id,
         me: uid,
-        s1: myIsP1 ? body.my_score : body.opp_score,
-        s2: myIsP1 ? body.opp_score : body.my_score,
         ranked: ranked,
       });
-      if (error) throw new Error(error.message);
+      if (res.error && /could not find the function|does not exist/i.test(res.error.message)) {
+        res = await sup.rpc("finish_match", {
+          match_id: body.match_id,
+          me: uid,
+          s1: myIsP1 ? body.my_score : body.opp_score,
+          s2: myIsP1 ? body.opp_score : body.my_score,
+          ranked: ranked,
+        });
+      }
+      if (res.error) throw new Error(res.error.message);
       const after = await sup.from("matches").select("winner").eq("id", body.match_id).limit(1);
       const winner = after.data && after.data[0] ? after.data[0].winner : null;
       return {

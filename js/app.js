@@ -207,6 +207,7 @@ function go(screenId) {
   if (screenId === "screen-leaderboard") loadLeaderboard();
   if (screenId === "screen-friends") loadFriends();
   if (screenId === "screen-profile") loadProfile();
+  if (screenId === "screen-stats") loadStats();
 }
 
 // ---- loading my profile row (from Supabase) -------------------------
@@ -250,6 +251,88 @@ async function loadProfile() {
     ? prog.needed + " trophies to " + prog.next.name
     : "Max arena reached — you're a legend!";
   applyArenaTheme(a);
+}
+
+// ---- the Stats screen (Profile → Stats): accuracy + match history -----------
+
+async function loadStats() {
+  const accWrap = document.getElementById("stats-accuracy");
+  const histWrap = document.getElementById("stats-history");
+  if (accWrap) accWrap.innerHTML = "<p class='muted small'>Loading…</p>";
+  if (histWrap) histWrap.innerHTML = "<p class='muted small'>Loading…</p>";
+
+  // fetch accuracy + history in parallel (they're independent)
+  const [s, h] = await Promise.all([
+    API.call("/api/stats").catch(function () { return null; }),
+    API.call("/api/matches/history").catch(function () { return null; }),
+  ]);
+  if (s) renderStatsAccuracy(accWrap, s);
+  else if (accWrap) accWrap.innerHTML = "<p class='muted'>Couldn't load your stats.</p>";
+  if (h) renderMatchHistory(histWrap, h);
+  else if (histWrap) histWrap.innerHTML = "<p class='muted'>Couldn't load match history.</p>";
+}
+
+// NOTE: esc() (used below) is defined in friends.js — fine here because this
+// only runs on user navigation, after every script has loaded.
+
+// overall accuracy ring + one progress bar per category
+function renderStatsAccuracy(wrap, s) {
+  if (!wrap) return;
+  const byCat = s.by_category || {};
+  const cats = ["Science", "Math", "Football", "History"];
+  Object.keys(byCat).forEach(function (c) {
+    if (cats.indexOf(c) === -1) cats.push(c); // any future categories too
+  });
+  const pct = s.total ? Math.round((s.correct / s.total) * 100) : 0;
+
+  let html =
+    '<div class="stats-card stats-overview">' +
+      '<div class="accuracy-big">' + pct + "<small>%</small></div>" +
+      "<p>Overall accuracy</p>" +
+      '<p class="stats-total">' + s.correct + " of " + s.total + " answers</p>" +
+    "</div>";
+
+  html += '<div class="stats-section"><h3>Accuracy by category</h3>';
+  if (!s.total) {
+    html += "<p class='muted small'>Answer a few questions and your per-category accuracy will appear here.</p>";
+  } else {
+    for (const c of cats) {
+      const row = byCat[c] || { total: 0, correct: 0 };
+      const cpct = row.total ? Math.round((row.correct / row.total) * 100) : 0;
+      html +=
+        '<div class="cat-row">' +
+          '<span class="cat-name">' + esc(c) + "</span>" +
+          '<span class="cat-track"><i class="cat-fill" style="width:' + cpct + '%"></i></span>' +
+          '<span class="cat-pct">' + cpct + "%</span>" +
+          '<span class="cat-count muted small">' + row.correct + "/" + row.total + "</span>" +
+        "</div>";
+    }
+  }
+  html += "</div>";
+  wrap.innerHTML = html;
+}
+
+// the most recent finished matches: result badge, opponent, score, date
+function renderMatchHistory(wrap, history) {
+  if (!wrap) return;
+  let html = '<div class="stats-section"><h3>Match history</h3>';
+  if (!history || history.length === 0) {
+    html += "<p class='muted small'>No finished matches yet — your ranked &amp; friend duels will show up here once they end (practice matches aren't listed).</p>";
+    wrap.innerHTML = html + "</div>";
+    return;
+  }
+  for (const m of history) {
+    const label = m.i_won ? "W" : m.tie ? "T" : "L";
+    const date = new Date(m.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    html +=
+      '<div class="hist-row">' +
+        '<span class="hist-result ' + (m.i_won ? "win" : m.tie ? "tie" : "loss") + '">' + label + "</span>" +
+        '<span class="hist-opp">vs ' + esc(m.opp_name) + "</span>" +
+        '<span class="hist-score">' + m.my_score + '<span class="sep">–</span>' + m.opp_score + "</span>" +
+        '<span class="hist-date muted small">' + date + "</span>" +
+      "</div>";
+  }
+  wrap.innerHTML = html + "</div>";
 }
 
 // ---- auth: sign up / log in / guest / sign out -----------------------------

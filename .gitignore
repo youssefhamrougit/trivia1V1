@@ -24,3 +24,6 @@ build/
 android/
 capacitor.config.json
 capacitor.config.ts
+
+# ---- APK build output (keep version.json + the download page, not the binary) ----
+apk/*.apk

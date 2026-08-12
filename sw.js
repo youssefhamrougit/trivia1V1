@@ -8,14 +8,57 @@
 //  fall back to the cache when offline. This way every code fix shows up
 //  immediately — the old cache-first version never updated, which made the
 //  app look "stuck" after changes.
+//
+//  Bump CACHE ("trivia-1v1-vN") whenever the pre-cache list or any cached
+//  asset changes, so stale versions get purged by the activate handler.
 // ============================================================================
 
-const CACHE = "trivia-1v1-v1";
+const CACHE = "trivia-1v1-v2";
+
+// everything the app needs to render the login/home shell offline: the page,
+// styles, all JS, the manifest and every icon (SVGs are tiny).
+const PRECACHE = [
+  "./",
+  "./index.html",
+  "./download.html",
+  "./style.css",
+  "./manifest.json",
+  "./js/config.js",
+  "./js/api.js",
+  "./js/sound.js",
+  "./js/arenas.js",
+  "./js/app.js",
+  "./js/trivia.js",
+  "./js/friends.js",
+  "./assets/icon.svg",
+  "./assets/icon-192.png",
+  "./assets/icon-512.png",
+  "./assets/icon-maskable-512.png",
+  "./assets/icons/bolt.svg",
+  "./assets/icons/flame.svg",
+  "./assets/icons/gamepad.svg",
+  "./assets/icons/medal-1.svg",
+  "./assets/icons/medal-2.svg",
+  "./assets/icons/medal-3.svg",
+  "./assets/icons/repeat.svg",
+  "./assets/icons/robot.svg",
+  "./assets/icons/share.svg",
+  "./assets/icons/skull.svg",
+  "./assets/icons/tie.svg",
+  "./assets/icons/trophy.svg",
+  "./assets/arenas/arena-1.svg",
+  "./assets/arenas/arena-2.svg",
+  "./assets/arenas/arena-3.svg",
+  "./assets/arenas/arena-4.svg",
+  "./assets/arenas/arena-5.svg",
+  "./assets/arenas/arena-6.svg",
+  "./assets/arenas/arena-7.svg",
+];
 
 self.addEventListener("install", function (event) {
   event.waitUntil(
     caches.open(CACHE).then(function (cache) {
-      return cache.addAll(["./index.html", "./style.css"]);
+      return cache.addAll(PRECACHE);
     })
   );
   self.skipWaiting();
@@ -37,7 +80,7 @@ self.addEventListener("fetch", function (event) {
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
-  // let cross-origin requests (Google Fonts, etc.) go straight through
+  // let cross-origin requests (Google Fonts, Supabase, etc.) go straight through
   if (url.origin !== location.origin) return;
   // NEVER cache API responses — they carry private per-user data
   if (url.pathname.startsWith("/api/")) return;
