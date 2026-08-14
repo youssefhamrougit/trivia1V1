@@ -38,7 +38,7 @@ this file is about *how* to make changes.
 
 - The match flow is a state machine driven by: the `submit_answer` RPC
   response (the second answerer advances from here), the Realtime **"round"**
-  event (the waiting answerer advances from here), and the 2.5s `sync_tick`
+  event (the waiting answerer advances from here), and the 1.5s `sync_tick`
   poll (fallback + disconnect grace). All three paths must funnel through
   **one guarded function** (`syncAdvanceTo`) so duplicate events are no-ops.
 - Never let the client write scores — `match_answers` is the only source of

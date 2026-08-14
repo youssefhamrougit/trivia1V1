@@ -13,7 +13,7 @@
 //  asset changes, so stale versions get purged by the activate handler.
 // ============================================================================
 
-const CACHE = "trivia-1v1-v2";
+const CACHE = "trivia-1v1-v3";
 
 // everything the app needs to render the login/home shell offline: the page,
 // styles, all JS, the manifest and every icon (SVGs are tiny).
@@ -21,6 +21,7 @@ const PRECACHE = [
   "./",
   "./index.html",
   "./download.html",
+  "./404.html",
   "./style.css",
   "./manifest.json",
   "./js/config.js",

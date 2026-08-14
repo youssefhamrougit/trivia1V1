@@ -68,7 +68,7 @@ its own rows, and the game's money moves (winner, trophies) are decided by
      server's 20s disconnect grace auto-records a timeout for a missing
      opponent via `sync_advance`). The client that answers second advances
      from the RPC response; the one waiting advances from a **Realtime
-     "round" event** or a 2.5s poll (`sync_tick` RPC).
+     "round" event** or a 1.5s poll (`sync_tick` RPC).
    - Scores are recomputed by `match_score` (100 points, 150 on a 3-streak)
      — never sent by the client.
 3. **Finish** — when the last round resolves, both clients call

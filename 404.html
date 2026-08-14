@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0e0d0b" />
+  <title>404 — Trivia1v1</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ---- the app's design language, inline so this page stands alone ---- */
+    :root {
+      --bg: #0e0d0b;          /* warm near-black */
+      --bg-2: #161412;
+      --surface: #1b1916;     /* cards */
+      --surface-2: #24211d;
+      --surface-3: #2e2a24;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-2: rgba(255, 255, 255, 0.16);
+      --text: #f3efe8;
+      --muted: #a9a092;
+      --muted-2: #6b655a;
+      --accent: #df7d1f;
+      --accent-bright: #f2a254;
+      --green: #7fcf8d;
+      --red: #f17a68;
+      --radius: 16px;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* a faint warm wash, like the app shell */
+    body::before {
+      content: "";
+      position: fixed; inset: 0;
+      z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(900px 500px at 85% -20%, rgba(223, 125, 31, 0.10), transparent 60%),
+        radial-gradient(700px 400px at 0% 110%, rgba(224, 169, 62, 0.06), transparent 55%);
+    }
+
+    .wrap {
+      position: relative; z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 40px 22px 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    /* ---- brand row (same as the auth screen) ---- */
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-logo {
+      display: flex; align-items: center; justify-content: center;
+      width: 46px; height: 46px;
+      border-radius: 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--line-2);
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+    }
+    .brand-logo img { width: 28px; height: 28px; }
+    .brand-name { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
+    .brand-name span { color: var(--accent); }
+
+    /* ---- the big 404 ---- */
+    .error-code {
+      margin-top: 30px;
+      font-size: 88px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: -2px;
+      color: var(--accent);
+      text-shadow: 0 6px 24px rgba(223, 125, 31, 0.35);
+      animation: rise 0.5s var(--ease) both;
+    }
+    .error-title { margin-top: 8px; font-size: 22px; font-weight: 800; }
+    .error-sub { margin-top: 8px; color: var(--muted); font-size: 15px; max-width: 320px; }
+
+    /* ---- the reveal card (styled like the in-game reveal) ---- */
+    .card {
+      width: 100%;
+      margin-top: 28px;
+      padding: 18px 16px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+      animation: rise 0.5s var(--ease) 0.12s both;
+    }
+    .card-question { font-weight: 800; font-size: 16px; margin-bottom: 14px; }
+
+    .answer-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 12px;
+      margin-top: 8px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+      font-size: 14px;
+      text-align: left;
+      overflow-wrap: anywhere;
+    }
+    .answer-letter {
+      flex: none;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 1px solid var(--line-2);
+      background: var(--surface-3);
+      font-size: 12px; font-weight: 800; color: var(--muted);
+    }
+    .answer-row.wrong { border-color: rgba(241, 122, 104, 0.45); }
+    .answer-row.wrong .answer-letter { background: rgba(241, 122, 104, 0.2); border-color: var(--red); color: var(--red); }
+    .answer-row.correct { border-color: rgba(127, 207, 141, 0.45); }
+    .answer-row.correct .answer-letter { background: rgba(127, 207, 141, 0.18); border-color: var(--green); color: var(--green); }
+    .answer-row b { display: block; font-size: 12px; font-weight: 800; margin-bottom: 2px; }
+    .answer-row.wrong b { color: var(--red); }
+    .answer-row.correct b { color: var(--green); }
+
+    /* ---- buttons (same as .btn / .btn.ghost in the app) ---- */
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 14px;
+      padding: 15px;
+      border: none;
+      border-radius: 14px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+      font-family: inherit;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+      transition: transform 0.1s var(--ease), background 0.2s, box-shadow 0.1s;
+    }
+    .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+    .btn.ghost {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--line-2);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+    }
+    .btn.ghost:hover { background: var(--surface-2); }
+    .btn.subtle { background: transparent; color: var(--muted); box-shadow: none; }
+    .btn.subtle:hover { color: var(--text); }
+
+    .actions { width: 100%; margin-top: 4px; }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="brand">
+      <div class="brand-logo"><img src="assets/icon.svg" alt="Trivia1v1 logo" /></div>
+      <h1 class="brand-name">Trivia<span>1v1</span></h1>
+    </div>
+
+    <div class="error-code">404</div>
+    <h2 class="error-title">Question not found</h2>
+    <p class="error-sub">This page isn't in the question bank — even the bots couldn't find it.</p>
+
+    <div class="card" aria-hidden="true">
+      <p class="card-question">Where did the page you wanted go?</p>
+      <div class="answer-row wrong">
+        <span class="answer-letter">A</span>
+        <span><b>Your answer — <span id="bad-path">that URL</span></b>It answered itself out of existence</span>
+      </div>
+      <div class="answer-row correct">
+        <span class="answer-letter">B</span>
+        <span><b>Correct answer</b>Go back to the arena and win some trophies</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <a class="btn" href="/">← Back to the arena</a>
+      <a class="btn ghost" href="download.html">Download the Android app</a>
+      <a class="btn subtle" href="/" onclick="history.length > 1 && (event.preventDefault(), history.back())">Go back</a>
+    </div>
+  </div>
+
+  <script>
+    // show which URL actually 404'd (harmless, purely decorative)
+    var p = (location.pathname + location.search).replace(/\/+$/, "") || "/";
+    var el = document.getElementById("bad-path");
+    if (el) el.textContent = p.length > 40 ? p.slice(0, 37) + "…" : p;
+  </script>
+</body>
+</html>

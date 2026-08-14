@@ -71,6 +71,7 @@ The whole thing is a **static site**: the browser talks to Supabase directly (au
 ```
 trivia1v1/
 ├── index.html          # all screens (the shell of the app)
+├── 404.html            # custom not-found page (Vercel serves it for bad routes)
 ├── style.css           # design system (dark + neon)
 ├── manifest.json       # PWA install
 ├── sw.js               # offline support (network-first)

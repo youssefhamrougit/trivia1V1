@@ -641,7 +641,7 @@ $$;
 
 -- ============================================================================
 --  FUNCTION: sync_tick
---  Called every ~2.5s by the player who is WAITING on the opponent (they
+--  Called every ~1.5s by the player who is WAITING on the opponent (they
 --  already answered the current question). Nudges the round forward if the
 --  disconnect grace has elapsed (sync_advance), then returns the current
 --  state so the client can react — a new current_q means "move to the next

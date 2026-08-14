@@ -76,7 +76,7 @@ question together.
 - `matches.round_started_at` anchors the **disconnect grace**: if one player
   never answers, `sync_advance` auto-records a `-1` timeout for them 20s
   after the first answer in the round, so a dead tab can't stall the match.
-- `sync_tick(me, match_id)` is polled every ~2.5s by the player who is
+- `sync_tick(me, match_id)` is polled every ~1.5s by the player who is
   waiting — it nudges stalled rounds and reports the current state (it's the
   safety net under the Realtime "round" event).
 - `submit_answer` now returns `{ correct, correct_index, score, opp_score,

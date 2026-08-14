@@ -8,7 +8,7 @@
 //    the round only advances when BOTH players have answered — the first
 //    to answer waits ("Waiting for <opponent>…") until the second one
 //    does, then BOTH phones move to the next question together (Realtime
-//    "round" event + a 2.5s poll as the safety net)
+//    "round" event + a 1.5s poll as the safety net)
 //    at the end, the database decides the winner and moves trophies
 //
 //  HOW THE "LIVE" PART WORKS:
@@ -46,7 +46,7 @@ let triviaState = {
   // sync 1v1 (online matches): the round only advances when BOTH players
   // have answered the current question — these fields drive that state machine
   waiting: false,    // true while we wait on the opponent after answering
-  syncPoll: null,    // the 2.5s poll that nudges + watches the round (fallback under Realtime)
+  syncPoll: null,    // the 1.5s poll that nudges + watches the round (fallback under Realtime)
   revealTimer: null, // the post-answer reveal pause before advancing (second answerer)
   myAnswers: {},     // question_id → correct, for resuming after a reload mid-match
   stream: null,      // the live Realtime subscription for this match / queue
@@ -509,6 +509,7 @@ function recordAnswerStat(q, correct) {
 function renderQuestion() {
   stopSyncPoll();
   clearTimeout(triviaState.revealTimer);
+  triviaState.revealTimer = null; // always reset — a stale id would block round events
   triviaState.waiting = false;
   const status = document.getElementById("match-status");
   if (status) status.classList.remove("waiting");
@@ -644,14 +645,20 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
         if (res.done === true) {
           // both answered — short pause so you can see the result, then the
           // whole match moves to the next question together
-          triviaState.revealTimer = setTimeout(function () { syncAdvanceTo(res.current_q); }, 1400);
+          triviaState.revealTimer = setTimeout(function () {
+            triviaState.revealTimer = null;
+            syncAdvanceTo(res.current_q);
+          }, 1400);
         } else if (res.done === false) {
           // the opponent hasn't answered yet — lock the screen and wait; the
           // Realtime "round" event (or the poll) advances us when they do
           enterWaitingState();
         } else {
           // legacy database without the sync fields — old self-paced flow
-          triviaState.revealTimer = setTimeout(function () { triviaNext(); }, 1400);
+          triviaState.revealTimer = setTimeout(function () {
+            triviaState.revealTimer = null;
+            triviaNext();
+          }, 1400);
         }
       })
       .catch(function () {
@@ -659,7 +666,10 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
         if (triviaState.ending) return;
         // couldn't reach Supabase — fall back to the old self-paced flow so
         // the game still moves on (the final scores are server-decided anyway)
-        triviaState.revealTimer = setTimeout(function () { triviaNext(); }, 1400);
+        triviaState.revealTimer = setTimeout(function () {
+          triviaState.revealTimer = null;
+          triviaNext();
+        }, 1400);
       });
     return;
   }
@@ -677,7 +687,10 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
   }
 
   // short pause so you can see the result, then next question
-  triviaState.revealTimer = setTimeout(function () { triviaNext(); }, 1400);
+  triviaState.revealTimer = setTimeout(function () {
+    triviaState.revealTimer = null;
+    triviaNext();
+  }, 1400);
 }
 
 // score ONE answer for the invisible opponent — 100 points, or 150 on a
@@ -727,7 +740,7 @@ function triviaNext() {
 
 // we answered the current question and the opponent hasn't yet — lock the
 // screen and show the waiting state. The opponent answering fires the
-// Realtime "round" event (see triviaStartMatch); the 2.5s poll below is the
+// Realtime "round" event (see triviaStartMatch); the 1.5s poll below is the
 // safety net (and the nudge that times a disconnected opponent out via the
 // server's sync_tick).
 function enterWaitingState() {
@@ -735,6 +748,7 @@ function enterWaitingState() {
   triviaState.waiting = true;
   triviaState.answered = true; // this question is locked — no re-answering
   clearInterval(triviaState.timer);
+  triviaState.revealTimer = null; // not used while waiting — never leave a stale id behind
   const status = document.getElementById("match-status");
   if (status) {
     status.textContent = "Waiting for " + triviaState.oppName + "…";
@@ -743,11 +757,12 @@ function enterWaitingState() {
   // lock the buttons too (a reload mid-wait rebuilds them enabled)
   document.querySelectorAll("#match-answers .answer").forEach(function (b) { b.disabled = true; });
   startSyncPoll();
+  syncPollTick(); // catch an advance that happened while our submit was in flight
 }
 
 function startSyncPoll() {
   stopSyncPoll();
-  triviaState.syncPoll = setInterval(function () { syncPollTick(); }, 2500);
+  triviaState.syncPoll = setInterval(function () { syncPollTick(); }, 1500);
 }
 
 function stopSyncPoll() {

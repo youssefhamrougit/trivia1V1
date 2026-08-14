@@ -546,7 +546,7 @@ const API = {
       return { ok: true };
     }
 
-    // ---- sync 1v1: the waiting player nudges the round every ~2.5s -----------
+    // ---- sync 1v1: the waiting player nudges the round every ~1.5s -----------
     // submit_answer only advances the round when BOTH players answered; the
     // one who answered first sits in a waiting state. This RPC pushes stalled
     // rounds forward (disconnect grace) and reports the current state so the
