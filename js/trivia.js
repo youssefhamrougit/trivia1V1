@@ -1,17 +1,22 @@
 // ============================================================================
 //  trivia.js — the Trivia1v1 game
 //
-//  THE FLOW:
+//  THE FLOW (online 1v1 — question by question, in sync):
 //    tap "Find Match"  ->  Supabase pairs us with a stranger
-//    both players get the SAME 10 questions, 15 seconds each
-//    answers are relayed live through Supabase Realtime so both
-//    phones show both scores
+//    both players see the SAME question, 15 seconds each
+//    you answer (or the clock runs out) -> the server records it
+//    the round only advances when BOTH players have answered — the first
+//    to answer waits ("Waiting for <opponent>…") until the second one
+//    does, then BOTH phones move to the next question together (Realtime
+//    "round" event + a 2.5s poll as the safety net)
 //    at the end, the database decides the winner and moves trophies
 //
 //  HOW THE "LIVE" PART WORKS:
 //    each player subscribes to Realtime changes on the match row
-//    ("match-<id>"). When you answer, we write your score to the match
-//    row in Supabase and Realtime pushes it to the other phone instantly.
+//    ("match-<id>"). Answers are validated and scored server-side
+//    (match_answers); the client never sends scores.
+//
+//  Practice vs. the visible QuizBot stays self-paced (no sync, no match row).
 // ============================================================================
 
 const QUESTION_SECONDS = 15;
@@ -38,6 +43,12 @@ let triviaState = {
   botChance: 0.55,   // bot answer-correctness chance (from bot_config)
   botDelay: 1600,    // bot "thinking" delay in ms (from bot_config)
   answered: false,   // have we picked an answer this question?
+  // sync 1v1 (online matches): the round only advances when BOTH players
+  // have answered the current question — these fields drive that state machine
+  waiting: false,    // true while we wait on the opponent after answering
+  syncPoll: null,    // the 2.5s poll that nudges + watches the round (fallback under Realtime)
+  revealTimer: null, // the post-answer reveal pause before advancing (second answerer)
+  myAnswers: {},     // question_id → correct, for resuming after a reload mid-match
   stream: null,      // the live Realtime subscription for this match / queue
   pendingAnswer: null, // the in-flight /api/trivia/answer call (awaited before finishing)
   timer: null,       // the per-question countdown
@@ -52,7 +63,7 @@ let triviaState = {
   stealthBot: false,    // this online match's opponent is a DISGUISED bot (looks human)
   botStreak: 0,         // the invisible opponent's current answer streak (streak scoring)
   botTimer: null,       // the invisible opponent's independent per-question "brain"
-  botAnsweredThisQ: false, // has the invisible opponent already answered this question?
+  botAnsweredThisQ: false, // has QuizBot already answered this question? (practice only)
   lastWinner: null,  // for the result screen
   lastDelta: 0,
   lastOnline: false,
@@ -112,6 +123,7 @@ function triviaFindMatch() {
   triviaState.botFallback = false;
   triviaState.stealthBot = false;
   triviaState.opponentFound = false;
+  triviaState.myAnswers = {};
   clearQueueTimers();
   startQueueCountdown();
 
@@ -197,7 +209,7 @@ async function triviaFallbackToBot() {
     const res = await API.call("/api/trivia/botmatch", { method: "POST", body: {} });
     if (triviaState.mode !== "online" || triviaState.started || triviaState.opponentFound) return;
     if (!res || !res.match_id) throw new Error("No bot opponent available");
-    triviaState.stealthBot = true;    // simulate the bot's answers client-side
+    triviaState.stealthBot = true;    // disguise: the bot's answers are rolled server-side (submit_answer)
     triviaState.opponentFound = true; // never fall back again / stop the poll
     triviaState.botFallback = false;  // this IS a ranked match — trophies move
     clearQueueTimers();
@@ -255,23 +267,37 @@ async function triviaStartMatch(matchId) {
   triviaState.oppName = opp.username || "Player";
   triviaState.oppAvatar = triviaState.oppName.charAt(0).toUpperCase();
   triviaState.questions = data.questions || [];
+  triviaState.myAnswers = data.myAnswers || {};
 
-  // open the live feed: Realtime pushes the opponent's scores to us
+  // open the live feed: Realtime pushes the opponent's scores + round
+  // advances to us
   triviaState.stream = API.stream("match-" + matchId, function (ev) {
     if (ev.type === "answer" && ev.from !== currentUser.id) {
       triviaState.oppScore = ev.score;
       updateScoreboard();
+    } else if (ev.type === "round") {
+      // sync 1v1: the round resolved — both phones move to the next
+      // question together. Ignore our OWN round resolving while our submit
+      // is in flight / the reveal is showing — the response already decided
+      // how we move on, and reacting here would skip the reveal.
+      const row = ev.row || {};
+      applyServerScores(row.score1, row.score2);
+      if (row.current_q === triviaState.qIndex + 1
+          && (triviaState.pendingAnswer || triviaState.revealTimer)) return;
+      syncAdvanceTo(row.current_q);
     } else if (ev.type === "match_finished") {
       // the opponent finished first — the match ends for BOTH of us now
       endMatch();
     }
   });
 
-  // reset the game state
-  triviaState.qIndex = 0;
-  triviaState.myScore = 0;
-  triviaState.oppScore = 0;
+  // reset the game state — resuming from where the match actually is, so a
+  // reload mid-match picks up the current question instead of restarting
+  triviaState.qIndex = Math.min(match.current_q || 0, triviaState.questions.length - 1);
+  triviaState.myScore = triviaState.iAmPlayer1 ? (match.score1 || 0) : (match.score2 || 0);
+  triviaState.oppScore = triviaState.iAmPlayer1 ? (match.score2 || 0) : (match.score1 || 0);
   triviaState.streak = 0;
+  triviaState.waiting = false;
   if (triviaState.stealthBot) applyStealthBotSkill(); // trophy-matched "opponent"
 
   buildProgressDots();
@@ -279,6 +305,13 @@ async function triviaStartMatch(matchId) {
   showArenaInMatch();
   go("screen-trivia-match");
   renderQuestion();
+
+  // I already answered the current question (reloaded while waiting on the
+  // opponent) — lock the screen into the waiting state instead of letting
+  // me answer the same question twice
+  const cur = triviaState.questions[triviaState.qIndex];
+  if (cur && triviaState.myAnswers[cur.id] !== undefined) enterWaitingState();
+
   triviaState.starting = false;
 }
 
@@ -474,6 +507,11 @@ function recordAnswerStat(q, correct) {
 }
 
 function renderQuestion() {
+  stopSyncPoll();
+  clearTimeout(triviaState.revealTimer);
+  triviaState.waiting = false;
+  const status = document.getElementById("match-status");
+  if (status) status.classList.remove("waiting");
   clearInterval(triviaState.timer);
   const q = triviaState.questions[triviaState.qIndex];
 
@@ -510,7 +548,7 @@ function renderQuestion() {
 
   triviaState.answered = false;
   triviaState.botAnsweredThisQ = false;
-  scheduleBotAnswer(); // the invisible opponent starts "thinking" right away
+  if (triviaState.mode === "bot") scheduleBotAnswer(); // QuizBot starts "thinking"
   startQuestionTimer();
 }
 
@@ -566,7 +604,8 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
   if (chosenBtn && !correct) chosenBtn.classList.add("wrong");
   buttons.forEach(function (b) { b.disabled = true; });
 
-  // scoring: 100 points, 150 if you have a streak of 3+
+  // scoring: 100 points, 150 if you have a streak of 3+ (the server
+  // recomputes the authoritative score from the recorded answers)
   if (correct) {
     triviaState.streak++;
     triviaState.myScore += triviaState.streak >= 3 ? 150 : 100;
@@ -576,9 +615,15 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
   updateScoreboard();
   updateStreak();
 
-  // write our answer to Supabase; Realtime relays the score to the opponent
-  // (online only). The secure path validates the pick server-side; `score`
-  // is only used by the legacy fallback on older databases.
+  // stats: log this answer so the Stats screen can show per-category
+  // accuracy (fire-and-forget — the game never breaks if it fails)
+  recordAnswerStat(q, correct);
+
+  // sync 1v1: write our answer to Supabase. The server validates the pick,
+  // records it in match_answers, and tells us whether the round is resolved:
+  //   done === true  -> both players answered -> advance after the reveal
+  //   done === false -> the opponent hasn't answered -> hold + wait for them
+  //   done undefined -> legacy database -> old self-paced flow
   if (triviaState.mode === "online" && triviaState.matchId) {
     triviaState.pendingAnswer = API.call("/api/trivia/answer", {
       method: "POST",
@@ -586,20 +631,44 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
         match_id: triviaState.matchId,
         question_id: q.id,
         choice: pickIndex == null ? -1 : pickIndex,
-        score: triviaState.myScore,
+        score: triviaState.myScore, // only used by the legacy fallback
       },
-    }).catch(function () { /* the opponent will see the final scores anyway */ });
+    })
+      .then(function (res) {
+        triviaState.pendingAnswer = null;
+        if (triviaState.ending) return;
+        // authoritative scores from the server
+        if (typeof res.score === "number") triviaState.myScore = res.score;
+        if (typeof res.opp_score === "number") triviaState.oppScore = res.opp_score;
+        updateScoreboard();
+        if (res.done === true) {
+          // both answered — short pause so you can see the result, then the
+          // whole match moves to the next question together
+          triviaState.revealTimer = setTimeout(function () { syncAdvanceTo(res.current_q); }, 1400);
+        } else if (res.done === false) {
+          // the opponent hasn't answered yet — lock the screen and wait; the
+          // Realtime "round" event (or the poll) advances us when they do
+          enterWaitingState();
+        } else {
+          // legacy database without the sync fields — old self-paced flow
+          triviaState.revealTimer = setTimeout(function () { triviaNext(); }, 1400);
+        }
+      })
+      .catch(function () {
+        triviaState.pendingAnswer = null;
+        if (triviaState.ending) return;
+        // couldn't reach Supabase — fall back to the old self-paced flow so
+        // the game still moves on (the final scores are server-decided anyway)
+        triviaState.revealTimer = setTimeout(function () { triviaNext(); }, 1400);
+      });
+    return;
   }
 
-  // stats: log this answer so the Stats screen can show per-category
-  // accuracy (fire-and-forget — the game never breaks if it fails)
-  recordAnswerStat(q, correct);
-
-  // the invisible opponent "answers" too — practice mode uses QuizBot at the
-  // difficulty you picked, a stealth match uses the disguised bot at a skill
-  // matched to your trophies. If it hasn't answered this question already
-  // (see scheduleBotAnswer), it "thinks" a moment and answers right now.
-  if ((triviaState.mode === "bot" || triviaState.stealthBot) && !triviaState.botAnsweredThisQ) {
+  // practice (visible QuizBot): the bot "answers" after a think delay, then
+  // we move on on our own — no sync machinery, no match row. (Disguised
+  // stealth bots go through the online sync path above; the SERVER rolls
+  // their answer inside submit_answer.)
+  if (triviaState.mode === "bot" && !triviaState.botAnsweredThisQ) {
     clearTimeout(triviaState.botTimer);
     const jitter = randomInt(550) - 225; // -225..+325 ms of "thinking"
     setTimeout(function () {
@@ -608,7 +677,7 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
   }
 
   // short pause so you can see the result, then next question
-  setTimeout(function () { triviaNext(); }, 1400);
+  triviaState.revealTimer = setTimeout(function () { triviaNext(); }, 1400);
 }
 
 // score ONE answer for the invisible opponent — 100 points, or 150 on a
@@ -616,7 +685,7 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
 // (e.g. the reveal-path answer firing after sign-out or a finished match)
 // can never mutate a scoreboard that is no longer on screen.
 function botAnswer() {
-  if (triviaState.ending || !(triviaState.mode === "bot" || triviaState.stealthBot)) return;
+  if (triviaState.ending || triviaState.mode !== "bot") return;
   triviaState.botAnsweredThisQ = true;
   if (Math.random() < triviaState.botChance) {
     triviaState.botStreak++;
@@ -633,7 +702,7 @@ function botAnswer() {
 // the player answers first, this pending timer is cancelled and the answer
 // happens during the reveal instead (see finishQuestion).
 function scheduleBotAnswer() {
-  if (!(triviaState.mode === "bot" || triviaState.stealthBot)) return;
+  if (triviaState.mode !== "bot") return;
   clearTimeout(triviaState.botTimer);
   const thinkMs = triviaState.botDelay + randomInt(600) - 100; // -100..+500 ms
   triviaState.botTimer = setTimeout(function () {
@@ -653,6 +722,88 @@ function triviaNext() {
 }
 
 // ============================================================================
+//  SYNC 1V1: waiting on the opponent + advancing together
+// ============================================================================
+
+// we answered the current question and the opponent hasn't yet — lock the
+// screen and show the waiting state. The opponent answering fires the
+// Realtime "round" event (see triviaStartMatch); the 2.5s poll below is the
+// safety net (and the nudge that times a disconnected opponent out via the
+// server's sync_tick).
+function enterWaitingState() {
+  if (triviaState.ending || triviaState.mode !== "online") return;
+  triviaState.waiting = true;
+  triviaState.answered = true; // this question is locked — no re-answering
+  clearInterval(triviaState.timer);
+  const status = document.getElementById("match-status");
+  if (status) {
+    status.textContent = "Waiting for " + triviaState.oppName + "…";
+    status.classList.add("waiting");
+  }
+  // lock the buttons too (a reload mid-wait rebuilds them enabled)
+  document.querySelectorAll("#match-answers .answer").forEach(function (b) { b.disabled = true; });
+  startSyncPoll();
+}
+
+function startSyncPoll() {
+  stopSyncPoll();
+  triviaState.syncPoll = setInterval(function () { syncPollTick(); }, 2500);
+}
+
+function stopSyncPoll() {
+  if (triviaState.syncPoll) {
+    clearInterval(triviaState.syncPoll);
+    triviaState.syncPoll = null;
+  }
+}
+
+// one poll tick: nudges a stalled round (disconnect grace) and picks up any
+// advance the Realtime event missed
+async function syncPollTick() {
+  if (triviaState.ending || !triviaState.matchId || triviaState.mode !== "online") return;
+  try {
+    const res = await API.call("/api/trivia/synctick", { method: "POST", body: { matchId: triviaState.matchId } });
+    if (triviaState.ending || !res) return;
+    if (res.status === "finished") { endMatch(); return; }
+    if (typeof res.current_q === "number" && res.current_q !== triviaState.qIndex) {
+      applyServerScores(res.score1, res.score2);
+      syncAdvanceTo(res.current_q);
+    }
+  } catch (e) {
+    // transient network error — the next tick will try again
+  }
+}
+
+// apply the authoritative score columns from the server to our scoreboard
+function applyServerScores(s1, s2) {
+  if (typeof s1 === "number" && typeof s2 === "number") {
+    if (triviaState.iAmPlayer1) {
+      triviaState.myScore = s1;
+      triviaState.oppScore = s2;
+    } else {
+      triviaState.myScore = s2;
+      triviaState.oppScore = s1;
+    }
+    updateScoreboard();
+  }
+}
+
+// move both phones to the next question together. Guarded so duplicate
+// triggers (submit response + Realtime "round" event + poll) are no-ops.
+function syncAdvanceTo(q) {
+  if (triviaState.ending || triviaState.mode !== "online") return;
+  stopSyncPoll();
+  triviaState.waiting = false;
+  if (typeof q !== "number" || q <= triviaState.qIndex) return; // stale/duplicate
+  triviaState.qIndex = q;
+  if (triviaState.qIndex >= triviaState.questions.length) {
+    endMatch();
+  } else {
+    renderQuestion();
+  }
+}
+
+// ============================================================================
 //  END OF MATCH + RESULT
 // ============================================================================
 
@@ -661,6 +812,8 @@ async function endMatch() {
   triviaState.ending = true;
   clearInterval(triviaState.timer);
   clearTimeout(triviaState.botTimer);
+  clearTimeout(triviaState.revealTimer);
+  stopSyncPoll();
   clearQueueTimers();
   closeStream();
 
@@ -803,6 +956,8 @@ function triviaRematch() {
 function triviaCleanup() {
   clearInterval(triviaState.timer);
   clearTimeout(triviaState.botTimer);
+  clearTimeout(triviaState.revealTimer);
+  stopSyncPoll();
   closeStream();
   clearQueueTimers();
   triviaState.mode = null; // stop any in-flight fallback from starting a match

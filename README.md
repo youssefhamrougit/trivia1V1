@@ -2,7 +2,7 @@
 
 # ⚔️ Trivia1v1
 
-**Real-time 1v1 trivia battles — 10 questions, 15 seconds each. Beat strangers, climb 7 arenas, and take their trophies.**
+**Real-time 1v1 trivia battles — 10 questions, 15 seconds each, played question-by-question in sync. Beat strangers, climb 7 arenas, and take their trophies.**
 
 <br>
 
@@ -36,13 +36,14 @@ Get Trivia1v1 on your phone's home screen — **two ways**:
 
 ## 🎮 What is it?
 
-trivia1v1 is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot), get the same 10 questions, and race the 15-second clock. Answers relay to the other player **live**, winner takes **+20 trophies** (loser −20, a strict 1:1 swap) — climb a 7-arena "Knowledge Ladder" Clash Royale style, where your **current** trophies decide your arena. Matchmaking only pairs you with humans within 60 trophies; otherwise a **skill-matched bot opponent** (indistinguishable from a human) steps in after 7 seconds. Win to climb; lose and you drop back down.
+trivia1v1 is a mobile-first **1v1 trivia game** that runs entirely in the browser. Find a stranger (or practice against QuizBot) and get the same 10 questions — played **question-by-question in sync**: both players see the same question, each answers (or the 15-second clock runs out), and the round only moves on once **both** have answered, so both phones advance together. Winner takes **+20 trophies** (loser −20, a strict 1:1 swap) — climb a 7-arena "Knowledge Ladder" Clash Royale style, where your **current** trophies decide your arena. Matchmaking only pairs you with humans within 60 trophies; otherwise a **skill-matched bot opponent** (indistinguishable from a human) steps in after 7 seconds. Win to climb; lose and you drop back down.
 
 **No app stores. No downloads. No login wall.** Open the link, tap *Continue as guest*, and you're in a match.
 
 | | |
 |---|---|
 | ⚔️ **Matchmaking** | Pair with a stranger (same 10 questions) or practice vs. QuizBot — Easy / Medium / Hard |
+| 🔄 **Sync rounds** | Both players answer each question before the round advances — both phones move on together (Realtime + a safety-net poll) |
 | 🔴 **Live relay** | Scores push between phones instantly via Supabase Realtime |
 | 🏆 **Trophy ladder** | Win +20 / lose −20 (1:1), arena follows your current trophies, skill-matched pairings (60-trophy band), arena-themed questions — every match mixes all 4 categories |
 | 🤝 **Friends** | Search by username, send/accept requests, and 1v1-challenge friends (casual duels — no trophies) |

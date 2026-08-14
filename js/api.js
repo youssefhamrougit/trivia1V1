@@ -244,7 +244,18 @@ const API = {
           }
         }
       }
-      return { match: match, opponent: opp, questions: qs };
+
+      // which questions have I already answered in this match? (question_id →
+      // correct). Used by the sync 1v1 flow to resume the right state after a
+      // reload mid-round — e.g. re-enter the "waiting for opponent" state
+      // instead of letting the player answer the same question twice.
+      const myAnswers = {};
+      const a = await sup.from("match_answers")
+        .select("question_id, correct")
+        .eq("match_id", id).eq("player_id", uid);
+      if (!a.error && a.data) a.data.forEach(function (x) { myAnswers[x.question_id] = x.correct; });
+
+      return { match: match, opponent: opp, questions: qs, myAnswers: myAnswers };
     }
 
     // ---- bot difficulty (easy / medium / hard) -------------------------------
@@ -363,8 +374,10 @@ const API = {
     }
     if (path === "/api/friends/acceptchallenge") {
       const uid = await this._uid();
+      // the round clock starts on ACCEPT, not on challenge creation (the
+      // challenge may have sat pending for minutes) — so stamp round_started_at
       const { data, error } = await sup.from("matches")
-        .update({ status: "active", player2: uid })
+        .update({ status: "active", player2: uid, round_started_at: new Date().toISOString() })
         .eq("id", body.matchId).eq("challengee", uid).eq("status", "challenged").select("id");
       if (error) throw new Error(error.message);
       if (!data || data.length === 0) throw new Error("That challenge is no longer available.");
@@ -503,6 +516,8 @@ const API = {
       // secure path (schema.sql / setup-demo.sql): the server validates the
       // pick against the real question, records it, and recomputes the score
       // columns from match_answers — a forged client can't inflate anything.
+      // The response carries the sync 1v1 state: 'done' says the round is
+      // resolved (both players answered) and 'current_q' is the next question.
       if (body.question_id != null) {
         const r = await sup.rpc("submit_answer", {
           me: uid,
@@ -510,7 +525,7 @@ const API = {
           question_id: body.question_id,
           choice: body.choice == null ? -1 : body.choice, // -1 = timed out
         });
-        if (!r.error) return { ok: true, submit: true };
+        if (!r.error) return Object.assign({ ok: true, submit: true }, r.data || {});
         // only fall back when the RPC itself is missing (PostgREST: "Could
         // not find the function … in the schema cache") — never mask a real
         // error from a deployed-but-broken function
@@ -529,6 +544,23 @@ const API = {
       const { error } = await sup.from("matches").update(patch).eq("id", body.match_id);
       if (error) throw new Error(error.message);
       return { ok: true };
+    }
+
+    // ---- sync 1v1: the waiting player nudges the round every ~2.5s -----------
+    // submit_answer only advances the round when BOTH players answered; the
+    // one who answered first sits in a waiting state. This RPC pushes stalled
+    // rounds forward (disconnect grace) and reports the current state so the
+    // poll can react — a new current_q means "next question", a finished
+    // status means the match is over.
+    if (path === "/api/trivia/synctick") {
+      const uid = await this._uid();
+      if (!uid) throw new Error("Not logged in");
+      const { data, error } = await sup.rpc("sync_tick", {
+        me: uid,
+        match_id: body.matchId,
+      });
+      if (error) throw new Error(error.message);
+      return data || {};
     }
 
     // ---- finish: the database decides the winner + moves trophies ------------
@@ -611,6 +643,13 @@ const API = {
           if (row.status === "finished" && old.status !== "finished") {
             onEvent({ type: "match_finished", match_id: matchId });
             return;
+          }
+
+          // sync 1v1: the round advanced (BOTH players answered, or the
+          // server's disconnect grace timed one out) — both phones move to
+          // the next question together. The row carries the fresh scores.
+          if ((row.current_q || 0) !== (old.current_q || 0)) {
+            onEvent({ type: "round", match_id: matchId, row: row });
           }
 
           // match listener: relay the OPPONENT's score column

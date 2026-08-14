@@ -86,8 +86,19 @@ create table if not exists public.matches (
   question_ids bigint[] not null,
   score1       integer not null default 0,
   score2       integer not null default 0,
+  -- sync 1v1: the question currently in play (0-based into question_ids).
+  -- The round only advances when BOTH players have answered it (or the
+  -- disconnect grace in sync_advance times the missing one out).
+  current_q        integer not null default 0,
+  -- when the current round started — anchors the disconnect grace window
+  round_started_at timestamptz not null default now(),
   created_at   timestamptz default now()
 );
+
+-- migration for EXISTING projects: add the sync 1v1 columns if missing
+-- (idempotent — safe to re-run)
+alter table public.matches add column if not exists current_q integer not null default 0;
+alter table public.matches add column if not exists round_started_at timestamptz not null default now();
 
 
 -- ============================================================================
@@ -229,7 +240,7 @@ begin
 
   if found_id is not null then
     update public.matches
-    set player2 = me, status = 'active'
+    set player2 = me, status = 'active', round_started_at = now()
     where id = found_id;
     return found_id;
   end if;
@@ -452,12 +463,17 @@ declare
   bot_correct boolean;
   bot_chance  numeric;
   p_trophies  integer := 0;
+  cur_q       integer := 0;
+  both_done   boolean := false;
 begin
   -- never trust the client: derive the identity from the JWT instead
   me := auth.uid();
   if me is null then return null; end if;
 
-  select * into m from public.matches where id = match_id;
+  -- lock the match row so two players answering the same question at the
+  -- same instant serialize: exactly ONE submission sees "both answered"
+  -- and advances the round (the other one simply waits for the advance).
+  select * into m from public.matches where id = match_id for update;
   if not found then return null; end if;
   if m.status <> 'active' then return null; end if;  -- the match already ended
   if me not in (m.player1, m.player2) then return null; end if;
@@ -518,13 +534,150 @@ begin
     end if;
   end if;
 
+  -- SYNC 1V1: if both players have now answered the current question (or the
+  -- disconnect grace timed the missing one out), move the round forward.
+  -- Realtime pushes the current_q change to BOTH phones, so they advance to
+  -- the next question together. Returns 'done' so the answering client knows
+  -- whether it must wait for the opponent or can advance right away.
+  perform public.sync_advance(match_id);
+
+  select current_q into cur_q from public.matches where id = match_id;
+
+  select exists (
+    select 1 from public.match_answers a
+    where a.match_id = match_id and a.question_id = question_id
+    group by a.question_id
+    having count(*) >= 2   -- both players answered this question
+  ) into both_done;
+
   return jsonb_build_object(
-    'correct',    my_correct,
+    'correct',       my_correct,
     'correct_index', q.correct_index,
-    'score',      public.match_score(match_id, me),
-    'opp_score',  case when me = m.player1
-                     then public.match_score(match_id, m.player2)
-                     else public.match_score(match_id, m.player1) end
+    'score',         public.match_score(match_id, me),
+    'opp_score',     case when me = m.player1
+                       then public.match_score(match_id, m.player2)
+                       else public.match_score(match_id, m.player1) end,
+    'current_q',     cur_q,
+    'done',          both_done
+  );
+end;
+$$;
+
+
+-- ============================================================================
+--  FUNCTION: sync_advance
+--  The shared SYNC 1V1 round-advance step. Called by submit_answer (right
+--  after an answer is recorded) and by sync_tick (the waiting player's
+--  poll). Does two things, in order:
+--
+--    1. DISCONNECT GRACE: once ONE player has answered the current question,
+--       the other gets a 20-second window to answer too. If it expires with
+--       them still missing, their answer is auto-recorded as a timeout (-1),
+--       so a round can never hang on a dead/closed opponent tab.
+--    2. ADVANCE: when BOTH players have answered the current question (or
+--       been timed out), move to the next question together, reset the round
+--       clock, and recompute both scores from the recorded answers. The
+--       matches row UPDATE is what Realtime pushes to both phones, so they
+--       advance to the next question in sync.
+-- ============================================================================
+create or replace function public.sync_advance(p_match uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  m               public.matches%rowtype;
+  qid             bigint;
+  first_answer_at timestamptz;
+begin
+  select * into m from public.matches where id = p_match;
+  if not found then return; end if;
+  if m.status <> 'active' then return; end if;
+  if m.current_q >= coalesce(cardinality(m.question_ids), 0) then return; end if;
+
+  -- the question in play (current_q is 0-based; the array is 1-based)
+  qid := m.question_ids[m.current_q + 1];
+
+  -- how long ago the first answer in this round landed
+  select max(created_at) into first_answer_at
+  from public.match_answers
+  where match_id = p_match and question_id = qid;
+
+  -- grace: a missing player is timed out 20s after the first answer, so a
+  -- disconnected opponent can never stall the round forever
+  if first_answer_at is not null and now() - first_answer_at > interval '20 seconds' then
+    if not exists (
+      select 1 from public.match_answers
+      where match_id = p_match and player_id = m.player1 and question_id = qid
+    ) then
+      insert into public.match_answers (match_id, player_id, question_id, choice, correct)
+      values (p_match, m.player1, qid, -1, false)
+      on conflict (match_id, player_id, question_id) do nothing;
+    end if;
+    if m.player2 is not null and not exists (
+      select 1 from public.match_answers
+      where match_id = p_match and player_id = m.player2 and question_id = qid
+    ) then
+      insert into public.match_answers (match_id, player_id, question_id, choice, correct)
+      values (p_match, m.player2, qid, -1, false)
+      on conflict (match_id, player_id, question_id) do nothing;
+    end if;
+  end if;
+
+  -- both players answered (or were timed out) -> next question, in sync
+  if (select count(*) from public.match_answers
+      where match_id = p_match and question_id = qid) >= 2 then
+    update public.matches
+    set current_q = m.current_q + 1,
+        round_started_at = now(),
+        score1 = public.match_score(p_match, m.player1),
+        score2 = public.match_score(p_match, m.player2)
+    where id = p_match;
+  end if;
+end;
+$$;
+
+
+-- ============================================================================
+--  FUNCTION: sync_tick
+--  Called every ~2.5s by the player who is WAITING on the opponent (they
+--  already answered the current question). Nudges the round forward if the
+--  disconnect grace has elapsed (sync_advance), then returns the current
+--  state so the client can react — a new current_q means "move to the next
+--  question", a finished status means the match is over. This is the safety
+--  net under the Realtime "round" event.
+-- ============================================================================
+create or replace function public.sync_tick(me uuid, match_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  m public.matches%rowtype;
+begin
+  -- never trust the client: derive the identity from the JWT instead
+  me := auth.uid();
+  if me is null then return null; end if;
+
+  select * into m from public.matches where id = match_id for update;
+  if not found then return null; end if;
+  if me not in (m.player1, m.player2) then return null; end if;
+
+  if m.status = 'active'
+     and m.current_q < coalesce(cardinality(m.question_ids), 0) then
+    perform public.sync_advance(match_id);
+  end if;
+
+  select * into m from public.matches where id = match_id;
+
+  return jsonb_build_object(
+    'current_q', m.current_q,
+    'score1',    m.score1,
+    'score2',    m.score2,
+    'status',    m.status,
+    'winner',    m.winner
   );
 end;
 $$;

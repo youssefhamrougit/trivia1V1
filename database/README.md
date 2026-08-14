@@ -62,6 +62,30 @@ whichever runs last wins and they're identical.
   upgrade yet — it tries `submit_answer`/v3 `finish_match` first, then falls
   back to the old calls. Old DBs keep working; new DBs are secure.
 
+## The sync 1v1 round flow (why `matches` gained two columns)
+
+1v1 matches are now played **question-by-question in sync**: both players see
+the same question, each answers (or times out at 15s), and the round only
+advances when **both** have answered — so both phones move to the next
+question together.
+
+- `matches.current_q` (0-based) is the question in play; `submit_answer`
+  advances it when both players have answered (serialized with a row lock,
+  so exactly one submission triggers the advance). Realtime pushes the
+  change to both phones.
+- `matches.round_started_at` anchors the **disconnect grace**: if one player
+  never answers, `sync_advance` auto-records a `-1` timeout for them 20s
+  after the first answer in the round, so a dead tab can't stall the match.
+- `sync_tick(me, match_id)` is polled every ~2.5s by the player who is
+  waiting — it nudges stalled rounds and reports the current state (it's the
+  safety net under the Realtime "round" event).
+- `submit_answer` now returns `{ correct, correct_index, score, opp_score,
+  current_q, done }`; the client advances straight away when `done` is true
+  and waits otherwise.
+- The client (`js/api.js` / `js/trivia.js`) and these columns/RPCs are
+  **version-locked** — apply the SQL and deploy the client together, just
+  like the secure answer pipeline above.
+
 ## Supabase dashboard checklist
 
 1. **Authentication → Providers → Email → "Confirm email" = OFF**
