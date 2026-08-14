@@ -34,6 +34,12 @@ const STEALTH_BOT_IDS = [
 ];
 const BOT_IDS = [BOT_ID].concat(STEALTH_BOT_IDS);
 
+// PostgREST expects the value list of an `in` filter wrapped in parentheses
+// (`not.in.(a,b,c)`), but supabase-js's .not() operator concatenates the raw
+// value and drops the parens — which makes PostgREST fail to parse the filter.
+// Build the parenthesised list once and pass it through .filter() instead.
+const BOT_IDS_FILTER = "(" + BOT_IDS.join(",") + ")";
+
 // ---- username + password auth -------------------------------------------------
 // Supabase GoTrue only signs people up with an email, so we turn the chosen
 // username into a private per-user email:  <username>@triviaduel.local
@@ -154,12 +160,12 @@ const API = {
     }
     if (path === "/api/leaderboard") {
       let { data, error } = await sup.from("profiles")
-        .select("*").not("id", "in", BOT_IDS).order("trophies", { ascending: false }).limit(50);
+        .select("*").filter("id", "not.in", BOT_IDS_FILTER).order("trophies", { ascending: false }).limit(50);
       if (error || !data || data.length === 0) {
         // pre-migration databases still use "elo" — fall back so the screen
         // keeps working until setup-demo.sql is run
         const fb = await sup.from("profiles")
-          .select("*").not("id", "in", BOT_IDS).order("elo", { ascending: false }).limit(50);
+          .select("*").filter("id", "not.in", BOT_IDS_FILTER).order("elo", { ascending: false }).limit(50);
         if (!fb.error && fb.data && fb.data.length) { data = fb.data; error = null; }
       }
       if (error) throw new Error(error.message);
@@ -262,7 +268,7 @@ const API = {
       const { data, error } = await sup.from("profiles")
         .select("id,username,trophies")
         .ilike("username", "%" + q + "%")
-        .neq("id", uid).not("id", "in", BOT_IDS)
+        .neq("id", uid).filter("id", "not.in", BOT_IDS_FILTER)
         .order("trophies", { ascending: false })
         .limit(10);
       if (error) throw new Error(error.message);
