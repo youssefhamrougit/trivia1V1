@@ -17,6 +17,7 @@ files + the dashboard settings below.
 | `friends-bots.sql` | **REQUIRED after schema**: username claim trigger, friends tables + RPCs, challenges (`challengee`, `challenged` status), `bot_config`, and the **secure v3 `finish_match`** | Yes (idempotent) |
 | `stealth-bots.sql` | Disguised skill-matched bot opponents + `start_bot_match` | Yes |
 | `match-stats.sql` | **Optional**: `answer_log` table → per-category accuracy on the Stats screen | Yes |
+| `easy-history.sql` | **Existing projects only**: wipes ALL History questions and inserts 120 easy, well-known ones (clears `match_answers` rows first so the FK doesn't block it) | Yes |
 | `setup-demo.sql` | **Existing projects only**: idempotent bring-up to the same state as schema + seed + the security upgrade | Yes |
 
 ## Install order
@@ -36,7 +37,8 @@ files + the dashboard settings below.
 1. setup-demo.sql        ← creates everything idempotently + the security upgrade
 2. friends-bots.sql
 3. stealth-bots.sql
-4. match-stats.sql
+4. match-stats.sql       ← optional (Stats accuracy)
+5. easy-history.sql      ← optional: replaces the History questions with 120 easy ones
 ```
 
 > ⚠️ **Deploy the app and the SQL together.** The client (`js/api.js`) prefers

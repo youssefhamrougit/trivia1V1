@@ -494,17 +494,27 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
 .answer:active { transform: scale(0.98); }
 .answer:hover { border-color: rgba(223, 125, 31, 0.5); background: rgba(223, 125, 31, 0.1); }
 .answer.correct {
-  background: rgba(127, 207, 141, 0.14); border-color: var(--green);
+  background: rgba(127, 207, 141, 0.16); border: 2px solid var(--green);
   animation: correctPop 0.4s var(--ease);
 }
-.answer.correct .answer-letter { background: rgba(127, 207, 141, 0.2); border-color: var(--green); color: var(--green); }
+.answer.correct .answer-letter { background: rgba(127, 207, 141, 0.25); border-color: var(--green); color: var(--green); }
 .answer.wrong {
-  background: rgba(241, 122, 104, 0.14); border-color: var(--red);
+  background: rgba(241, 122, 104, 0.14); border: 2px solid var(--red);
   animation: wrongShake 0.35s ease;
 }
 .answer.wrong .answer-letter { background: rgba(241, 122, 104, 0.2); border-color: var(--red); color: var(--red); }
 .answer:disabled { cursor: default; }
 .answer:disabled:hover { border-color: var(--line-2); background: var(--surface-2); }
+/* the reveal band must stay visible after answering — the disabled hover
+   rule above would wash it back to grey, so keep the correct/wrong colors
+   on disabled answers too (box-sizing: border-box keeps the 2px band from
+   shifting the layout) */
+.answer:disabled.correct, .answer:disabled.correct:hover {
+  background: rgba(127, 207, 141, 0.16); border-color: var(--green);
+}
+.answer:disabled.wrong, .answer:disabled.wrong:hover {
+  background: rgba(241, 122, 104, 0.14); border-color: var(--red);
+}
 @keyframes correctPop {
   0% { transform: scale(1); } 45% { transform: scale(1.03); } 100% { transform: scale(1); }
 }

@@ -39,9 +39,11 @@ its own rows, and the game's money moves (winner, trophies) are decided by
 | File | What it does |
 |---|---|
 | `index.html` | All screens (the app shell) — auth, home, queue, match, result, friends, leaderboard, profile, stats |
-| `style.css` | Design system (dark + neon), match screen, progress dots, timer bar |
+| `style.css` | Design system (dark + neon), match screen, progress dots, timer bar, answer reveal bands (green/red stay visible on disabled answers — see gotchas) |
 | `manifest.json` / `sw.js` | PWA install + network-first offline support |
 | `vercel.json` | Vercel caching + CSP headers |
+| `404.html` | Custom not-found page (Vercel serves it for unknown routes; precached in `sw.js`) |
+| `download.html` | Android APK download page |
 | `js/config.js` | Supabase project URL + anon key (`window.TRIVIA1V1_CONFIG`) |
 | `js/api.js` | **The Supabase client layer** — `API.call()` mirrors the old `/api/*` routes; `API.stream()` wraps Realtime. All table access + RPCs live here |
 | `js/app.js` | Startup, auth flow, screen router (`go()`), toasts, confetti, arena modal, stats/history rendering |
@@ -108,11 +110,12 @@ only advances when both players answered the question at `current_q`, and
 | File | Role | Safe to re-run? |
 |---|---|---|
 | `schema.sql` | Fresh-install: tables, RLS, RPCs, Realtime publication | No |
-| `seed.sql` | 40 starter questions + QuizBot profile | Mostly |
-| `questions-bank.sql` | 440 more questions (full 480 bank) | No |
+| `seed.sql` | 40 starter questions + QuizBot profile (History entries are easy general knowledge — the niche Lighthouse question was swapped out) | Mostly |
+| `questions-bank.sql` | 440 more questions (full 480 bank). **History block rewritten to easy, well-known questions** (110) — Science/Math/Football untouched | No |
 | `friends-bots.sql` | **Required**: username trigger, friends tables/RPCs, challenges, `bot_config`, secure `finish_match` | Yes |
 | `stealth-bots.sql` | Disguised bots + `start_bot_match` | Yes |
 | `match-stats.sql` | Optional: `answer_log` → per-category accuracy | Yes |
+| `easy-history.sql` | Existing projects only: wipes ALL History questions, inserts 120 easy well-known ones (clears `match_answers` FK rows first) | Yes |
 | `setup-demo.sql` | Idempotent bring-up for EXISTING projects (mirrors schema+seed) | Yes |
 
 **Critical rule:** `submit_answer`, `finish_match`, `match_score`,
@@ -150,3 +153,12 @@ the new SQL.
 - **Challenge accept** (`/api/friends/acceptchallenge`) is a plain client
   update that must also set `round_started_at` (the round starts on accept,
   not on challenge creation).
+- **Answer reveal band:** `.answer.correct` / `.answer.wrong` style the
+  correct/wrong picks after answering. Don't "clean up" the
+  `.answer:disabled.correct:hover` / `.answer:disabled.wrong:hover`
+  overrides — without them the disabled `:hover` rule washes the green/red
+  band back to grey and the reveal disappears on desktop.
+- **History difficulty:** by design the History questions are easy general
+  knowledge (per the owner — "a trivia game, not niche knowledge"). Don't
+  re-add obscure facts to the History block. `easy-history.sql` is how an
+  existing DB gets the rewritten set.

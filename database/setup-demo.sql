@@ -811,7 +811,7 @@ begin
       ('History', 'In which year did the Berlin Wall fall?', ARRAY['1985', '1989', '1991', '1993'], 1),
       ('History', 'Who was the ancient Greek god of the sea?', ARRAY['Zeus', 'Apollo', 'Poseidon', 'Ares'], 2),
       ('History', 'What ship did Charles Darwin sail on?', ARRAY['Beagle', 'Endeavour', 'Victory', 'Mayflower'], 0),
-      ('History', 'Which ancient wonder stood in Alexandria?', ARRAY['Colossus', 'Lighthouse', 'Hanging Gardens', 'Pyramid'], 1),
+      ('History', 'Who was the first person to walk on the Moon?', ARRAY['Buzz Aldrin', 'Neil Armstrong', 'Michael Collins', 'Yuri Gagarin'], 1),
       ('History', 'Who painted the Mona Lisa?', ARRAY['Michelangelo', 'Raphael', 'Leonardo da Vinci', 'Donatello'], 2);
   end if;
 end;

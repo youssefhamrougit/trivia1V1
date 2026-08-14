@@ -151,8 +151,8 @@ insert into public.questions (category, question, options, correct_index) values
 ('History', 'What ship did Charles Darwin sail on?',
   ARRAY['Beagle', 'Endeavour', 'Victory', 'Mayflower'], 0),
 
-('History', 'Which ancient wonder stood in Alexandria?',
-  ARRAY['Colossus', 'Lighthouse', 'Hanging Gardens', 'Pyramid'], 1),
+('History', 'Who was the first person to walk on the Moon?',
+  ARRAY['Buzz Aldrin', 'Neil Armstrong', 'Michael Collins', 'Yuri Gagarin'], 1),
 
 ('History', 'Who painted the Mona Lisa?',
   ARRAY['Michelangelo', 'Raphael', 'Leonardo da Vinci', 'Donatello'], 2);
