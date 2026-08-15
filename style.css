@@ -368,6 +368,7 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
   15% { opacity: 0.9; }
   100% { transform: translateY(-26px); opacity: 0; }
 }
+@keyframes a-drift { 0%, 100% { transform: translateX(-6px); } 50% { transform: translateX(6px); } }
 .a-bob     { animation: a-bob 3.4s ease-in-out infinite; }
 .a-flame   { transform-origin: 50% 100%; animation: a-flicker 1.5s ease-in-out infinite; }
 .a-sway    { transform-origin: 50% 100%; animation: a-sway 3.6s ease-in-out infinite; }
@@ -377,6 +378,7 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
 .a-breathe { animation: a-breathe 4.2s ease-in-out infinite; transform-origin: 50% 100%; }
 .a-ray     { transform-origin: 50% 0%; animation: a-ray 5.5s ease-in-out infinite; }
 .a-bub     { animation: a-bub 2.6s ease-in infinite; }
+.a-drift   { animation: a-drift 7s ease-in-out infinite; }
 .arena-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 40px; height: 40px; border-radius: 50%; padding: 0;
