@@ -48,6 +48,21 @@ function _cloudSVG(cx, cy, s, delay) {
   );
 }
 
+// a sign showing the arena's name — each theme gets its own look, and the
+// scene is readable at a glance (pixel font is loaded with the page)
+function _bannerSVG(text, bg, stroke, color, bolt) {
+  return (
+    '<g>' +
+      '<rect x="70" y="34" width="280" height="36" rx="8" fill="' + bg + '" stroke="' + stroke + '" stroke-width="3"/>' +
+      '<circle cx="80" cy="44" r="2.5" fill="' + bolt + '"/>' +
+      '<circle cx="340" cy="44" r="2.5" fill="' + bolt + '"/>' +
+      '<circle cx="80" cy="60" r="2.5" fill="' + bolt + '"/>' +
+      '<circle cx="340" cy="60" r="2.5" fill="' + bolt + '"/>' +
+      '<text x="210" y="57" text-anchor="middle" font-family="\'Press Start 2P\', monospace" font-size="13" fill="' + color + '">' + text + '</text>' +
+    '</g>'
+  );
+}
+
 // a few swaying grass tufts
 function _grassSVG(x, y, s, delay) {
   return (
@@ -78,8 +93,8 @@ function _sceneTraining() {
   const wood = "#8a6b4a", woodD = "#6b4f34", tan = "#cfa974";
   return (
     // sky
-    _moonSVG(342, 58, 19, "#9aa3ad") +
-    _cloudSVG(70, 60, 1.1, 0) +
+    _moonSVG(372, 56, 19, "#9aa3ad") +
+    _cloudSVG(58, 90, 1.1, 0) +
     _cloudSVG(250, 96, 0.8, 2.2) +
     // distant tree line
     '<path d="M18 214 q28 -64 56 0 z" fill="#15121c"/>' +
@@ -144,7 +159,9 @@ function _sceneTraining() {
     '<path d="M89 252 h22 M89 258 h22" stroke="' + woodD + '" stroke-width="2"/>' +
     // wooden signpost
     '<rect x="183" y="226" width="5" height="24" fill="' + woodD + '"/>' +
-    '<rect x="172" y="220" width="28" height="9" rx="3" fill="' + wood + '"/>'
+    '<rect x="172" y="220" width="28" height="9" rx="3" fill="' + wood + '"/>' +
+    // name sign
+    _bannerSVG("TRAINING GROUNDS", "#6b4f34", "#8a6b4a", "#f3efe8", "#3a2f23")
   );
 }
 
@@ -206,7 +223,9 @@ function _sceneLab() {
     '<circle class="a-bub" cx="140" cy="150" r="4" fill="#7fe3c4" opacity="0.8"/>' +
     '<circle class="a-bub" cx="272" cy="140" r="3" fill="#7fe3c4" opacity="0.8" style="animation-delay:1.4s"/>' +
     '<circle class="a-bub" cx="196" cy="120" r="2.6" fill="#7fe3c4" opacity="0.8" style="animation-delay:.7s"/>' +
-    '<circle class="a-bub" cx="230" cy="132" r="2" fill="#7fe3c4" opacity="0.8" style="animation-delay:2s"/>'
+    '<circle class="a-bub" cx="230" cy="132" r="2" fill="#7fe3c4" opacity="0.8" style="animation-delay:2s"/>' +
+    // name sign
+    _bannerSVG("SCIENCE LAB", "#0f2c27", "#2dd4bf", "#4ff0c8", "#2dd4bf")
   );
 }
 
@@ -265,7 +284,9 @@ function _sceneStadium() {
     '<circle class="a-twinkle" cx="60.5" cy="92" r="4" fill="#fff" opacity="0.9" style="animation-delay:.3s"/>' +
     '<rect x="356" y="102" width="5" height="64" fill="#2c3b31"/>' +
     '<circle class="a-twinkle" cx="358.5" cy="98" r="8" fill="#eaffea" opacity="0.9" style="animation-delay:1.4s"/>' +
-    '<circle class="a-twinkle" cx="358.5" cy="98" r="4" fill="#fff" opacity="0.9" style="animation-delay:1.7s"/>'
+    '<circle class="a-twinkle" cx="358.5" cy="98" r="4" fill="#fff" opacity="0.9" style="animation-delay:1.7s"/>' +
+    // name sign (scoreboard style)
+    _bannerSVG("FOOTBALL STADIUM", "#0f2b1a", "#3f9d5a", "#eaffea", "#3f9d5a")
   );
 }
 
@@ -273,7 +294,7 @@ function _sceneMuseum() {
   const marble = "#e8e2d6";
   return (
     // sky: amber moon + dust
-    _moonSVG(70, 58, 17, "#e8cfa0") +
+    _moonSVG(46, 56, 17, "#e8cfa0") +
     '<ellipse class="a-breathe" cx="210" cy="60" rx="120" ry="36" fill="#fbbf24" opacity="0.06"/>' +
     // temple facade silhouette
     '<path d="M140 214 v-46 l70 -30 70 30 v46 z" fill="#1c1410"/>' +
@@ -332,7 +353,9 @@ function _sceneMuseum() {
     '<polygon points="196,186 210,158 224,186" fill="' + marble + '"/>' +
     '<rect x="190" y="248" width="40" height="7" rx="3" fill="#c9bfae"/>' +
     '<path d="M203 200 h16 M203 208 h16 M203 216 h16 M203 224 h16" stroke="#b45309" stroke-width="2" opacity="0.5"/>' +
-    '<circle class="a-twinkle" cx="210" cy="166" r="4" fill="#fbbf24" opacity="0.95"/>'
+    '<circle class="a-twinkle" cx="210" cy="166" r="4" fill="#fbbf24" opacity="0.95"/>' +
+    // name sign (stone plaque)
+    _bannerSVG("HISTORY MUSEUM", "#c9bfae", "#8a6f50", "#3a2a1a", "#b45309")
   );
 }
 
@@ -384,7 +407,9 @@ function _sceneMath(c1, c2) {
     // edge sparks
     '<circle class="a-twinkle" cx="96" cy="176" r="2" fill="' + c1 + '"/>' +
     '<circle class="a-twinkle" cx="326" cy="184" r="2" fill="' + c1 + '" style="animation-delay:.8s"/>' +
-    '<circle class="a-twinkle" cx="150" cy="120" r="2" fill="' + c1 + '" style="animation-delay:1.6s"/>'
+    '<circle class="a-twinkle" cx="150" cy="120" r="2" fill="' + c1 + '" style="animation-delay:1.6s"/>' +
+    // name sign (hologram)
+    _bannerSVG("MATH ARENA", "#161024", "#a78bfa", "#a78bfa", "#6d28d9")
   );
 }
 
@@ -440,7 +465,9 @@ function _sceneColosseum(c1) {
     '<rect x="192" y="222" width="36" height="12" rx="4" fill="' + stone + '"/>' +
     '<ellipse class="a-flame" cx="210" cy="204" rx="13" ry="19" fill="#f2a254"/>' +
     '<ellipse class="a-flame" cx="210" cy="204" rx="6.5" ry="10" fill="#f6c98a" style="animation-delay:.3s"/>' +
-    '<circle cx="210" cy="232" r="14" fill="#f2a254" opacity="0.25"/>'
+    '<circle cx="210" cy="232" r="14" fill="#f2a254" opacity="0.25"/>' +
+    // name sign (stone banner)
+    _bannerSVG("GRAND COLOSSEUM", "#8a5a36", "#5a4030", "#f3e2c9", "#5a4030")
   );
 }
 
@@ -495,7 +522,9 @@ function _sceneLegends(c1) {
     '<circle class="a-breathe" cx="210" cy="156" r="28" fill="#ffe9a8" opacity="0.35" style="animation-delay:.8s"/>' +
     '<path d="M188 136 q22 -12 44 0 M188 136 q-8 6 0 12 M232 136 q8 6 0 12" stroke="#d9a43c" stroke-width="2.5" fill="none"/>' +
     '<path d="M196 130 q14 -8 28 0" stroke="#d9a43c" stroke-width="2.5" fill="none"/>' +
-    '<polygon class="a-ray" points="210,104 220,132 200,132" fill="#ffe9a8"/>'
+    '<polygon class="a-ray" points="210,104 220,132 200,132" fill="#ffe9a8"/>' +
+    // name sign (golden plaque)
+    _bannerSVG("HALL OF LEGENDS", "#d9a43c", "#e9b64f", "#241b0e", "#a16207")
   );
 }
 
