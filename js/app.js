@@ -208,6 +208,8 @@ function go(screenId) {
   if (screenId === "screen-friends") loadFriends();
   if (screenId === "screen-profile") loadProfile();
   if (screenId === "screen-stats") loadStats();
+  if (screenId === "screen-arenas") openArenaViewer();
+  else closeArenaViewer(); // pause the 3D loop whenever we leave the Arenas screen
 }
 
 // ---- loading my profile row (from Supabase) -------------------------

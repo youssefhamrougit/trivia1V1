@@ -1004,35 +1004,10 @@ async function loadTriviaHome() {
   document.getElementById("arena-next").textContent = prog.next
     ? prog.needed + " trophies to " + prog.next.name
     : "Max arena reached — you're a legend!";
-  buildArenaLadder(trophies);
   applyArenaTheme(a);
 
   // keep the Friends chip badge (pending requests + challenges) fresh
   if (typeof refreshFriendsBadge === "function") refreshFriendsBadge();
-}
-
-// the little 7-step Knowledge Ladder strip under the arena card
-function buildArenaLadder(trophies) {
-  const wrap = document.getElementById("arena-ladder");
-  if (!wrap) return;
-  wrap.innerHTML = "";
-  const cur = arenaForTrophies(trophies);
-  for (const a of ARENAS) {
-    const step = document.createElement("div");
-    step.className = "ladder-step" + (trophies >= a.min ? " unlocked" : "") + (a === cur ? " current" : "");
-    step.title = a.name;
-    const img = document.createElement("img");
-    img.src = a.icon;
-    img.alt = a.name;
-    step.appendChild(img);
-    if (trophies < a.min) {
-      const lock = document.createElement("span");
-      lock.className = "ladder-lock";
-      lock.textContent = "\uD83D\uDD12";
-      step.appendChild(lock);
-    }
-    wrap.appendChild(step);
-  }
 }
 
 // show the arena pill on the match screen + theme it

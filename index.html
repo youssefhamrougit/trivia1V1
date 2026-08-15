@@ -58,21 +58,23 @@
       <h1 class="screen-title">Your <span class="accent">Arena</span></h1>
       <p class="muted small">Win matches to climb the Knowledge Ladder.</p>
 
-      <div class="arena-card">
+      <div class="arena-card" role="button" tabindex="0" onclick="go('screen-arenas')"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('screen-arenas');}"
+           aria-label="Browse all arenas">
         <div class="arena-card-top">
           <div class="arena-emoji" id="arena-emoji"></div>
           <div class="arena-info">
             <span class="arena-label">Current arena</span>
             <b id="arena-name">Training Grounds</b>
           </div>
+          <span class="arena-chevron" aria-hidden="true">›</span>
         </div>
         <div class="arena-progress"><div id="arena-fill"></div></div>
         <div class="arena-progress-row">
           <span class="muted small" id="arena-next"></span>
+          <span class="muted small arena-hint">All arenas ›</span>
         </div>
       </div>
-
-      <div class="arena-ladder" id="arena-ladder"></div>
 
       <button class="btn big" onclick="triviaFindMatch()"><img class="btn-icon" src="assets/icons/bolt.svg" alt="" /> Find a match</button>
 
@@ -113,17 +115,21 @@
         <p class="muted small" id="profile-arena"></p>
       </div>
 
-      <div class="arena-card">
+      <div class="arena-card" role="button" tabindex="0" onclick="go('screen-arenas')"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('screen-arenas');}"
+           aria-label="Browse all arenas">
         <div class="arena-card-top">
           <div class="arena-emoji" id="profile-arena-emoji"></div>
           <div class="arena-info">
             <span class="arena-label">Current arena</span>
             <b id="profile-arena-name">Training Grounds</b>
           </div>
+          <span class="arena-chevron" aria-hidden="true">›</span>
         </div>
         <div class="arena-progress"><div id="profile-arena-fill"></div></div>
         <div class="arena-progress-row">
           <span class="muted small" id="profile-arena-next"></span>
+          <span class="muted small arena-hint">All arenas ›</span>
         </div>
       </div>
 
@@ -287,6 +293,31 @@
       <div id="stats-history"></div>
     </section>
 
+    <!-- ================================================================
+         SCREEN: ARENAS (Clash-Royale-style 3D arena browser)
+    ================================================================= -->
+    <section id="screen-arenas" class="screen">
+      <div class="topbar">
+        <button class="chip" onclick="go('screen-trivia-home')">← Back</button>
+        <h1 class="friends-title">Arenas</h1>
+        <span></span>
+      </div>
+
+      <div class="arena-stage" id="arena-stage">
+        <canvas id="arena3d" aria-label="3D view of the arenas"></canvas>
+        <button class="arena-nav prev" onclick="arenaPrev()" aria-label="Previous arena">‹</button>
+        <button class="arena-nav next" onclick="arenaNext()" aria-label="Next arena">›</button>
+        <div class="arena-hud">
+          <span class="arena-badge" id="arena3d-current">Your arena</span>
+          <h2 id="arena3d-name">Training Grounds</h2>
+          <p class="muted small" id="arena3d-req">Reach 120 trophies to unlock</p>
+        </div>
+      </div>
+
+      <p class="muted small center-text arena-swipe-hint">Swipe the arena or tap a card to explore</p>
+      <div class="arena3d-tiles" id="arena3d-tiles"></div>
+    </section>
+
   </div>
 
   <!-- ================================================================
@@ -308,10 +339,12 @@
   <canvas id="confetti-canvas" class="confetti-canvas" aria-hidden="true"></canvas>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/arenas.js"></script>
+  <script src="js/arenaViewer.js"></script>
   <script src="js/app.js"></script>
   <script src="js/trivia.js"></script>
   <script src="js/friends.js"></script>
