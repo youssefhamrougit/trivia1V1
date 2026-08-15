@@ -39,7 +39,7 @@ its own rows, and the game's money moves (winner, trophies) are decided by
 | File | What it does |
 |---|---|
 | `index.html` | All screens (the app shell) — auth, home, queue, match, result, friends, leaderboard, profile, stats, **arenas (Undertale-style viewer)** |
-| `style.css` | Design system (dark + neon), match screen, progress dots, timer bar, answer reveal bands (green/red stay visible on disabled answers — see gotchas), arena scenes + tiles + animations |
+| `style.css` | Design system (indie: warm dark surfaces, burnt-amber accent), match screen, progress dots, timer bar, answer reveal bands (green/red stay visible on disabled answers — see gotchas), arena scenes + tiles + animations |
 | `manifest.json` / `sw.js` | PWA install + network-first offline support |
 | `vercel.json` | Vercel caching + CSP headers |
 | `404.html` | Custom not-found page (Vercel serves it for unknown routes; precached in `sw.js`) |

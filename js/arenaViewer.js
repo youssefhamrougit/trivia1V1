@@ -74,7 +74,7 @@ function _grassSVG(x, y, s, delay) {
   );
 }
 
-// a glowing flask of bubbling liquid (Science Lab)
+// a glowing flask of bubbling liquid (The Beaker Realm)
 function _flask(cx, cy, delay) {
   return (
     '<g class="a-bob" style="animation-delay:' + delay + 's">' +
@@ -225,7 +225,7 @@ function _sceneLab() {
     '<circle class="a-bub" cx="196" cy="120" r="2.6" fill="#7fe3c4" opacity="0.8" style="animation-delay:.7s"/>' +
     '<circle class="a-bub" cx="230" cy="132" r="2" fill="#7fe3c4" opacity="0.8" style="animation-delay:2s"/>' +
     // name sign
-    _bannerSVG("SCIENCE LAB", "#0f2c27", "#2dd4bf", "#4ff0c8", "#2dd4bf")
+    _bannerSVG("THE BEAKER REALM", "#0f2c27", "#2dd4bf", "#4ff0c8", "#2dd4bf")
   );
 }
 
@@ -286,7 +286,7 @@ function _sceneStadium() {
     '<circle class="a-twinkle" cx="358.5" cy="98" r="8" fill="#eaffea" opacity="0.9" style="animation-delay:1.4s"/>' +
     '<circle class="a-twinkle" cx="358.5" cy="98" r="4" fill="#fff" opacity="0.9" style="animation-delay:1.7s"/>' +
     // name sign (scoreboard style)
-    _bannerSVG("FOOTBALL STADIUM", "#0f2b1a", "#3f9d5a", "#eaffea", "#3f9d5a")
+    _bannerSVG("THE LAST WHISTLE", "#0f2b1a", "#3f9d5a", "#eaffea", "#3f9d5a")
   );
 }
 
@@ -355,7 +355,7 @@ function _sceneMuseum() {
     '<path d="M203 200 h16 M203 208 h16 M203 216 h16 M203 224 h16" stroke="#b45309" stroke-width="2" opacity="0.5"/>' +
     '<circle class="a-twinkle" cx="210" cy="166" r="4" fill="#fbbf24" opacity="0.95"/>' +
     // name sign (stone plaque)
-    _bannerSVG("HISTORY MUSEUM", "#c9bfae", "#8a6f50", "#3a2a1a", "#b45309")
+    _bannerSVG("THE MARBLE ARCHIVE", "#c9bfae", "#8a6f50", "#3a2a1a", "#b45309")
   );
 }
 
@@ -409,7 +409,7 @@ function _sceneMath(c1, c2) {
     '<circle class="a-twinkle" cx="326" cy="184" r="2" fill="' + c1 + '" style="animation-delay:.8s"/>' +
     '<circle class="a-twinkle" cx="150" cy="120" r="2" fill="' + c1 + '" style="animation-delay:1.6s"/>' +
     // name sign (hologram)
-    _bannerSVG("MATH ARENA", "#161024", "#a78bfa", "#a78bfa", "#6d28d9")
+    _bannerSVG("AXIOM CHAMBER", "#161024", "#a78bfa", "#a78bfa", "#6d28d9")
   );
 }
 
@@ -467,7 +467,7 @@ function _sceneColosseum(c1) {
     '<ellipse class="a-flame" cx="210" cy="204" rx="6.5" ry="10" fill="#f6c98a" style="animation-delay:.3s"/>' +
     '<circle cx="210" cy="232" r="14" fill="#f2a254" opacity="0.25"/>' +
     // name sign (stone banner)
-    _bannerSVG("GRAND COLOSSEUM", "#8a5a36", "#5a4030", "#f3e2c9", "#5a4030")
+    _bannerSVG("SANDSWORN ARENA", "#8a5a36", "#5a4030", "#f3e2c9", "#5a4030")
   );
 }
 

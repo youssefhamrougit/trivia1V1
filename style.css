@@ -432,7 +432,6 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
   color: var(--text); font-size: 26px; font-weight: 900; line-height: 1;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; z-index: 3;
-  backdrop-filter: blur(4px);
   transition: opacity 0.2s, transform 0.15s var(--ease);
 }
 .arena-nav.prev { left: 10px; }
