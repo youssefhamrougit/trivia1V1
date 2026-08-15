@@ -63,6 +63,29 @@ this file is about *how* to make changes.
 - The result screen reads `triviaState.lastWinner/lastDelta/lastOnline/
   lastRanked` — set them in `endMatch`, nowhere else.
 
+## Editing the arena viewer (js/arenaViewer.js)
+
+- **three.js is pinned to r128** (CDN in `index.html`) — the code uses r128
+  APIs (`sRGBEncoding`, `ACESFilmicToneMapping`, UMD `THREE.GLTFLoader`).
+  Don't bump the version or migrate to ES-module imports; keep the
+  script-tag, no-build setup.
+- **Procedural scenes are the fallback, not the placeholder to delete.**
+  `_buildArena3D(i)` must keep working for every arena — it's what renders
+  until the GLB models exist and what renders forever if WebGL is missing.
+- **Real models are drop-in.** Drop `arena-1.glb` … `arena-7.glb` into
+  `assets/arenas/models/` and `_tryLoadModel` picks them up automatically
+  (auto-fits to 4.2-wide footprint, floors at y=0, front faces +Z). The
+  build spec lives in `assets/arenas/models/instruction.md` — point the
+  3D-art agent there and don't hand-tune per-model offsets in code.
+- **`_viewer.target` must stay an index** (the loop multiplies it by
+  `spacing`). While dragging, store `nx / spacing`; on release, a whole
+  index. Never a raw world position.
+- **New inputs** (gestures, keys) belong in `bindArenaInput`; keep the drag
+  path (pointer capture → follow → snap) intact and keep the 2D fallback
+  (`_showFallback`) reachable when `_viewer` is null.
+- The `esc()` helper from friends.js is used when building tile/fallback
+  HTML — it only runs on user navigation, after all scripts load.
+
 ## Before finishing a change
 
 1. `node --check` every edited JS file.

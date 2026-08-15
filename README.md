@@ -79,14 +79,15 @@ trivia1v1/
 ├── download.html       # Android APK download page (checks apk/ at load)
 ├── .env.example        # env var reference (placeholders only)
 ├── assets/             # icons, arena art, UI graphics
+│   └── arenas/models/  # drop-in GLB arena models (arena-1…7.glb) + build spec
 ├── apk/                # generated trivia1v1.apk + build instructions
-├── content/            # social content kit (Instagram carousels, captions)
 ├── js/
 │   ├── config.js       # Supabase config (project URL + publishable key)
 │   ├── api.js          # Supabase client (auth, RPCs, Realtime)
 │   ├── sound.js        # synthesized sound effects (Web Audio — no audio files)
 │   ├── app.js          # startup, login, screen switching
 │   ├── arenas.js       # the 7-arena "Knowledge Ladder"
+│   ├── arenaViewer.js  # 3D arena browser (procedural scenes + GLB models)
 │   ├── trivia.js       # the trivia1v1 game
 │   └── friends.js      # the Friends tab (requests, 1v1 challenges)
 └── database/

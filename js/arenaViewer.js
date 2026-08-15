@@ -220,6 +220,39 @@ function _buildArena3D(i) {
   return g;
 }
 
+// ---- real 3D models ----------------------------------------------------------
+//
+// The arenas are built procedurally as a fallback, but the app prefers real
+// GLB models (see assets/arenas/models/instruction.md for the build spec).
+// When a model file exists it replaces the procedural scene for that arena;
+// when it's missing (or WebGL/loader unavailable) the procedural build stays.
+
+function _tryLoadModel(i, group) {
+  if (typeof THREE.GLTFLoader === "undefined") return;
+  const loader = new THREE.GLTFLoader();
+  loader.load(
+    "assets/arenas/models/arena-" + (i + 1) + ".glb",
+    function (gltf) {
+      const model = gltf.scene || gltf;
+      // auto-fit: scale the model so its width matches the arena footprint,
+      // center it on X/Z, and sit it on the ground plane (y = 0)
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      if (size.x > 0.001) model.scale.setScalar(4.2 / size.x);
+      const b2 = new THREE.Box3().setFromObject(model);
+      const c = b2.getCenter(new THREE.Vector3());
+      model.position.x -= c.x;
+      model.position.z -= c.z;
+      model.position.y -= b2.min.y;
+      // replace the procedural build with the real model
+      while (group.children.length) group.remove(group.children[0]);
+      group.add(model);
+    },
+    undefined,
+    function () { /* model missing — keep the procedural scene */ }
+  );
+}
+
 // ---- init -------------------------------------------------------------------
 
 function _initViewer() {
@@ -258,6 +291,7 @@ function _initViewer() {
     const g = _buildArena3D(i);
     g.position.x = i * SPACING;
     scene.add(g);
+    _tryLoadModel(i, g); // swap in the real GLB when it exists
   }
 
   _viewer = {
