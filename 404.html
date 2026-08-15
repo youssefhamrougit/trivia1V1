@@ -9,7 +9,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Press+Start+2P&display=swap" rel="stylesheet" />
 
   <style>
     /* ---- the app's design language, inline so this page stands alone ---- */
@@ -28,7 +28,7 @@
       --accent-bright: #f2a254;
       --green: #7fcf8d;
       --red: #f17a68;
-      --radius: 16px;
+      --radius: 12px;
       --ease: cubic-bezier(0.22, 1, 0.36, 1);
     }
 
@@ -37,7 +37,7 @@
     html, body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-family: 'Pixelify Sans', 'Nunito', system-ui, -apple-system, 'Segoe UI', sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -75,21 +75,22 @@
       box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
     }
     .brand-logo img { width: 28px; height: 28px; }
-    .brand-name { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
+    .brand-name { font-family: 'Press Start 2P', monospace; font-size: 24px; font-weight: 400; letter-spacing: 0; }
     .brand-name span { color: var(--accent); }
 
     /* ---- the big 404 ---- */
     .error-code {
       margin-top: 30px;
+      font-family: 'Press Start 2P', monospace;
       font-size: 88px;
-      font-weight: 900;
+      font-weight: 400;
       line-height: 1;
-      letter-spacing: -2px;
+      letter-spacing: 0;
       color: var(--accent);
-      text-shadow: 0 6px 24px rgba(223, 125, 31, 0.35);
+      text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
       animation: rise 0.5s var(--ease) both;
     }
-    .error-title { margin-top: 8px; font-size: 22px; font-weight: 800; }
+    .error-title { margin-top: 8px; font-family: 'Press Start 2P', monospace; font-size: 18px; font-weight: 400; }
     .error-sub { margin-top: 8px; color: var(--muted); font-size: 15px; max-width: 320px; }
 
     /* ---- the reveal card (styled like the in-game reveal) ---- */
@@ -103,7 +104,7 @@
       box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
       animation: rise 0.5s var(--ease) 0.12s both;
     }
-    .card-question { font-weight: 800; font-size: 16px; margin-bottom: 14px; }
+    .card-question { font-weight: 700; font-size: 16px; margin-bottom: 14px; }
 
     .answer-row {
       display: flex; align-items: center; gap: 10px;
@@ -123,13 +124,14 @@
       border-radius: 50%;
       border: 1px solid var(--line-2);
       background: var(--surface-3);
-      font-size: 12px; font-weight: 800; color: var(--muted);
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px; font-weight: 400; color: var(--muted);
     }
     .answer-row.wrong { border-color: rgba(241, 122, 104, 0.45); }
     .answer-row.wrong .answer-letter { background: rgba(241, 122, 104, 0.2); border-color: var(--red); color: var(--red); }
     .answer-row.correct { border-color: rgba(127, 207, 141, 0.45); }
     .answer-row.correct .answer-letter { background: rgba(127, 207, 141, 0.18); border-color: var(--green); color: var(--green); }
-    .answer-row b { display: block; font-size: 12px; font-weight: 800; margin-bottom: 2px; }
+    .answer-row b { display: block; font-size: 12px; font-weight: 700; margin-bottom: 2px; }
     .answer-row.wrong b { color: var(--red); }
     .answer-row.correct b { color: var(--green); }
 
@@ -139,24 +141,24 @@
       width: 100%;
       margin-top: 14px;
       padding: 15px;
-      border: none;
-      border-radius: 14px;
+      border: 2px solid rgba(0, 0, 0, 0.4);
+      border-radius: 10px;
       background: var(--accent);
-      color: #fff;
-      font-size: 15px;
-      font-weight: 800;
+      color: #fff8ef;
+      font-size: 16px;
+      font-weight: 700;
       font-family: inherit;
       text-decoration: none;
       cursor: pointer;
-      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
+      box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.22), inset 0 -2px 0 rgba(0, 0, 0, 0.28), 0 4px 0 rgba(0, 0, 0, 0.45);
       transition: transform 0.1s var(--ease), background 0.2s, box-shadow 0.1s;
     }
-    .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35); }
+    .btn:active { transform: translateY(2px); box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.18), inset 0 -2px 0 rgba(0, 0, 0, 0.2), 0 2px 0 rgba(0, 0, 0, 0.45); }
     .btn.ghost {
       background: var(--surface);
       color: var(--text);
-      border: 1px solid var(--line-2);
-      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.3);
+      border: 2px solid var(--line-2);
+      box-shadow: 0 3px 0 rgba(0, 0, 0, 0.35);
     }
     .btn.ghost:hover { background: var(--surface-2); }
     .btn.subtle { background: transparent; color: var(--muted); box-shadow: none; }
