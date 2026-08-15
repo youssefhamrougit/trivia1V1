@@ -2,9 +2,13 @@
 //  arenaViewer.js — the Clash-Royale-style 3D arena browser.
 //
 //  Opens on the "Arenas" screen: a Three.js stage with all 7 arenas built
-//  procedurally (no model files needed) and laid out in a row. Swipe the
-//  stage, use the arrows / arrow keys, or tap a thumbnail to glide between
+//  procedurally (no model files needed) and laid out in a row. Drag the
+//  stage (the arena follows your finger), use the mouse wheel / trackpad,
+//  the ‹ › arrows, the arrow keys, or tap a thumbnail to glide between
 //  arenas — just like Clash Royale's arena selection.
+//
+//  If WebGL isn't available the stage falls back to a simple scrollable
+//  list of arena cards, so the screen always works.
 //
 //  Uses the global `ARENAS` array from arenas.js (names, icons, trophy
 //  thresholds and color themes).
@@ -222,7 +226,13 @@ function _initViewer() {
   const canvas = document.getElementById("arena3d");
   if (!canvas || typeof THREE === "undefined") return null;
 
-  const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  } catch (e) {
+    return null; // WebGL unavailable — the caller shows the 2D fallback
+  }
+
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -230,10 +240,12 @@ function _initViewer() {
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0e0d0b);
-  scene.fog = new THREE.Fog(0x0e0d0b, 9, 24);
+  // fog starts past the neighbours so you can see the next arena sliding in
+  scene.fog = new THREE.Fog(0x0e0d0b, 12, 30);
 
-  const cam = new THREE.PerspectiveCamera(42, 1, 0.1, 60);
-  cam.position.set(0, 3.1, 6.4);
+  // low, close camera so the current arena fills the stage
+  const cam = new THREE.PerspectiveCamera(40, 1, 0.1, 60);
+  cam.position.set(0, 2.35, 5.6);
 
   scene.add(new THREE.HemisphereLight(0xffffff, 0x3a2f24, 0.7));
   const dir = new THREE.DirectionalLight(0xffffff, 0.85);
@@ -282,10 +294,12 @@ function _frame(now) {
   _viewer.last = now;
   _animStep(now);
 
-  // ease the camera toward the selected arena (Clash-Royale glide)
+  // ease the camera toward the selected arena (Clash-Royale glide).
+  // while the user drags, pointermove sets the position directly and
+  // keeps target in sync, so the tween never fights the drag.
   const tx = _viewer.target * _viewer.spacing;
   _viewer.cam.position.x += (tx - _viewer.cam.position.x) * Math.min(1, dt * 7);
-  _viewer.cam.lookAt(_viewer.cam.position.x, 1.7, 0);
+  _viewer.cam.lookAt(_viewer.cam.position.x, 1.15, 0);
   _viewer.renderer.render(_viewer.scene, _viewer.cam);
 }
 
@@ -304,9 +318,16 @@ window.addEventListener("resize", _resize);
 // ---- public API (called from app.js + index.html) -----------------------------
 
 function openArenaViewer() {
-  if (!_viewer) _viewer = _initViewer();
-  if (!_viewer) return; // Three.js failed to load — the rest of the app still works
   const trophies = (currentProfile && currentProfile.trophies) || 0;
+  if (!_viewer) {
+    _viewer = _initViewer();
+    if (!_viewer) {
+      // no WebGL — show the 2D arena list instead
+      _buildTiles(trophies);
+      _showFallback(trophies);
+      return;
+    }
+  }
   const cur = ARENAS.findIndex(function (a) { return a.id === arenaForTrophies(trophies).id; });
   _viewer.cur = cur < 0 ? 0 : cur;
   _viewer.target = _viewer.cur;
@@ -371,6 +392,10 @@ function _updateHUD(trophies) {
 
   const tiles = document.querySelectorAll(".a3d-tile");
   tiles.forEach(function (t, i) { t.classList.toggle("current", i === _viewer.cur); });
+  const curTile = tiles[_viewer.cur];
+  if (curTile && curTile.scrollIntoView) {
+    curTile.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  }
 }
 
 function _buildTiles(trophies) {
@@ -391,27 +416,91 @@ function _buildTiles(trophies) {
   });
 }
 
-// ---- input: swipe the stage, arrow keys ----------------------------------------
+// ---- 2D fallback (shown when WebGL isn't available) -----------------------------
+
+function _showFallback(trophies) {
+  const stage = document.getElementById("arena-stage");
+  if (!stage) return;
+  stage.classList.add("fallback");
+  stage.innerHTML = "";
+  const mine = arenaForTrophies(trophies);
+  ARENAS.forEach(function (a) {
+    const card = document.createElement("div");
+    const isCur = mine.id === a.id;
+    const locked = trophies < a.min;
+    card.className = "a3d-fb" + (isCur ? " current" : "") + (locked ? " locked" : "");
+    card.innerHTML =
+      '<img src="' + a.icon + '" alt="' + esc(a.name) + '">' +
+      "<b>" + esc(a.name) + "</b>" +
+      "<span>" + (isCur
+        ? "★ Your arena"
+        : locked
+          ? "Locked — reach " + a.min + " trophies"
+          : "Unlocked at " + a.min + " trophies") + "</span>";
+    stage.appendChild(card);
+  });
+}
+
+// ---- input: drag the stage, mouse wheel, arrow keys ------------------------------
 
 (function bindArenaInput() {
   const canvas = document.getElementById("arena3d");
   if (canvas) {
-    let downX = null, downY = null, moved = false;
+    let downX = null, startCamX = 0, dragActive = false;
+
     canvas.addEventListener("pointerdown", function (e) {
-      downX = e.clientX; downY = e.clientY; moved = false;
+      if (!_viewer) return;
+      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      downX = e.clientX;
+      startCamX = _viewer.cam.position.x;
+      dragActive = false;
     });
+
     canvas.addEventListener("pointermove", function (e) {
-      if (downX !== null && Math.abs(e.clientX - downX) > 8) moved = true;
-    });
-    canvas.addEventListener("pointerup", function (e) {
-      if (downX === null) return;
+      if (downX === null || !_viewer) return;
       const dx = e.clientX - downX;
-      if (moved && Math.abs(dx) > 40) {
-        if (dx < 0) arenaNext(); else arenaPrev();
+      if (!dragActive && Math.abs(dx) > 8) dragActive = true;
+      if (dragActive) {
+        const stage = document.getElementById("arena-stage");
+        const scale = stage && stage.clientWidth ? (_viewer.spacing * 1.15) / stage.clientWidth : 0.02;
+        let nx = startCamX - dx * scale;
+        nx = Math.max(0, Math.min((ARENAS.length - 1) * _viewer.spacing, nx));
+        _viewer.cam.position.x = nx;
+        _viewer.target = nx / _viewer.spacing; // fractional index — keeps the tween from fighting the drag
+      }
+    });
+
+    function endDrag() {
+      if (downX === null || !_viewer) return;
+      if (dragActive) {
+        // release → glide to the nearest arena
+        const i = Math.round(_viewer.cam.position.x / _viewer.spacing);
+        _viewer.cur = i;
+        _viewer.target = i;
+        _updateHUD((currentProfile && currentProfile.trophies) || 0);
       }
       downX = null;
-    });
-    canvas.addEventListener("pointercancel", function () { downX = null; });
+      dragActive = false;
+    }
+
+    canvas.addEventListener("pointerup", endDrag);
+    canvas.addEventListener("pointercancel", endDrag);
+  }
+
+  // mouse wheel / trackpad: scroll through the arenas
+  const stage = document.getElementById("arena-stage");
+  if (stage) {
+    let wheelCooldown = 0;
+    stage.addEventListener("wheel", function (e) {
+      if (!_viewer) return;
+      const now = Date.now();
+      if (now < wheelCooldown) return;
+      const dx = e.deltaX || e.deltaY;
+      if (Math.abs(dx) < 8) return;
+      if (dx > 0) arenaNext(); else arenaPrev();
+      wheelCooldown = now + 260;
+      e.preventDefault();
+    }, { passive: false });
   }
 
   document.addEventListener("keydown", function (e) {
