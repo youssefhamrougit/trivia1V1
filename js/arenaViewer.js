@@ -1,402 +1,339 @@
 // ============================================================================
-//  arenaViewer.js — the Clash-Royale-style 3D arena browser.
+//  arenaViewer.js — the arena browser, indie Undertale style.
 //
-//  Opens on the "Arenas" screen: a Three.js stage with all 7 arenas built
-//  procedurally (no model files needed) and laid out in a row. Drag the
-//  stage (the arena follows your finger), use the mouse wheel / trackpad,
-//  the ‹ › arrows, the arrow keys, or tap a thumbnail to glide between
-//  arenas — just like Clash Royale's arena selection.
-//
-//  If WebGL isn't available the stage falls back to a simple scrollable
-//  list of arena cards, so the screen always works.
+//  Opens on the "Arenas" screen: a horizontally scrollable stage where each
+//  of the 7 arenas is a hand-built HTML/SVG island scene — dark, warm, and a
+//  little alive. Props bob, flames flicker, eyes blink, dust floats up like
+//  determination. Pure DOM + CSS: no WebGL, no model files, works offline
+//  and scrolls natively on every device (swipe, wheel, trackpad).
 //
 //  Uses the global `ARENAS` array from arenas.js (names, icons, trophy
 //  thresholds and color themes).
 // ============================================================================
 
-let _viewer = null; // { renderer, scene, cam, spacing, cur, target, anims, running, raf, last }
-let _anims = [];    // animated props: { o, spinY?, spinX?, flicker?, orbit?, ... }
+let _track = null;   // the scrollable stage track
+let _current = 0;    // the arena currently centered in the stage
+let _scrollRaf = 0;
 
-// ---- tiny helpers -----------------------------------------------------------
+// ---- tiny pieces shared by every scene ---------------------------------------
 
-function _mat(color, opts) {
-  opts = opts || {};
-  return new THREE.MeshStandardMaterial({
-    color: color,
-    metalness: opts.metalness !== undefined ? opts.metalness : 0.15,
-    roughness: opts.roughness !== undefined ? opts.roughness : 0.6,
-    emissive: opts.emissive || 0x000000,
-    emissiveIntensity: opts.emissiveIntensity || 0,
-    side: opts.side || THREE.FrontSide,
-  });
-}
-
-function _mesh(geo, material, x, y, z, parent) {
-  const m = new THREE.Mesh(geo, material);
-  m.position.set(x, y, z);
-  parent.add(m);
-  return m;
-}
-
-function _spin(mesh, ry, phase) { _anims.push({ o: mesh, spinY: ry, phase: phase || 0 }); }
-function _flicker(mesh, baseY, speed, phase) {
-  _anims.push({ o: mesh, flicker: true, baseY: baseY, speed: speed, phase: phase || 0 });
-}
-function _orbit(mesh, r, y0, speed, phase) {
-  _anims.push({ o: mesh, orbit: r, y0: y0, speed: speed, phase: phase });
-}
-
-// a little golden trophy (bowl + stem + base + handles)
-function _trophy(c1) {
-  const gold = _mat(0xe9b64f, { metalness: 0.7, roughness: 0.3, emissive: 0xe9b64f, emissiveIntensity: 0.25 });
-  const g = new THREE.Group();
-  _mesh(new THREE.ConeGeometry(0.3, 0.36, 16), gold, 0, 0.52, 0, g);
-  _mesh(new THREE.CylinderGeometry(0.055, 0.09, 0.32, 12), gold, 0, 0.2, 0, g);
-  _mesh(new THREE.CylinderGeometry(0.24, 0.3, 0.1, 16), gold, 0, 0.02, 0, g);
-  for (const s of [-1, 1]) {
-    const h = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.035, 8, 16), gold);
-    h.position.set(s * 0.19, 0.38, 0);
-    g.add(h);
-  }
-  return g;
-}
-
-// ---- build one arena's 3D scene ---------------------------------------------
-
-function _buildArena3D(i) {
-  const a = ARENAS[i];
-  const g = new THREE.Group();
-  const c1 = new THREE.Color(a.theme.c1);
-  const c2 = new THREE.Color(a.theme.c2);
-  const dark = c2.clone().multiplyScalar(0.5);
-  const mid = c2.clone().multiplyScalar(0.85);
-
-  // ground disc + platform (shared by every arena)
-  _mesh(new THREE.CylinderGeometry(4.3, 4.5, 0.3, 40), _mat(0x141210), 0, -0.95, 0, g);
-  _mesh(new THREE.CylinderGeometry(2.15, 2.4, 0.7, 40), _mat(dark), 0, 0.08, 0, g);
-  _mesh(new THREE.CylinderGeometry(2.05, 2.05, 0.14, 40), _mat(mid), 0, 0.5, 0, g);
-
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(2.05, 0.1, 10, 48),
-    _mat(c1, { emissive: c1, emissiveIntensity: 0.2 }));
-  rim.rotation.x = Math.PI / 2;
-  rim.position.y = 0.6;
-  g.add(rim);
-
-  // center pedestal with trophy
-  _mesh(new THREE.CylinderGeometry(0.5, 0.64, 1.0, 24), _mat(mid), 0, 1.05, 0, g);
-  _mesh(new THREE.CylinderGeometry(0.32, 0.5, 0.16, 24), _mat(c1, { emissive: c1, emissiveIntensity: 0.25 }), 0, 1.63, 0, g);
-  const trophy = _trophy(c1);
-  trophy.position.y = 1.8;
-  g.add(trophy);
-
-  // two towers + flags (skipped on the Hall of Legends, which has its own pillars)
-  if (i < ARENAS.length - 1) {
-    for (const s of [-1, 1]) {
-      _mesh(new THREE.CylinderGeometry(0.3, 0.38, 1.6, 20), _mat(mid), s * 1.55, 1.25, 1.5, g);
-      _mesh(new THREE.ConeGeometry(0.34, 0.55, 20), _mat(c1, { emissive: c1, emissiveIntensity: 0.25 }), s * 1.55, 2.2, 1.5, g);
-      _mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.4, 10), _mat(0x6b6255), s * 1.6, 1.7, -1.7, g);
-      const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.55), _mat(c1, { side: THREE.DoubleSide }));
-      flag.position.set(s * 1.6 + s * 0.5, 2.6, -1.7);
-      flag.rotation.y = s * -0.35;
-      g.add(flag);
-    }
-  }
-
-  // ---- themed decorations -------------------------------------------------
-  if (i === 0) {
-    // Training Grounds: wooden dummies + flickering torches
-    const wood = _mat(0x8a6b4a);
-    const head = _mat(0xcfa974);
-    for (const s of [-1, 1]) {
-      _mesh(new THREE.CylinderGeometry(0.12, 0.16, 1.2, 10), wood, s * 1.3, 1.1, -0.4, g);
-      _mesh(new THREE.SphereGeometry(0.2, 12, 10), head, s * 1.3, 1.85, -0.4, g);
-      _mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.3, 10), wood, s * 1.5, 1.15, 0.7, g);
-      const flame = _mesh(new THREE.ConeGeometry(0.14, 0.35, 10),
-        _mat(0xf2a254, { emissive: 0xf2a254, emissiveIntensity: 1.2 }), s * 1.5, 2.0, 0.7, g);
-      _flicker(flame, 2.0, 3 + s, s);
-    }
-  } else if (i === 1) {
-    // Science Lab: glowing flasks + floating orbs
-    const glass = _mat(0x7fe3c4, { emissive: 0x2dd4bf, emissiveIntensity: 0.45 });
-    const orbMat = _mat(c1, { emissive: c1, emissiveIntensity: 1.4 });
-    const spots = [[-1.35, -1.3], [1.35, -1.3], [0, 1.7]];
-    for (let k = 0; k < spots.length; k++) {
-      const b = new THREE.Group();
-      _mesh(new THREE.SphereGeometry(0.2, 14, 10), glass, 0, 0.22, 0, b);
-      _mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.3, 10), glass, 0, 0.48, 0, b);
-      b.position.set(spots[k][0], 0.5, spots[k][1]);
-      g.add(b);
-      _flicker(b, 0.5, 1.4, k);
-    }
-    for (let k = 0; k < 3; k++) {
-      const orb = _mesh(new THREE.SphereGeometry(0.09, 10, 8), orbMat, 0, 0, 0, g);
-      _orbit(orb, 1.5, 2.3, 0.5 + k * 0.2, k * 2.1);
-    }
-  } else if (i === 2) {
-    // Football Stadium: grass pitch + white goal posts
-    _mesh(new THREE.CylinderGeometry(2.03, 2.03, 0.06, 40), _mat(0x3f9d5a), 0, 0.62, 0, g);
-    for (const dz of [-1.2, 0, 1.2]) {
-      _mesh(new THREE.BoxGeometry(3.4, 0.05, 0.05), _mat(0xe9f2e6), 0, 0.66, dz, g);
-    }
-    const white = _mat(0xf3efe8);
-    for (const s of [-1, 1]) {
-      _mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.2, 8), white, s * 0.55, 1.7, -2.05, g);
-    }
-    _mesh(new THREE.BoxGeometry(1.16, 0.08, 0.08), white, 0, 2.75, -2.05, g);
-    _mesh(new THREE.BoxGeometry(0.08, 1.1, 0.08), white, 0, 1.35, -2.6, g);
-  } else if (i === 3) {
-    // History Museum: marble columns + a statue
-    const marble = _mat(0xe8e2d6, { roughness: 0.4 });
-    const cols = [[-1.5, -1.2], [1.5, -1.2], [-1.5, 0.6], [1.5, 0.6]];
-    for (const [x, z] of cols) {
-      _mesh(new THREE.CylinderGeometry(0.18, 0.2, 1.4, 14), marble, x, 1.2, z, g);
-      _mesh(new THREE.BoxGeometry(0.46, 0.12, 0.46), marble, x, 1.98, z, g);
-    }
-    const statue = new THREE.Group();
-    _mesh(new THREE.CylinderGeometry(0.2, 0.26, 0.5, 12), marble, 0, 0.25, 0, statue);
-    _mesh(new THREE.SphereGeometry(0.2, 12, 10), marble, 0, 0.62, 0, statue);
-    statue.position.set(0, 0.5, -1.3);
-    g.add(statue);
-    _flicker(statue, 1.12, 0.6, 1.3);
-  } else if (i === 4) {
-    // Math Arena: floating solids on small pedestals
-    const solids = [
-      new THREE.IcosahedronGeometry(0.28, 0),
-      new THREE.OctahedronGeometry(0.28, 0),
-      new THREE.TorusKnotGeometry(0.2, 0.07, 60, 10),
-      new THREE.DodecahedronGeometry(0.26, 0),
-    ];
-    const spots = [[-1.45, -1.1], [1.45, -1.1], [-1.45, 0.9], [1.45, 0.9]];
-    for (let k = 0; k < solids.length; k++) {
-      const [x, z] = spots[k];
-      _mesh(new THREE.CylinderGeometry(0.1, 0.14, 0.9, 10), _mat(c2), x, 0.95, z, g);
-      const solid = new THREE.Mesh(solids[k], _mat(c1, { emissive: c1, emissiveIntensity: 0.5, roughness: 0.35 }));
-      solid.position.set(x, 1.7, z);
-      g.add(solid);
-      _spin(solid, 0.8 + (k % 2) * 0.4, k);
-    }
-  } else if (i === 5) {
-    // Grand Colosseum: ring of stone columns + torches on a sand floor
-    const stone = _mat(0x9c6b4f);
-    for (let k = 0; k < 8; k++) {
-      const ang = (k / 8) * Math.PI * 2;
-      _mesh(new THREE.CylinderGeometry(0.22, 0.28, 2.0, 12), stone,
-        Math.cos(ang) * 2.7, 1.0, Math.sin(ang) * 2.7, g);
-    }
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(2.7, 0.16, 10, 40), stone);
-    ring.rotation.x = Math.PI / 2;
-    ring.position.y = 2.05;
-    g.add(ring);
-    _mesh(new THREE.CylinderGeometry(2.03, 2.03, 0.06, 40), _mat(0xc8a061), 0, 0.62, 0, g);
-    for (const [x, z] of [[2.7, 0], [-2.7, 0], [0, 2.7], [0, -2.7]]) {
-      const flame = _mesh(new THREE.ConeGeometry(0.16, 0.4, 10),
-        _mat(0xf2a254, { emissive: 0xf2a254, emissiveIntensity: 1.3 }), x, 2.5, z, g);
-      _flicker(flame, 2.5, 2.2, x + z);
-    }
-  } else {
-    // Hall of Legends: golden pillars, light beam, floating rings + sparkles
-    const gold = _mat(0xe9b64f, { metalness: 0.8, roughness: 0.25, emissive: 0xe9b64f, emissiveIntensity: 0.25 });
-    for (const [x, z] of [[-1.75, -1.5], [1.75, -1.5], [-1.75, 1.5], [1.75, 1.5]]) {
-      _mesh(new THREE.CylinderGeometry(0.2, 0.26, 2.6, 14), gold, x, 1.3, z, g);
-    }
-    for (let k = 0; k < 3; k++) {
-      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.7 + k * 0.25, 0.05, 10, 30), gold);
-      ring.rotation.x = Math.PI / 2.6;
-      ring.position.y = 2.7 + k * 0.45;
-      g.add(ring);
-      _spin(ring, 0.6, k * 2);
-    }
-    const beam = new THREE.Mesh(new THREE.ConeGeometry(1.0, 3.4, 24, 1, true),
-      new THREE.MeshBasicMaterial({ color: c1, transparent: true, opacity: 0.08, side: THREE.DoubleSide, depthWrite: false }));
-    beam.position.y = 3.2;
-    g.add(beam);
-    const spark = _mat(0xfff3c4, { emissive: 0xfff3c4, emissiveIntensity: 1.6 });
-    for (let k = 0; k < 8; k++) {
-      const s = _mesh(new THREE.SphereGeometry(0.05, 8, 6), spark, 0, 0, 0, g);
-      _orbit(s, 1.1 + (k % 3) * 0.35, 1.9 + (k % 4) * 0.5, 0.4 + (k % 3) * 0.25, k * 0.8);
-    }
-  }
-
-  return g;
-}
-
-// ---- real 3D models ----------------------------------------------------------
-//
-// The arenas are built procedurally as a fallback, but the app prefers real
-// GLB models (see assets/arenas/models/instruction.md for the build spec).
-// When a model file exists it replaces the procedural scene for that arena;
-// when it's missing (or WebGL/loader unavailable) the procedural build stays.
-
-function _tryLoadModel(i, group) {
-  if (typeof THREE.GLTFLoader === "undefined") return;
-  const loader = new THREE.GLTFLoader();
-  loader.load(
-    "assets/arenas/models/arena-" + (i + 1) + ".glb",
-    function (gltf) {
-      const model = gltf.scene || gltf;
-      // auto-fit: scale the model so its width matches the arena footprint,
-      // center it on X/Z, and sit it on the ground plane (y = 0)
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-      if (size.x > 0.001) model.scale.setScalar(4.2 / size.x);
-      const b2 = new THREE.Box3().setFromObject(model);
-      const c = b2.getCenter(new THREE.Vector3());
-      model.position.x -= c.x;
-      model.position.z -= c.z;
-      model.position.y -= b2.min.y;
-      // replace the procedural build with the real model
-      while (group.children.length) group.remove(group.children[0]);
-      group.add(model);
-    },
-    undefined,
-    function () { /* model missing — keep the procedural scene */ }
+// the floating island every arena sits on (dark void + platform + accent rim)
+function _islandSVG(c1, c2) {
+  return (
+    '<ellipse cx="210" cy="260" rx="182" ry="48" fill="#221f28"/>' +
+    '<ellipse cx="210" cy="248" rx="160" ry="34" fill="' + c2 + '"/>' +
+    '<ellipse cx="210" cy="243" rx="118" ry="20" fill="' + c1 + '" opacity="0.16"/>' +
+    '<ellipse cx="210" cy="248" rx="160" ry="34" fill="none" stroke="' + c1 + '" stroke-width="4" opacity="0.9"/>'
   );
 }
 
-// ---- init -------------------------------------------------------------------
+// the golden trophy every arena keeps at its heart (with blinking eyes)
+function _trophySVG() {
+  return (
+    '<g class="a-bob" style="animation-delay:.6s">' +
+      '<path d="M192 166 h36 v5 l-6 17 q-12 7 -24 0 z" fill="#e9b64f"/>' +
+      '<path d="M188 170 q-5 4 0 9 M232 170 q5 4 0 9" stroke="#e9b64f" stroke-width="3" fill="none" stroke-linecap="round"/>' +
+      '<rect x="208" y="188" width="4" height="13" fill="#b8862f"/>' +
+      '<rect x="198" y="201" width="24" height="8" rx="4" fill="#e9b64f"/>' +
+      '<g class="a-blink"><circle cx="202" cy="174" r="2.6" fill="#221f28"/><circle cx="218" cy="174" r="2.6" fill="#221f28"/></g>' +
+    '</g>'
+  );
+}
 
-function _initViewer() {
-  const canvas = document.getElementById("arena3d");
-  if (!canvas || typeof THREE === "undefined") return null;
+// a glowing flask of bubbling liquid (Science Lab)
+function _flask(cx, cy, delay) {
+  return (
+    '<g class="a-bob" style="animation-delay:' + delay + 's">' +
+      '<rect x="' + (cx - 6) + '" y="' + (cy - 26) + '" width="12" height="24" rx="4" fill="#b8e8dc" opacity="0.45"/>' +
+      '<circle cx="' + cx + '" cy="' + (cy + 6) + '" r="20" fill="#b8e8dc" opacity="0.45"/>' +
+      '<circle cx="' + cx + '" cy="' + (cy + 8) + '" r="15" fill="#2dd4bf" opacity="0.85"/>' +
+      '<circle class="a-bub" cx="' + (cx - 5) + '" cy="' + (cy - 1) + '" r="2.4" fill="#d9fff2"/>' +
+      '<circle class="a-bub" cx="' + (cx + 6) + '" cy="' + (cy + 5) + '" r="1.8" fill="#d9fff2" style="animation-delay:1.2s"/>' +
+    '</g>'
+  );
+}
 
-  let renderer;
-  try {
-    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-  } catch (e) {
-    return null; // WebGL unavailable — the caller shows the 2D fallback
+// ---- the seven arena scenes ----------------------------------------------------
+
+function _sceneTraining() {
+  const wood = "#8a6b4a", woodD = "#6b4f34", tan = "#cfa974";
+  return (
+    // two training dummies with blinking eyes
+    '<g class="a-bob" style="animation-delay:.2s">' +
+      '<rect x="118" y="156" width="16" height="84" rx="7" fill="' + wood + '"/>' +
+      '<circle cx="126" cy="142" r="22" fill="' + tan + '"/>' +
+      '<g class="a-blink"><circle cx="119" cy="137" r="3.4" fill="#221f28"/><circle cx="133" cy="137" r="3.4" fill="#221f28"/></g>' +
+      '<rect x="100" y="164" width="52" height="9" rx="4.5" fill="' + woodD + '"/>' +
+    '</g>' +
+    '<g class="a-bob" style="animation-delay:.9s">' +
+      '<rect x="286" y="156" width="16" height="84" rx="7" fill="' + wood + '"/>' +
+      '<circle cx="294" cy="142" r="22" fill="' + tan + '"/>' +
+      '<g class="a-blink" style="animation-delay:.4s"><circle cx="287" cy="137" r="3.4" fill="#221f28"/><circle cx="301" cy="137" r="3.4" fill="#221f28"/></g>' +
+      '<rect x="268" y="164" width="52" height="9" rx="4.5" fill="' + woodD + '"/>' +
+    '</g>' +
+    // torches
+    '<rect x="56" y="190" width="9" height="58" rx="4.5" fill="' + woodD + '"/>' +
+    '<ellipse class="a-flame" cx="60.5" cy="180" rx="11" ry="17" fill="#f2a254"/>' +
+    '<ellipse class="a-flame" cx="60.5" cy="180" rx="5.5" ry="9.5" fill="#f6c98a" style="animation-delay:.25s"/>' +
+    '<rect x="355" y="190" width="9" height="58" rx="4.5" fill="' + woodD + '"/>' +
+    '<ellipse class="a-flame" cx="359.5" cy="180" rx="11" ry="17" fill="#f2a254" style="animation-delay:.5s"/>' +
+    '<ellipse class="a-flame" cx="359.5" cy="180" rx="5.5" ry="9.5" fill="#f6c98a" style="animation-delay:.75s"/>' +
+    // little fence
+    '<rect x="196" y="218" width="7" height="24" fill="' + wood + '"/>' +
+    '<rect x="217" y="218" width="7" height="24" fill="' + wood + '"/>' +
+    '<rect x="238" y="218" width="7" height="24" fill="' + wood + '"/>' +
+    '<rect x="190" y="222" width="62" height="6" rx="3" fill="' + woodD + '"/>' +
+    '<rect x="190" y="232" width="62" height="6" rx="3" fill="' + woodD + '"/>'
+  );
+}
+
+function _sceneLab() {
+  return (
+    _flask(105, 214, 0) +
+    _flask(185, 220, 0.7) +
+    _flask(300, 214, 1.3) +
+    // floating bubbles
+    '<circle class="a-bub" cx="150" cy="150" r="4" fill="#7fe3c4" opacity="0.8"/>' +
+    '<circle class="a-bub" cx="270" cy="160" r="3" fill="#7fe3c4" opacity="0.8" style="animation-delay:1.4s"/>' +
+    '<circle class="a-bub" cx="120" cy="140" r="2.4" fill="#7fe3c4" opacity="0.8" style="animation-delay:.7s"/>' +
+    // test-tube rack
+    '<rect x="238" y="226" width="42" height="6" rx="3" fill="#3a5f55"/>' +
+    '<rect x="242" y="232" width="5" height="18" rx="2" fill="#b8e8dc" opacity="0.5"/>' +
+    '<rect x="254" y="232" width="5" height="18" rx="2" fill="#2dd4bf" opacity="0.8"/>' +
+    '<rect x="266" y="232" width="5" height="18" rx="2" fill="#b8e8dc" opacity="0.5"/>'
+  );
+}
+
+function _sceneStadium() {
+  const green = "#3f9d5a", white = "#f3efe8";
+  return (
+    // grass + field lines
+    '<ellipse cx="210" cy="248" rx="150" ry="30" fill="' + green + '" opacity="0.9"/>' +
+    '<rect x="66" y="240" width="288" height="3" fill="' + white + '" opacity="0.45"/>' +
+    '<rect x="66" y="250" width="288" height="3" fill="' + white + '" opacity="0.35"/>' +
+    // goal on the right
+    '<rect x="330" y="176" width="5" height="64" fill="' + white + '"/>' +
+    '<rect x="352" y="176" width="5" height="64" fill="' + white + '"/>' +
+    '<rect x="327" y="174" width="33" height="5" rx="2" fill="' + white + '"/>' +
+    '<path d="M333 210 h19 M333 222 h19 M333 234 h19" stroke="' + white + '" stroke-width="2" opacity="0.5"/>' +
+    // corner flags waving
+    '<g class="a-sway"><rect x="78" y="196" width="4" height="46" fill="' + white + '" opacity="0.8"/>' +
+    '<path d="M82 196 l26 4 -26 8 z" fill="' + green + '" stroke="#1d4a2e" stroke-width="1.5"/></g>' +
+    '<g class="a-sway" style="animation-delay:1.1s"><rect x="330" y="236" width="4" height="20" fill="' + white + '" opacity="0.8"/>' +
+    '<path d="M334 236 l16 3 -16 6 z" fill="' + green + '" stroke="#1d4a2e" stroke-width="1.5"/></g>' +
+    // floodlights
+    '<rect x="60" y="120" width="5" height="76" fill="#2c3b31"/>' +
+    '<circle class="a-twinkle" cx="62.5" cy="116" r="9" fill="#eaffea" opacity="0.85"/>' +
+    '<rect x="355" y="128" width="5" height="68" fill="#2c3b31"/>' +
+    '<circle class="a-twinkle" cx="357.5" cy="124" r="9" fill="#eaffea" opacity="0.85" style="animation-delay:1.4s"/>'
+  );
+}
+
+function _sceneMuseum() {
+  const marble = "#e8e2d6";
+  return (
+    // marble columns
+    '<rect x="84" y="206" width="14" height="46" fill="' + marble + '"/>' +
+    '<rect x="80" y="200" width="22" height="8" rx="2" fill="' + marble + '"/>' +
+    '<rect x="80" y="250" width="22" height="7" rx="2" fill="#c9bfae"/>' +
+    '<rect x="322" y="206" width="14" height="46" fill="' + marble + '"/>' +
+    '<rect x="318" y="200" width="22" height="8" rx="2" fill="' + marble + '"/>' +
+    '<rect x="318" y="250" width="22" height="7" rx="2" fill="#c9bfae"/>' +
+    // a statue with eyes
+    '<g class="a-bob" style="animation-delay:.4s">' +
+      '<rect x="150" y="224" width="30" height="28" rx="3" fill="' + marble + '"/>' +
+      '<circle cx="165" cy="212" r="13" fill="' + marble + '"/>' +
+      '<circle cx="165" cy="192" r="11" fill="' + marble + '"/>' +
+      '<g class="a-blink" style="animation-delay:.9s"><circle cx="160" cy="190" r="2.4" fill="#5a5148"/><circle cx="170" cy="190" r="2.4" fill="#5a5148"/></g>' +
+    '</g>' +
+    // amphorae
+    '<ellipse cx="258" cy="246" rx="13" ry="16" fill="#c98d4b"/>' +
+    '<rect x="253" y="220" width="10" height="12" rx="3" fill="#c98d4b"/>' +
+    '<rect x="250" y="216" width="16" height="5" rx="2.5" fill="#a36a2f"/>' +
+    '<ellipse cx="120" cy="250" rx="11" ry="13" fill="#c98d4b" opacity="0.85"/>' +
+    '<rect x="116" y="228" width="8" height="10" rx="3" fill="#c98d4b" opacity="0.85"/>'
+  );
+}
+
+function _sceneMath(c1, c2) {
+  return (
+    // four pedestals with floating solids
+    '<rect x="94" y="232" width="10" height="18" rx="2" fill="' + c2 + '"/>' +
+    '<g class="a-bob a-spin" style="animation-delay:.2s">' +
+      '<rect x="88" y="186" width="22" height="22" rx="3" fill="' + c1 + '" opacity="0.85"/>' +
+      '<path d="M88 186 l11 -8 11 8 -11 8 z" fill="' + c2 + '"/>' +
+    '</g>' +
+    '<rect x="164" y="232" width="10" height="18" rx="2" fill="' + c2 + '"/>' +
+    '<g class="a-bob a-spin" style="animation-delay:.7s">' +
+      '<path d="M169 206 l24 0 -12 22 z" fill="' + c2 + '" opacity="0.9" stroke="' + c1 + '" stroke-width="2"/>' +
+    '</g>' +
+    '<rect x="234" y="232" width="10" height="18" rx="2" fill="' + c2 + '"/>' +
+    '<g class="a-bob a-spin" style="animation-delay:1.1s">' +
+      '<circle cx="239" cy="199" r="13" fill="' + c1 + '" opacity="0.4" stroke="' + c1 + '" stroke-width="3"/>' +
+    '</g>' +
+    '<rect x="304" y="232" width="10" height="18" rx="2" fill="' + c2 + '"/>' +
+    '<g class="a-bob a-spin" style="animation-delay:1.5s">' +
+      '<ellipse cx="309" cy="199" rx="17" ry="10" fill="none" stroke="' + c1 + '" stroke-width="6"/>' +
+    '</g>' +
+    // glowing edge sparks
+    '<circle class="a-twinkle" cx="180" cy="150" r="2" fill="' + c1 + '"/>' +
+    '<circle class="a-twinkle" cx="252" cy="160" r="2" fill="' + c1 + '" style="animation-delay:1.2s"/>' +
+    '<circle class="a-twinkle" cx="130" cy="170" r="2" fill="' + c1 + '" style="animation-delay:.6s"/>'
+  );
+}
+
+function _sceneColosseum(c1) {
+  const stone = "#9c6b4f", sand = "#c8a061";
+  return (
+    // sand floor
+    '<ellipse cx="210" cy="248" rx="150" ry="30" fill="' + sand + '" opacity="0.9"/>' +
+    // ring of arches
+    '<path d="M70 252 v-58 a26 26 0 0 1 52 0 v58" fill="none" stroke="' + stone + '" stroke-width="10"/>' +
+    '<path d="M184 252 v-66 a28 28 0 0 1 56 0 v66" fill="none" stroke="' + stone + '" stroke-width="10"/>' +
+    '<path d="M298 252 v-58 a26 26 0 0 1 52 0 v58" fill="none" stroke="' + stone + '" stroke-width="10"/>' +
+    // torches on the arches
+    '<ellipse class="a-flame" cx="96" cy="176" rx="9" ry="14" fill="#f2a254"/>' +
+    '<ellipse class="a-flame" cx="96" cy="176" rx="4.5" ry="8" fill="#f6c98a" style="animation-delay:.3s"/>' +
+    '<ellipse class="a-flame" cx="212" cy="170" rx="9" ry="14" fill="#f2a254" style="animation-delay:.7s"/>' +
+    '<ellipse class="a-flame" cx="212" cy="170" rx="4.5" ry="8" fill="#f6c98a" style="animation-delay:1s"/>' +
+    '<ellipse class="a-flame" cx="324" cy="176" rx="9" ry="14" fill="#f2a254" style="animation-delay:1.3s"/>' +
+    // small battlements
+    '<rect x="118" y="238" width="10" height="14" fill="' + stone + '"/>' +
+    '<rect x="292" y="238" width="10" height="14" fill="' + stone + '"/>' +
+    '<rect x="156" y="240" width="8" height="12" fill="' + stone + '"/>' +
+    '<rect x="256" y="240" width="8" height="12" fill="' + stone + '"/>' +
+    // red banner
+    '<g class="a-sway" style="animation-delay:.5s"><rect x="205" y="130" width="4" height="34" fill="#5a4030"/>' +
+    '<path d="M209 132 l26 6 -26 8 z" fill="' + c1 + '"/></g>'
+  );
+}
+
+function _sceneLegends(c1) {
+  const gold = "#e9b64f";
+  return (
+    // golden pillars
+    '<rect x="64" y="128" width="20" height="122" fill="' + gold + '"/>' +
+    '<rect x="58" y="120" width="32" height="10" rx="2" fill="#d9a43c"/>' +
+    '<rect x="336" y="128" width="20" height="122" fill="' + gold + '"/>' +
+    '<rect x="330" y="120" width="32" height="10" rx="2" fill="#d9a43c"/>' +
+    // light beams
+    '<polygon class="a-ray" points="210,0 246,150 174,150" fill="#ffe9a8"/>' +
+    '<polygon class="a-ray" style="animation-delay:1.6s" points="120,0 152,150 88,150" fill="#ffe9a8" opacity="0.6"/>' +
+    '<polygon class="a-ray" style="animation-delay:3s" points="300,0 332,150 268,150" fill="#ffe9a8" opacity="0.6"/>' +
+    // floating rings
+    '<ellipse class="a-bob" cx="140" cy="150" rx="26" ry="8" fill="none" stroke="' + gold + '" stroke-width="4" opacity="0.8"/>' +
+    '<ellipse class="a-bob" cx="282" cy="138" rx="22" ry="7" fill="none" stroke="' + gold + '" stroke-width="4" opacity="0.8" style="animation-delay:1.2s"/>' +
+    // sparkles
+    '<circle class="a-twinkle" cx="150" cy="120" r="2.6" fill="#fff3c4"/>' +
+    '<circle class="a-twinkle" cx="270" cy="112" r="2.2" fill="#fff3c4" style="animation-delay:.8s"/>' +
+    '<circle class="a-twinkle" cx="210" cy="100" r="2.8" fill="#fff3c4" style="animation-delay:1.6s"/>' +
+    '<circle class="a-twinkle" cx="120" cy="100" r="2" fill="#fff3c4" style="animation-delay:2.2s"/>' +
+    '<circle class="a-twinkle" cx="300" cy="104" r="2" fill="#fff3c4" style="animation-delay:2.8s"/>'
+  );
+}
+
+// assemble one arena's SVG (island + theme props + the heart trophy)
+function _sceneSVG(i, a) {
+  const c1 = a.theme.c1, c2 = a.theme.c2;
+  let extra = "";
+  if (i === 0) extra = _sceneTraining();
+  else if (i === 1) extra = _sceneLab();
+  else if (i === 2) extra = _sceneStadium();
+  else if (i === 3) extra = _sceneMuseum();
+  else if (i === 4) extra = _sceneMath(c1, c2);
+  else if (i === 5) extra = _sceneColosseum(c1);
+  else extra = _sceneLegends(c1);
+  const trophy = i === 6
+    ? '<g transform="translate(210 210) scale(1.45) translate(-210 -210)">' + _trophySVG() + '</g>'
+    : _trophySVG();
+  return (
+    '<svg class="a-svg" viewBox="0 0 420 320" preserveAspectRatio="xMidYMax slice" aria-hidden="true">' +
+      _islandSVG(c1, c2) +
+      extra +
+      trophy +
+    '</svg>'
+  );
+}
+
+// ---- panel assembly ------------------------------------------------------------
+
+function _starsHTML() {
+  const spots = [[8, 12], [18, 30], [30, 8], [44, 22], [58, 12], [72, 26], [84, 9], [93, 18], [26, 42], [66, 38], [50, 32], [12, 46]];
+  let s = "";
+  for (let k = 0; k < spots.length; k++) {
+    s += '<i class="a-star" style="left:' + spots[k][0] + '%;top:' + spots[k][1] + '%;animation-delay:' + (Math.random() * 3).toFixed(2) + 's"></i>';
   }
+  return s;
+}
 
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
-
-  const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0e0d0b);
-  // fog starts past the neighbours so you can see the next arena sliding in
-  scene.fog = new THREE.Fog(0x0e0d0b, 12, 30);
-
-  // low, close camera so the current arena fills the stage
-  const cam = new THREE.PerspectiveCamera(40, 1, 0.1, 60);
-  cam.position.set(0, 2.35, 5.6);
-
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x3a2f24, 0.7));
-  const dir = new THREE.DirectionalLight(0xffffff, 0.85);
-  dir.position.set(4, 7, 5);
-  scene.add(dir);
-
-  const SPACING = 7;
-  _anims = [];
-  for (let i = 0; i < ARENAS.length; i++) {
-    const g = _buildArena3D(i);
-    g.position.x = i * SPACING;
-    scene.add(g);
-    _tryLoadModel(i, g); // swap in the real GLB when it exists
+function _dustHTML(c1) {
+  let s = "";
+  for (let k = 0; k < 10; k++) {
+    s += '<i class="a-dust" style="' +
+      'left:' + (6 + Math.random() * 88).toFixed(1) + '%;' +
+      'bottom:' + (6 + Math.random() * 46).toFixed(1) + '%;' +
+      'animation-delay:' + (Math.random() * 9).toFixed(2) + 's;' +
+      'animation-duration:' + (6 + Math.random() * 6).toFixed(2) + 's;' +
+      'background:' + (k % 3 === 0 ? "#fff" : c1) + '"></i>';
   }
-
-  _viewer = {
-    renderer: renderer, scene: scene, cam: cam,
-    spacing: SPACING, cur: 0, target: 0,
-    anims: _anims, running: false, raf: 0, last: 0,
-  };
-  _resize();
-  return _viewer;
+  return s;
 }
 
-// ---- render loop --------------------------------------------------------------
-
-function _animStep(now) {
-  const tt = now * 0.001;
-  for (const a of _viewer.anims) {
-    if (a.orbit) {
-      a.o.position.x = Math.cos(tt * a.speed + a.phase) * a.orbit;
-      a.o.position.z = Math.sin(tt * a.speed + a.phase) * a.orbit;
-      a.o.position.y = a.y0 + Math.sin(tt * 1.3 + a.phase) * 0.15;
-      a.o.rotation.y = tt * 0.6;
-    } else {
-      if (a.flicker) a.o.position.y = a.baseY + Math.sin(tt * a.speed + a.phase) * 0.06;
-      if (a.spinY) a.o.rotation.y += a.spinY * 0.016;
-      if (a.spinX) a.o.rotation.x += a.spinX * 0.016;
-    }
-  }
+function _panelHTML(i) {
+  const a = ARENAS[i];
+  const c1 = a.theme.c1;
+  const bg = 'radial-gradient(140% 90% at 50% 80%, ' + c1 + '2e 0%, transparent 55%), linear-gradient(to bottom, #0b0a09, #151210 70%, #0b0a09)';
+  return (
+    '<div class="a-panel">' +
+      '<div class="a-bg" style="background:' + bg + '"></div>' +
+      _starsHTML() +
+      '<div class="a-scene">' + _sceneSVG(i, a) + '</div>' +
+      _dustHTML(c1) +
+    '</div>'
+  );
 }
 
-function _frame(now) {
-  if (!_viewer || !_viewer.running) return;
-  _viewer.raf = requestAnimationFrame(_frame);
-  const dt = Math.min(0.05, (now - (_viewer.last || now)) / 1000);
-  _viewer.last = now;
-  _animStep(now);
-
-  // ease the camera toward the selected arena (Clash-Royale glide).
-  // while the user drags, pointermove sets the position directly and
-  // keeps target in sync, so the tween never fights the drag.
-  const tx = _viewer.target * _viewer.spacing;
-  _viewer.cam.position.x += (tx - _viewer.cam.position.x) * Math.min(1, dt * 7);
-  _viewer.cam.lookAt(_viewer.cam.position.x, 1.15, 0);
-  _viewer.renderer.render(_viewer.scene, _viewer.cam);
-}
-
-function _resize() {
-  if (!_viewer) return;
-  const stage = document.getElementById("arena-stage");
-  if (!stage) return;
-  const w = stage.clientWidth, h = stage.clientHeight;
-  if (!w || !h) return;
-  _viewer.renderer.setSize(w, h, false);
-  _viewer.cam.aspect = w / h;
-  _viewer.cam.updateProjectionMatrix();
-}
-window.addEventListener("resize", _resize);
-
-// ---- public API (called from app.js + index.html) -----------------------------
+// ---- public API (called from app.js + index.html) -------------------------------
 
 function openArenaViewer() {
+  const track = document.getElementById("arena-track");
+  if (!track) return;
+  _track = track;
+  if (!track.children.length) {
+    let html = "";
+    for (let i = 0; i < ARENAS.length; i++) html += _panelHTML(i);
+    track.innerHTML = html;
+  }
   const trophies = (currentProfile && currentProfile.trophies) || 0;
-  if (!_viewer) {
-    _viewer = _initViewer();
-    if (!_viewer) {
-      // no WebGL — show the 2D arena list instead
-      _buildTiles(trophies);
-      _showFallback(trophies);
-      return;
-    }
-  }
   const cur = ARENAS.findIndex(function (a) { return a.id === arenaForTrophies(trophies).id; });
-  _viewer.cur = cur < 0 ? 0 : cur;
-  _viewer.target = _viewer.cur;
-  _viewer.cam.position.x = _viewer.cur * _viewer.spacing;
-  _resize();
+  const start = cur < 0 ? 0 : cur;
   _buildTiles(trophies);
-  _updateHUD(trophies);
-  if (!_viewer.running) {
-    _viewer.running = true;
-    _viewer.last = 0;
-    _viewer.raf = requestAnimationFrame(_frame);
-  }
+  // jump straight to the player's arena (no animation on open)
+  track.scrollLeft = start * track.clientWidth;
+  _setCurrent(start, trophies);
 }
 
 function closeArenaViewer() {
-  if (_viewer) _viewer.running = false;
+  // nothing to stop — the DOM scenes keep breathing on their own
 }
 
 function arenaGo3D(i) {
-  if (!_viewer) return;
+  if (!_track) return;
   i = Math.max(0, Math.min(ARENAS.length - 1, i));
-  _viewer.target = i;
-  _viewer.cur = i;
-  _updateHUD((currentProfile && currentProfile.trophies) || 0);
+  _track.scrollTo({ left: i * _track.clientWidth, behavior: "smooth" });
+  _setCurrent(i);
 }
 
-function arenaPrev() { if (_viewer) arenaGo3D(_viewer.cur - 1); }
-function arenaNext() { if (_viewer) arenaGo3D(_viewer.cur + 1); }
+function arenaPrev() { if (_track) arenaGo3D(_current - 1); }
+function arenaNext() { if (_track) arenaGo3D(_current + 1); }
 
-// ---- HUD + thumbnails ----------------------------------------------------------
+// ---- HUD + thumbnails ------------------------------------------------------------
 
-function _updateHUD(trophies) {
-  if (!_viewer) return;
-  const a = ARENAS[_viewer.cur];
-  const mine = arenaForTrophies(trophies);
+function _setCurrent(i, trophies) {
+  _current = i;
+  const t = trophies !== undefined ? trophies : ((currentProfile && currentProfile.trophies) || 0);
+  const a = ARENAS[i];
+  const mine = arenaForTrophies(t);
 
   const name = document.getElementById("arena3d-name");
   const req = document.getElementById("arena3d-req");
@@ -407,26 +344,26 @@ function _updateHUD(trophies) {
       ? "You're climbing here"
       : a.min === 0
         ? "Everyone starts here"
-        : trophies >= a.min
+        : t >= a.min
           ? "Unlocked at " + a.min + " trophies"
           : "Reach " + a.min + " trophies to unlock";
   }
   if (badge) {
-    const locked = mine.id !== a.id && trophies < a.min;
+    const locked = mine.id !== a.id && t < a.min;
     badge.classList.toggle("locked", locked);
-    if (locked) badge.style.removeProperty("background"); // let the .locked style dim it
+    if (locked) badge.style.removeProperty("background");
     else badge.style.background = a.theme.c1;
-    badge.textContent = mine.id === a.id ? "★ Your arena" : trophies >= a.min ? "Unlocked" : "Locked";
+    badge.textContent = mine.id === a.id ? "★ Your arena" : t >= a.min ? "Unlocked" : "Locked";
   }
 
   const prev = document.getElementById("arena3d-prev");
   const next = document.getElementById("arena3d-next");
-  if (prev) prev.classList.toggle("off", _viewer.cur === 0);
-  if (next) next.classList.toggle("off", _viewer.cur === ARENAS.length - 1);
+  if (prev) prev.classList.toggle("off", i === 0);
+  if (next) next.classList.toggle("off", i === ARENAS.length - 1);
 
   const tiles = document.querySelectorAll(".a3d-tile");
-  tiles.forEach(function (t, i) { t.classList.toggle("current", i === _viewer.cur); });
-  const curTile = tiles[_viewer.cur];
+  tiles.forEach(function (tile, k) { tile.classList.toggle("current", k === i); });
+  const curTile = tiles[i];
   if (curTile && curTile.scrollIntoView) {
     curTile.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
   }
@@ -450,91 +387,29 @@ function _buildTiles(trophies) {
   });
 }
 
-// ---- 2D fallback (shown when WebGL isn't available) -----------------------------
-
-function _showFallback(trophies) {
-  const stage = document.getElementById("arena-stage");
-  if (!stage) return;
-  stage.classList.add("fallback");
-  stage.innerHTML = "";
-  const mine = arenaForTrophies(trophies);
-  ARENAS.forEach(function (a) {
-    const card = document.createElement("div");
-    const isCur = mine.id === a.id;
-    const locked = trophies < a.min;
-    card.className = "a3d-fb" + (isCur ? " current" : "") + (locked ? " locked" : "");
-    card.innerHTML =
-      '<img src="' + a.icon + '" alt="' + esc(a.name) + '">' +
-      "<b>" + esc(a.name) + "</b>" +
-      "<span>" + (isCur
-        ? "★ Your arena"
-        : locked
-          ? "Locked — reach " + a.min + " trophies"
-          : "Unlocked at " + a.min + " trophies") + "</span>";
-    stage.appendChild(card);
-  });
-}
-
-// ---- input: drag the stage, mouse wheel, arrow keys ------------------------------
+// ---- input: native scroll + wheel + arrow keys ------------------------------------
 
 (function bindArenaInput() {
-  const canvas = document.getElementById("arena3d");
-  if (canvas) {
-    let downX = null, startCamX = 0, dragActive = false;
-
-    canvas.addEventListener("pointerdown", function (e) {
-      if (!_viewer) return;
-      try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-      downX = e.clientX;
-      startCamX = _viewer.cam.position.x;
-      dragActive = false;
-    });
-
-    canvas.addEventListener("pointermove", function (e) {
-      if (downX === null || !_viewer) return;
-      const dx = e.clientX - downX;
-      if (!dragActive && Math.abs(dx) > 8) dragActive = true;
-      if (dragActive) {
-        const stage = document.getElementById("arena-stage");
-        const scale = stage && stage.clientWidth ? (_viewer.spacing * 1.15) / stage.clientWidth : 0.02;
-        let nx = startCamX - dx * scale;
-        nx = Math.max(0, Math.min((ARENAS.length - 1) * _viewer.spacing, nx));
-        _viewer.cam.position.x = nx;
-        _viewer.target = nx / _viewer.spacing; // fractional index — keeps the tween from fighting the drag
-      }
-    });
-
-    function endDrag() {
-      if (downX === null || !_viewer) return;
-      if (dragActive) {
-        // release → glide to the nearest arena
-        const i = Math.round(_viewer.cam.position.x / _viewer.spacing);
-        _viewer.cur = i;
-        _viewer.target = i;
-        _updateHUD((currentProfile && currentProfile.trophies) || 0);
-      }
-      downX = null;
-      dragActive = false;
-    }
-
-    canvas.addEventListener("pointerup", endDrag);
-    canvas.addEventListener("pointercancel", endDrag);
-  }
-
-  // mouse wheel / trackpad: scroll through the arenas
   const stage = document.getElementById("arena-stage");
   if (stage) {
-    let wheelCooldown = 0;
+    // mouse wheel / trackpad scrolls the arena track horizontally on PC
     stage.addEventListener("wheel", function (e) {
-      if (!_viewer) return;
-      const now = Date.now();
-      if (now < wheelCooldown) return;
-      const dx = e.deltaX || e.deltaY;
-      if (Math.abs(dx) < 8) return;
-      if (dx > 0) arenaNext(); else arenaPrev();
-      wheelCooldown = now + 260;
+      if (!_track || _track.scrollWidth <= _track.clientWidth) return;
+      _track.scrollLeft += (e.deltaY || e.deltaX);
       e.preventDefault();
     }, { passive: false });
+  }
+
+  const track = document.getElementById("arena-track");
+  if (track) {
+    track.addEventListener("scroll", function () {
+      if (_scrollRaf) return;
+      _scrollRaf = requestAnimationFrame(function () {
+        _scrollRaf = 0;
+        const i = Math.round(track.scrollLeft / (track.clientWidth || 1));
+        _setCurrent(Math.max(0, Math.min(ARENAS.length - 1, i)));
+      });
+    });
   }
 
   document.addEventListener("keydown", function (e) {

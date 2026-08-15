@@ -293,46 +293,90 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
   margin-top: 8px;
 }
 
-/* ---------- arena viewer (Clash-Royale-style 3D browser) ---------- */
+/* ---------- arena viewer (indie Undertale-style HTML/SVG scenes) ---------- */
 .arena-stage {
   position: relative;
   height: 46vh; min-height: 300px;
   border-radius: 20px; overflow: hidden;
   border: 1px solid var(--line);
-  background: var(--bg-2);
-  touch-action: pan-y;
+  background: #0b0a09;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-/* 2D fallback list when WebGL isn't available */
-.arena-stage.fallback {
-  height: auto; min-height: 0;
-  display: flex; gap: 12px;
-  overflow-x: auto; overflow-y: hidden;
+/* soft vignette + faint scanlines so the scenes feel like a retro game */
+.arena-stage::before {
+  content: ""; position: absolute; inset: 0; z-index: 6; pointer-events: none;
+  background: radial-gradient(120% 95% at 50% 40%, transparent 52%, rgba(0, 0, 0, 0.6) 100%);
+}
+.arena-stage::after {
+  content: ""; position: absolute; inset: 0; z-index: 6; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(0, 0, 0, 0.07) 3px 4px);
+  mix-blend-mode: multiply;
+}
+.arena-track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 18px;
   scrollbar-width: none;
   touch-action: pan-x pan-y;
+  cursor: grab;
 }
-.arena-stage.fallback::-webkit-scrollbar { display: none; }
-.a3d-fb {
-  flex: 0 0 220px;
+.arena-track::-webkit-scrollbar { display: none; }
+.arena-track:active { cursor: grabbing; }
+.a-panel {
+  position: relative; flex: 0 0 100%;
   scroll-snap-align: center;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 22px 16px;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  text-align: center;
+  overflow: hidden;
 }
-.a3d-fb img { width: 56px; height: 56px; }
-.a3d-fb b { font-size: 16px; font-family: 'Nunito', sans-serif; }
-.a3d-fb span { font-size: 12px; color: var(--muted); line-height: 1.4; }
-.a3d-fb.current { border-color: var(--arena-c1, var(--accent)); background: rgba(255, 255, 255, 0.05); }
-.a3d-fb.locked { opacity: 0.6; }
-#arena3d { width: 100%; height: 100%; display: block; touch-action: pan-y; cursor: grab; }
-#arena3d:active { cursor: grabbing; }
+.a-bg { position: absolute; inset: 0; }
+.a-scene { position: absolute; inset: 0; }
+.a-svg { position: absolute; inset: 0; width: 100%; height: 100%; animation: a-breathe 8s ease-in-out infinite; transform-origin: 50% 100%; }
+.a-scene svg * { transform-box: fill-box; }
+.a-star {
+  position: absolute; width: 3px; height: 3px; border-radius: 50%;
+  background: #fff; opacity: 0.5; pointer-events: none;
+  animation: a-twinkle 3.2s ease-in-out infinite;
+}
+.a-dust {
+  position: absolute; width: 5px; height: 5px; border-radius: 50%;
+  opacity: 0; pointer-events: none;
+  animation: a-rise linear infinite;
+}
+/* the life of the scenes — everything breathes a little */
+@keyframes a-rise {
+  0%   { transform: translateY(0) scale(1); opacity: 0; }
+  15%  { opacity: 0.8; }
+  85%  { opacity: 0.5; }
+  100% { transform: translateY(-110px) scale(0.6); opacity: 0; }
+}
+@keyframes a-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes a-flicker {
+  0%, 100% { transform: scaleY(1) scaleX(1); opacity: 0.95; }
+  30% { transform: scaleY(1.18) scaleX(0.9); opacity: 1; }
+  65% { transform: scaleY(0.88) scaleX(1.06); opacity: 0.85; }
+}
+@keyframes a-sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes a-twinkle { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes a-blink { 0%, 92%, 100% { transform: scaleY(1); } 95%, 97% { transform: scaleY(0.08); } }
+@keyframes a-spin { to { transform: rotate(360deg); } }
+@keyframes a-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+@keyframes a-ray { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.38; } }
+@keyframes a-bub {
+  0% { transform: translateY(0); opacity: 0; }
+  15% { opacity: 0.9; }
+  100% { transform: translateY(-26px); opacity: 0; }
+}
+.a-bob     { animation: a-bob 3.4s ease-in-out infinite; }
+.a-flame   { transform-origin: 50% 100%; animation: a-flicker 1.5s ease-in-out infinite; }
+.a-sway    { transform-origin: 50% 100%; animation: a-sway 3.6s ease-in-out infinite; }
+.a-twinkle { animation: a-twinkle 3s ease-in-out infinite; }
+.a-blink   { animation: a-blink 4.6s infinite; }
+.a-spin    { animation: a-spin 7s linear infinite; }
+.a-breathe { animation: a-breathe 4.2s ease-in-out infinite; transform-origin: 50% 100%; }
+.a-ray     { transform-origin: 50% 0%; animation: a-ray 5.5s ease-in-out infinite; }
+.a-bub     { animation: a-bub 2.6s ease-in infinite; }
 .arena-nav {
   position: absolute; top: 50%; transform: translateY(-50%);
   width: 40px; height: 40px; border-radius: 50%; padding: 0;
@@ -361,7 +405,12 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
   transition: background 0.3s;
 }
 .arena-badge.locked { background: var(--surface-3); color: var(--muted); }
-.arena-hud h2 { font-size: 24px; line-height: 1.15; }
+.arena-hud h2 {
+  font-size: 14px; line-height: 1.55;
+  font-family: 'Press Start 2P', monospace;
+  letter-spacing: 0.02em;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.65);
+}
 .arena-hud p { margin-top: 3px; }
 .arena-swipe-hint { margin: 12px 0 6px; }
 .arena3d-tiles {

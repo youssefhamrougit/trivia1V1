@@ -38,8 +38,8 @@ its own rows, and the game's money moves (winner, trophies) are decided by
 
 | File | What it does |
 |---|---|
-| `index.html` | All screens (the app shell) — auth, home, queue, match, result, friends, leaderboard, profile, stats, **arenas (3D viewer)**. Loads three.js r128 + GLTFLoader from CDN before the app scripts |
-| `style.css` | Design system (dark + neon), match screen, progress dots, timer bar, answer reveal bands (green/red stay visible on disabled answers — see gotchas), arena viewer + tiles |
+| `index.html` | All screens (the app shell) — auth, home, queue, match, result, friends, leaderboard, profile, stats, **arenas (Undertale-style viewer)** |
+| `style.css` | Design system (dark + neon), match screen, progress dots, timer bar, answer reveal bands (green/red stay visible on disabled answers — see gotchas), arena scenes + tiles + animations |
 | `manifest.json` / `sw.js` | PWA install + network-first offline support |
 | `vercel.json` | Vercel caching + CSP headers |
 | `404.html` | Custom not-found page (Vercel serves it for unknown routes; precached in `sw.js`) |
@@ -50,9 +50,9 @@ its own rows, and the game's money moves (winner, trophies) are decided by
 | `js/trivia.js` | **The game** — matchmaking queue, the sync 1v1 match loop, bot practice, leaderboard |
 | `js/friends.js` | Friends tab — search, requests, 1v1 challenges (casual duels), incoming-challenge Realtime listener |
 | `js/arenas.js` | The 7-arena "Knowledge Ladder" (trophies → arena + theme colors/icons). Source of truth for both the home card and the 3D viewer |
-| `js/arenaViewer.js` | **The 3D arena browser** — Three.js stage (procedural scenes + GLB model loading), swipe/wheel/arrow/tile navigation, HUD |
+| `js/arenaViewer.js` | **The arena browser** — 7 hand-built HTML/SVG island scenes (indie Undertale style), scrollable track, HUD + thumbnails |
 | `js/sound.js` | Synthesized sound effects (Web Audio, no files) |
-| `assets/arenas/models/` | Drop-in **GLB arena models** (`arena-1.glb`…`arena-7.glb`) + `instruction.md` (the build spec for the 3D-art agent) |
+| `assets/arenas/models/` | **Empty** — the 3D/GLB model plan was cancelled (see `instruction.md` note) |
 | `database/*.sql` | All Postgres: tables, RLS, RPCs, seeds (see below) |
 | `aitools/context.md` | This file — the codebase map |
 | `aitools/skills.md` | How to work safely in this repo (conventions, gotchas) |
@@ -131,31 +131,29 @@ client keeps a few legacy fallbacks for pre-migration databases (e.g. the
 direct score write when `submit_answer` is missing), but new features require
 the new SQL.
 
-## The arena viewer (the 3D Arenas screen)
+## The arena viewer (the Arenas screen)
 
 - The **arena card** on the home screen (and profile) is a button that opens
   `screen-arenas`. The old 7-emoji ladder strip was removed.
-- The screen = a Three.js **stage** (46vh, one arena per 7-unit slot) + a
-  horizontal **thumbnail row** + a HUD (arena name, "★ Your arena" / "Unlocked"
-  / "Locked" badge, trophy requirement).
-- **Navigation:** drag the stage (arena follows your finger, glides to the
-  nearest arena on release), mouse wheel / trackpad, ‹ › arrows, arrow keys,
-  or tap a thumbnail. `arenaGo3D(i)` / `arenaPrev()` / `arenaNext()` are the
-  public entry points; the camera tweens `target * spacing` (target is an
-  **index**, never a world position — see gotchas).
-- **Rendering:** every arena is built **procedurally** from primitives as the
-  guaranteed fallback (shared platform + towers + flags + themed props, using
-  each arena's theme colors). Then `_tryLoadModel(i)` attempts
-  `assets/arenas/models/arena-N.glb` and, on success, **replaces** the
-  procedural scene (auto-fits bounding box to a 4.2-wide footprint, floors it
-  at y=0, expects the front to face +Z). Missing/404 → procedural stays.
-- **No WebGL / no Three.js** (offline, blocked CDN) → the stage falls back to
-  a scrollable row of 2D arena cards. The screen never renders blank.
-- three.js is pinned to **r128** (cdnjs) + its matching `GLTFLoader`
-  (jsdelivr `three@0.128.0/examples/js/loaders/GLTFLoader.js`) — loaded in
-  `index.html` before the app scripts. Don't bump the version casually; the
-  viewer code uses r128 APIs (`sRGBEncoding`, `ACESFilmicToneMapping`,
-  `MeshStandardMaterial`, UMD `THREE.GLTFLoader`).
+- The screen = a **stage** (46vh) containing a horizontally scrollable
+  **track** (`#arena-track`, one `.a-panel` per arena, `scroll-snap`), a
+  **thumbnail row** below, and a HUD (arena name in the pixel font, "★ Your
+  arena" / "Unlocked" / "Locked" badge, trophy requirement).
+- **Pure HTML/SVG — no Three.js, no WebGL, no model files.** Each arena is a
+  hand-built SVG island scene (`_sceneSVG` in js/arenaViewer.js): a floating
+  island (dark void + platform + accent rim), a themed prop set, and a golden
+  trophy with blinking eyes at the heart of every arena. Props **breathe**
+  via CSS animations (`.a-bob`, `.a-flame`, `.a-sway`, `.a-blink`,
+  `.a-spin`, `.a-twinkle`, `.a-ray`, `.a-bub`) plus floating dust motes
+  (`.a-dust`) and twinkling stars. This works offline and on any device.
+- **Navigation is native scrolling** — swipe/trackpad/drag scroll the track;
+  the stage's `wheel` handler maps vertical mouse-wheel to horizontal track
+  scroll on PC; ‹ › arrows, arrow keys, and thumbnails call `arenaGo3D(i)`
+  which smooth-scrolls the track. A rAF-throttled `scroll` listener derives
+  the centered arena and updates the HUD + tile highlight.
+- **Style notes:** the HUD arena name uses the **Press Start 2P** pixel font
+  (added to the Google Fonts link in index.html); the stage has a vignette +
+  scanline overlay (`.arena-stage::before/::after`) for the retro feel.
 - The arena-unlock modal (showArenaUnlock) still fires on the result screen
   when a win crosses a trophy threshold — it's separate from the viewer.
 
@@ -172,17 +170,19 @@ the new SQL.
 
 ## Known pain points / gotchas
 
-- **`_viewer.target` is an arena index, not a world position.** The render
-  loop computes `tx = target * spacing`. During a drag the pointer handler
-  stores `nx / spacing` (a fractional index); on release it snaps to a whole
-  index. Never store raw world X in `target` or the camera will fly off.
-- **Keep the procedural fallback alive.** The GLB models are drop-in
-  replacements; until all 7 exist, the procedural scenes are what players
-  see. Don't "clean up" `_buildArena3D` or the fallback path in
-  `openArenaViewer`.
-- **Model files are async.** `_tryLoadModel` swaps the model in whenever it
-  loads; the procedural scene shows first. A 404 is expected today (models
-  not built yet) — the error callback keeps the fallback.
+- **Arena scenes are SVG strings, not DOM nodes.** `_sceneSVG(i, a)` returns
+  markup that is injected via `innerHTML`; the per-arena prop builders
+  (`_sceneTraining`, `_sceneLab`, …) must stay in sync with the 7 entries in
+  `ARENAS`. `esc()` (friends.js) is used for any user-derived text in the
+  tiles.
+- **SVG transforms need `transform-box: fill-box`.** The animation classes
+  (`.a-bob`, `.a-spin`, …) are applied to SVG elements — `.a-scene svg * {
+  transform-box: fill-box; }` is required or transforms originate from the
+  SVG origin instead of each element.
+- **`scrollLeft` math is viewport-relative.** `arenaGo3D` scrolls to
+  `i * track.clientWidth`; the rAF scroll handler rounds
+  `scrollLeft / clientWidth` to find the current arena. Don't change the
+  panel sizing (`.a-panel { flex: 0 0 100% }`) or the snap will drift.
 - **`not.in` filter bug:** never use `.not(col, "in", array)` in supabase-js
   v2 — it drops the parentheses PostgREST requires. Use `.filter(col,
   "not.in", "(" + array.join(",") + ")")`.

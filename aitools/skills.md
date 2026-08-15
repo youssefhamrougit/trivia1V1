@@ -65,26 +65,28 @@ this file is about *how* to make changes.
 
 ## Editing the arena viewer (js/arenaViewer.js)
 
-- **three.js is pinned to r128** (CDN in `index.html`) — the code uses r128
-  APIs (`sRGBEncoding`, `ACESFilmicToneMapping`, UMD `THREE.GLTFLoader`).
-  Don't bump the version or migrate to ES-module imports; keep the
-  script-tag, no-build setup.
-- **Procedural scenes are the fallback, not the placeholder to delete.**
-  `_buildArena3D(i)` must keep working for every arena — it's what renders
-  until the GLB models exist and what renders forever if WebGL is missing.
-- **Real models are drop-in.** Drop `arena-1.glb` … `arena-7.glb` into
-  `assets/arenas/models/` and `_tryLoadModel` picks them up automatically
-  (auto-fits to 4.2-wide footprint, floors at y=0, front faces +Z). The
-  build spec lives in `assets/arenas/models/instruction.md` — point the
-  3D-art agent there and don't hand-tune per-model offsets in code.
-- **`_viewer.target` must stay an index** (the loop multiplies it by
-  `spacing`). While dragging, store `nx / spacing`; on release, a whole
-  index. Never a raw world position.
-- **New inputs** (gestures, keys) belong in `bindArenaInput`; keep the drag
-  path (pointer capture → follow → snap) intact and keep the 2D fallback
-  (`_showFallback`) reachable when `_viewer` is null.
-- The `esc()` helper from friends.js is used when building tile/fallback
-  HTML — it only runs on user navigation, after all scripts load.
+- **The arenas are pure HTML/SVG — no Three.js, no WebGL, no model files.**
+  Each arena is an SVG island scene built as a string by `_sceneSVG(i, a)`
+  and injected into the scrollable `#arena-track`. Don't reintroduce
+  external 3D/GLB dependencies; the viewer must work offline.
+- **Keep every scene alive.** The "soul" comes from CSS animations on SVG
+  elements (`.a-bob`, `.a-flame`, `.a-sway`, `.a-blink`, `.a-spin`,
+  `.a-twinkle`, `.a-ray`, `.a-bub`) and the floating `.a-dust` motes. New
+  props should reuse these classes rather than adding bespoke animations, and
+  any new animation needs `transform-box: fill-box` handling (see
+  `.a-scene svg *` in style.css).
+- **The shared trophy is the anchor.** `_trophySVG()` (blinking eyes) sits at
+  the center of every arena; scene props should be arranged around it.
+  `_islandSVG(c1, c2)` is the island every scene starts from.
+- **Navigation is native scrolling.** The track scrolls on its own (swipe /
+  wheel / trackpad); `arenaGo3D(i)` smooth-scrolls to `i * clientWidth`.
+  Keep `.a-panel` at `flex: 0 0 100%` and the rAF `scroll` → `_setCurrent`
+  derivation intact.
+- **Per-arena builders must match `ARENAS`.** `_sceneTraining` …
+  `_sceneLegends` are dispatched by index in `_sceneSVG` — keep them aligned
+  with the 7 arenas in js/arenas.js.
+- The `esc()` helper from friends.js is used when building tile HTML — it
+  only runs on user navigation, after all scripts load.
 
 ## Before finishing a change
 

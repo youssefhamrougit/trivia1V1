@@ -11,7 +11,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Press+Start+2P&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -294,7 +294,7 @@
     </section>
 
     <!-- ================================================================
-         SCREEN: ARENAS (Clash-Royale-style 3D arena browser)
+         SCREEN: ARENAS (indie Undertale-style arena browser)
     ================================================================= -->
     <section id="screen-arenas" class="screen">
       <div class="topbar">
@@ -304,7 +304,7 @@
       </div>
 
       <div class="arena-stage" id="arena-stage">
-        <canvas id="arena3d" aria-label="3D view of the arenas"></canvas>
+        <div class="arena-track" id="arena-track" aria-label="The seven arenas"></div>
         <button class="arena-nav prev" onclick="arenaPrev()" aria-label="Previous arena">‹</button>
         <button class="arena-nav next" onclick="arenaNext()" aria-label="Next arena">›</button>
         <div class="arena-hud">
@@ -339,8 +339,6 @@
   <canvas id="confetti-canvas" class="confetti-canvas" aria-hidden="true"></canvas>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/sound.js"></script>
