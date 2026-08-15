@@ -66,6 +66,17 @@ trivia1v1 is a mobile-first **1v1 trivia game** that runs entirely in the browse
 
 The whole thing is a **static site**: the browser talks to Supabase directly (auth, questions, matchmaking RPCs, live scores). There is no C++, no Node, no Docker — nothing to build or deploy.
 
+## 🎨 Design
+
+An indie pixel identity — Undertale-cute but polished, dark and moody but warm. The arena viewer is the reference target: the whole app matches its pixel language.
+
+| | |
+|---|---|
+| 🎨 **Palette** | Warm near-black `#0e0d0b` background with layered warm-dark surfaces (`#161410` → `#1e1a15`, `#262119`), warm off-white ink `#f3efe8` (never pure white) |
+| 🧡 **Accent** | One burnt-amber chrome accent (`#df7d1f`, bright `#f2a254`) for buttons/active states; state colors only for win/lose/streak (`#7fcf8d`, `#f17a68`, `#e0a93e`); arenas keep their own per-arena palettes |
+| 🔤 **Fonts** | **Press Start 2P** for headings/titles (single weight — no faux bold), **Pixelify Sans** for body text, Press Start 2P again for the arena HUD |
+| 🔲 **Chrome** | Chunky 2px borders, hard offset "sticker" shadows (no glow, no blur halos, no gradient buttons), one radius scale (4/8/12px), 150–250ms motion |
+
 ## 📁 What's in the repo
 
 ```
