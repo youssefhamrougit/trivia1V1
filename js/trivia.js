@@ -260,6 +260,7 @@ async function triviaStartMatch(matchId) {
   }
 
   showToast("Opponent found — good luck!", "ok");
+  Sound.playMatchFound();
 
   const match = data.match;
   const opp = data.opponent || { username: "Player" };
@@ -909,7 +910,8 @@ async function endMatch() {
   deltaEl.classList.add(delta > 0 ? "up" : delta < 0 ? "down" : "flat");
 
   // celebration! confetti fountain on a win
-  if (iWon) confettiBurst();
+  if (iWon) { confettiBurst(); Sound.playVictory(); }
+  else if (!tie) Sound.playDefeat();
 
   // scores + animated comparison bars
   animateNumber(document.getElementById("result-my-score"), triviaState.myScore, 500);
