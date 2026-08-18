@@ -14,6 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&family=Press+Start+2P&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
   <div id="app">
@@ -52,7 +53,12 @@
         <button class="chip" onclick="go('screen-profile')" aria-label="Open your profile">
           <span class="chip-avatar" id="home-chip-avatar">…</span> Profile
         </button>
-        <button class="chip sound-toggle" onclick="Sound.toggle()" aria-label="Toggle sound"></button>
+        <div class="topbar-right">
+          <a class="social-icon" href="https://www.tiktok.com/@trivia1v1" target="_blank" rel="noopener noreferrer" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+          <a class="social-icon" href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+          <a class="social-icon" href="https://github.com/" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+          <button class="chip sound-toggle" onclick="Sound.toggle()" aria-label="Toggle sound"></button>
+        </div>
       </header>
 
       <h1 class="screen-title">Your <span class="accent">Arena</span></h1>
