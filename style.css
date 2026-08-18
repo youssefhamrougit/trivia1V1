@@ -621,17 +621,17 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
 }
 .pill-icon, .inline-icon { width: 14px; height: 14px; vertical-align: -2px; margin-right: 3px; }
 
-/* ---------- sound toggle ---------- */
+/* ---------- sound + music toggle ---------- */
 /* works as both a .chip (home) and a .pill (match) — just inherit their look */
-.sound-toggle {
+.sound-toggle, .music-toggle {
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.2s, border-color 0.2s, color 0.2s, transform 0.1s;
 }
-.sound-toggle:active { transform: scale(0.94); }
-.sound-toggle:hover { border-color: var(--line-2); color: var(--text); }
-.sound-toggle.muted { opacity: 0.55; }
+.sound-toggle:active, .music-toggle:active { transform: scale(0.94); }
+.sound-toggle:hover, .music-toggle:hover { border-color: var(--line-2); color: var(--text); }
+.sound-toggle.muted, .music-toggle.muted { opacity: 0.55; }
 
 /* ---------- match: timer ---------- */
 .timer-bar {

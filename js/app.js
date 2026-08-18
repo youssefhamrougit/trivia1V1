@@ -397,6 +397,7 @@ async function afterLogin(user) {
   currentUser = user || null;
   await loadMyProfile();
   initFriendsListener(); // live incoming-challenge listener (Supabase Realtime)
+  if (typeof Music !== "undefined" && !Music.isMuted()) Music.start();
   go("screen-trivia-home");
 }
 
@@ -408,6 +409,7 @@ function authSignOut() {
   triviaCleanup();
   friendsCleanup();
   resetArenaTheme();
+  if (typeof Music !== "undefined") Music.stop();
   go("screen-auth");
 }
 

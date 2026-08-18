@@ -275,6 +275,7 @@ function refreshButtons() {
     btn.classList.toggle("muted", !on);
     btn.setAttribute("aria-pressed", String(on));
   });
+  if (typeof refreshMusicButton === "function") refreshMusicButton();
 }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", refreshButtons);
 else refreshButtons();

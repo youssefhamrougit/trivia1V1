@@ -8,6 +8,7 @@ Drop these `.mp3` files into this folder:
 
 | File name | What it is | Suggested duration |
 |---|---|---|
+| `bgm.mp3` | **Background music** (loops) | 30–60s ambient track |
 | `correct.mp3` | Correct answer chime | ~0.3s |
 | `wrong.mp3` | Wrong answer buzzer | ~0.3s |
 | `tick.mp3` | Countdown tick | ~0.05s |

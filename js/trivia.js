@@ -229,6 +229,7 @@ function triviaCancelQueue() {
   // don't leave a waiting match behind that someone could join into empty
   API.call("/api/trivia/cancel", { method: "POST", body: {} }).catch(function () {});
   triviaState.matchId = null;
+  if (typeof Music !== "undefined") Music.resume();
   go("screen-trivia-home");
 }
 
@@ -304,6 +305,7 @@ async function triviaStartMatch(matchId) {
   buildProgressDots();
   setScoreboard();
   showArenaInMatch();
+  if (typeof Music !== "undefined") Music.pause();
   go("screen-trivia-match");
   renderQuestion();
 
@@ -368,6 +370,7 @@ function triviaStartBotGame(questions) {
   buildProgressDots();
   setScoreboard();
   showArenaInMatch();
+  if (typeof Music !== "undefined") Music.pause();
   go("screen-trivia-match");
   renderQuestion();
 }
@@ -944,6 +947,7 @@ async function endMatch() {
   };
   requestAnimationFrame(function () { requestAnimationFrame(fillBars); });
 
+  if (typeof Music !== "undefined") Music.resume();
   go("screen-trivia-result");
 }
 
