@@ -252,11 +252,14 @@ async function loadProfile() {
   document.getElementById("profile-arena-emoji").innerHTML =
     '<img src="' + a.icon + '" alt="' + a.name + '">';
   document.getElementById("profile-arena-name").textContent = a.name;
+  document.getElementById("profile-arena-name").setAttribute("data-arena-name", a.id);
   document.getElementById("profile-arena-fill").style.width = prog.pct + "%";
   document.getElementById("profile-arena-next").textContent = prog.next
     ? Settings.tf("home.trophies_to", {n: prog.needed, name: prog.next.name})
     : Settings.t("home.max_arena");
   applyArenaTheme(a);
+  // translate arena name + category names now that profile is loaded
+  if (typeof Settings !== "undefined") Settings.applyTranslations();
 }
 
 // ---- the Stats screen (Profile → Stats): accuracy + match history -----------
@@ -307,7 +310,7 @@ function renderStatsAccuracy(wrap, s) {
       const cpct = row.total ? Math.round((row.correct / row.total) * 100) : 0;
       html +=
         '<div class="cat-row">' +
-          '<span class="cat-name">' + esc(c) + "</span>" +
+          '<span class="cat-name" data-category="' + esc(c) + '">' + esc(c) + "</span>" +
           '<span class="cat-track"><i class="cat-fill" style="width:' + cpct + '%"></i></span>' +
           '<span class="cat-pct">' + cpct + "%</span>" +
           '<span class="cat-count muted small">' + row.correct + "/" + row.total + "</span>" +

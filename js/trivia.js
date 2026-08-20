@@ -21,7 +21,7 @@
 
 const QUESTION_SECONDS = 15;
 const QUESTIONS_PER_MATCH = 10;
-const MEDAL_ICONS = ["assets/icons/medal-1.svg", "assets/icons/medal-2.svg", "assets/icons/medal-3.svg"];
+const MEDAL_ICONS = ["assets/icon.svg", "assets/icon.svg", "assets/icon.svg"];
 
 // how long we wait for a human opponent before switching to QuizBot
 const HUMAN_SEARCH_SECONDS = 7;
@@ -420,7 +420,7 @@ function prepareBotGame(diff) {
   triviaState.ending = false;
   triviaState.botDiff = diff || "medium";
   triviaState.oppName = "QuizBot";
-  triviaState.oppAvatar = '<img class="avatar-img" src="assets/icons/robot.svg" alt="QuizBot">';
+  triviaState.oppAvatar = '<img class="avatar-img" src="assets/icon.svg" alt="QuizBot">';
   triviaState.stealthBot = false; // practice is the VISIBLE QuizBot, never disguised
   triviaState.botStreak = 0;
   triviaState.matchId = null; // the online queue is over — don't touch it again
@@ -585,7 +585,7 @@ function updateStreak() {
   const pill = document.getElementById("match-streak");
   const on = triviaState.streak >= 2;
   pill.innerHTML = on
-    ? '<img class="pill-icon" src="assets/icons/flame.svg" alt=""> ' + Settings.tf("match.streak", {n: triviaState.streak})
+    ? '<img class="pill-icon" src="assets/icon.svg" alt=""> ' + Settings.tf("match.streak", {n: triviaState.streak})
     : Settings.tf("match.streak_zero", {n: triviaState.streak});
   if (on) {
     pill.classList.remove("flame-on");
@@ -1029,7 +1029,7 @@ async function endMatch() {
   const tie = !winner;
 
   document.getElementById("result-emoji").innerHTML =
-    '<img src="' + (iWon ? "assets/icons/trophy.svg" : tie ? "assets/icons/tie.svg" : "assets/icons/skull.svg") + '" alt="">';
+    '<img src="' + (iWon ? "assets/icon.svg" : tie ? "assets/icon.svg" : "assets/icon.svg") + '" alt="">';
   document.getElementById("result-title").textContent = iWon ? Settings.t("result.win") : tie ? Settings.t("result.tie") : Settings.t("result.lost");
   const trophyWord = Math.abs(delta) === 1 ? Settings.t("result.trophy") : Settings.t("result.trophies");
   const deltaText = delta > 0
@@ -1144,6 +1144,7 @@ async function loadTriviaHome() {
   const a = prog.arena;
   document.getElementById("arena-emoji").innerHTML = '<img src="' + a.icon + '" alt="' + a.name + '">';
   document.getElementById("arena-name").textContent = a.name;
+  document.getElementById("arena-name").setAttribute("data-arena-name", a.id);
   document.getElementById("arena-fill").style.width = prog.pct + "%";
   document.getElementById("arena-next").textContent = prog.next
     ? Settings.tf("home.trophies_to", {n: prog.needed, name: prog.next.name})
@@ -1159,7 +1160,7 @@ function showArenaInMatch() {
   const trophies = (currentProfile && currentProfile.trophies) || 0;
   const a = arenaForTrophies(trophies);
   const pill = document.getElementById("match-arena");
-  if (pill) pill.innerHTML = '<img class="pill-icon" src="' + a.icon + '" alt=""> ' + a.name;
+  if (pill) pill.innerHTML = '<img class="pill-icon" src="' + a.icon + '" alt=""> <span data-arena-name="' + a.id + '">' + a.name + '</span>';
   applyArenaTheme(a);
 }
 
@@ -1197,13 +1198,13 @@ async function loadLeaderboard() {
     const me = data[myRank - 1];
     document.getElementById("lb-my-rank").textContent = "#" + myRank;
     document.getElementById("lb-my-name").textContent = me.username;
-    document.getElementById("lb-my-trophies").innerHTML = (me.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt="">';
+    document.getElementById("lb-my-trophies").innerHTML = (me.trophies || 0) + ' <img class="pill-icon" src="assets/icon.svg" alt="">';
     myRow.hidden = false;
   } else if (myRow && currentProfile) {
     // user isn't in the top 50 — show their stats anyway
     document.getElementById("lb-my-rank").textContent = ">50";
     document.getElementById("lb-my-name").textContent = currentProfile.username;
-    document.getElementById("lb-my-trophies").innerHTML = (currentProfile.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt="">';
+    document.getElementById("lb-my-trophies").innerHTML = (currentProfile.trophies || 0) + ' <img class="pill-icon" src="assets/icon.svg" alt="">';
     myRow.hidden = false;
   }
 
@@ -1226,7 +1227,7 @@ async function loadLeaderboard() {
       var trEl = document.getElementById("lb-podium-trophies-" + num);
       if (avEl) avEl.textContent = (pp.username || "?").charAt(0).toUpperCase();
       if (nameEl) nameEl.textContent = pp.username + (pp.id === currentUser.id ? " " + Settings.t("leaderboard.you") : "");
-      if (trEl) trEl.innerHTML = (pp.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt="">';
+      if (trEl) trEl.innerHTML = (pp.trophies || 0) + ' <img class="pill-icon" src="assets/icon.svg" alt="">';
     }
     podium.hidden = false;
   }
@@ -1249,11 +1250,13 @@ async function loadLeaderboard() {
 
     const tr = document.createElement("span");
     tr.className = "lb-elo";
-    tr.innerHTML = (p.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt="">';
+    tr.innerHTML = (p.trophies || 0) + ' <img class="pill-icon" src="assets/icon.svg" alt="">';
 
     row.appendChild(rank);
     row.appendChild(name);
     row.appendChild(tr);
     wrap.appendChild(row);
   }
+  // translate leaderboard after async load
+  if (typeof Settings !== "undefined") Settings.applyTranslations();
 }

@@ -672,7 +672,7 @@ function _buildTiles(trophies) {
     t.innerHTML =
       '<img src="' + a.icon + '" alt="' + esc(a.name) + '">' +
       "<b>" + esc(a.name) + "</b>" +
-      '<span><img src="assets/icons/trophy.svg" alt="">' +
+      '<span><img src="assets/icon.svg" alt="">' +
       (a.min === 0 ? "Start" : a.min) + "</span>";
     wrap.appendChild(t);
   });

@@ -182,6 +182,23 @@ const Settings = (function () {
       "cat.Math": "Math",
       "cat.Football": "Football",
       "cat.History": "History",
+      // arena names
+      "arena.1": "Training Grounds",
+      "arena.2": "The Beaker Realm",
+      "arena.3": "The Last Whistle",
+      "arena.4": "The Marble Archive",
+      "arena.5": "Axiom Chamber",
+      "arena.6": "Sandsworn Arena",
+      "arena.7": "Hall of Legends",
+      // misc
+      "auth.subtitle": "Answer fast. Beat strangers. Climb the ladder.",
+      "match.vs": "VS",
+      "match.cancel": "Cancel",
+      "match.practice_easy": "Easy",
+      "match.practice_medium": "Medium",
+      "match.practice_hard": "Hard",
+      "result.my_name": "You",
+      "result.opp_name": "Opponent",
     },
 
     fr: {
@@ -335,6 +352,21 @@ const Settings = (function () {
       "cat.Math": "Maths",
       "cat.Football": "Football",
       "cat.History": "Histoire",
+      "arena.1": "Terrain d'entra\u00eetement",
+      "arena.2": "Le Royaume des Eprouvettes",
+      "arena.3": "Le Dernier Sifflet",
+      "arena.4": "L'Archive de Marbre",
+      "arena.5": "Chambre des Axiomes",
+      "arena.6": "Ar\u00e8ne du Sable",
+      "arena.7": "Hall des L\u00e9gendes",
+      "auth.subtitle": "R\u00e9pondez vite. Battez des inconnus. Gravissez l'\u00e9chelle.",
+      "match.vs": "VS",
+      "match.cancel": "Annuler",
+      "match.practice_easy": "Facile",
+      "match.practice_medium": "Moyen",
+      "match.practice_hard": "Difficile",
+      "result.my_name": "Vous",
+      "result.opp_name": "Adversaire",
     },
   };
 
@@ -392,8 +424,8 @@ const Settings = (function () {
     setHTML("screen-trivia-home .screen-title", t("home.arena_title"));
     setTextById("home-subtitle", t("home.arena_subtitle"));
     setTextById("arena-label", t("home.current_arena"));
-    setBtnInner("screen-trivia-home .btn.big", t("home.find_match"), "assets/icons/bolt.svg");
-    setBtnInner("screen-trivia-home .btn.ghost.bot-launch", t("home.practice"), "assets/icons/robot.svg");
+    setBtnInner("screen-trivia-home .btn.big", t("home.find_match"), "assets/icon.svg");
+    setBtnInner("screen-trivia-home .btn.ghost.bot-launch", t("home.practice"), "assets/icon.svg");
     setTextById("home-note", t("home.practice_note"));
     setTextById("arena-hint-home", t("home.arena_hint"));
     setTextById("arena-hint-profile", t("home.arena_hint"));
@@ -426,11 +458,11 @@ const Settings = (function () {
 
     // Profile
     setInner("screen-profile .friends-title", t("profile.title"));
-    setBtnInner("#screen-profile .btn.ghost", t("other.stats_history"), "assets/icons/trophy.svg");
-    setBtnInner(".profile-signout", t("other.sign_out"), "assets/icons/gamepad.svg");
+    setBtnInner("#screen-profile .btn.ghost", t("other.stats_history"), "assets/icon.svg");
+    setBtnInner(".profile-signout", t("other.sign_out"), "assets/icon.svg");
 
     // Leaderboard
-    setHTML("screen-leaderboard .screen-title", "<img class=\"title-icon\" src=\"assets/icons/trophy.svg\" alt=\"\"> " + t("home.leaderboard"));
+    setHTML("screen-leaderboard .screen-title", "<img class=\"title-icon\" src=\"assets/icon.svg\" alt=\"\"> " + t("home.leaderboard"));
 
     // Arena modal
     setModalText(".arena-modal-kicker", "⭐ " + t("arena.unlocked") + " ⭐");
@@ -447,6 +479,33 @@ const Settings = (function () {
 
     // Arena viewer
     setTextById("arena-swipe-hint", t("arena.swipe_hint"));
+
+    // Auth subtitle
+    setTextById("auth-subtitle", t("auth.subtitle"));
+
+    // Bot difficulty buttons
+    translateBtnText(".btn.bot-diff.easy", t("match.practice_easy"));
+    translateBtnText(".btn.bot-diff.medium", t("match.practice_medium"));
+    translateBtnText(".btn.bot-diff.hard", t("match.practice_hard"));
+
+    // Arena names (all elements with data-arena-name)
+    document.querySelectorAll("[data-arena-name]").forEach(function (el) {
+      var arenaId = el.getAttribute("data-arena-name");
+      var key = "arena." + arenaId;
+      var translated = t(key);
+      if (translated !== key) el.textContent = translated;
+    });
+
+    // Category names (all elements with data-category)
+    document.querySelectorAll("[data-category]").forEach(function (el) {
+      var cat = el.getAttribute("data-category");
+      var key = "cat." + cat;
+      var translated = t(key);
+      if (translated !== key) el.textContent = translated;
+    });
+
+    // VS badge
+    setTextById("match-vs", t("match.vs"));
   }
 
   // ---- small DOM helpers ---------------------------------------------------
@@ -533,6 +592,10 @@ const Settings = (function () {
   }
   function setLabel(id, text) {
     const el = document.getElementById(id) || document.querySelector(id);
+    if (el) el.textContent = text;
+  }
+  function translateBtnText(sel, text) {
+    const el = document.querySelector(sel);
     if (el) el.textContent = text;
   }
   function setLabelHTML(id, html) {

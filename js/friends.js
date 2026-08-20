@@ -102,7 +102,7 @@ async function friendsSearch() {
     row.innerHTML =
       friendAvatar(r) +
       '<div class="friend-info"><b>' + esc(r.username) + "</b>" +
-      '<span class="muted small">' + (r.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt=""> ' + Settings.t("friends.trophies_label") + '</span></div>';
+      '<span class="muted small">' + (r.trophies || 0) + ' <img class="pill-icon" src="assets/icon.svg" alt=""> ' + Settings.t("friends.trophies_label") + '</span></div>';
     const btn = document.createElement("button");
     btn.className = "mini-btn";
     btn.textContent = Settings.t("friends.add_btn");
@@ -164,7 +164,7 @@ function renderFriends(wrap, friends, outgoing) {
       '<div class="friend-row">' +
       friendAvatar(f) +
       '<div class="friend-info"><b>' + esc(f.username) + "</b>" +
-      '<span class="muted small">' + (f.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt=""> ' + Settings.t("friends.trophies_label") + '</span></div>' +
+      '<span class="muted small">' + (f.trophies || 0) + ' <img class="pill-icon" src="assets/icon.svg" alt=""> ' + Settings.t("friends.trophies_label") + '</span></div>' +
       (wait
         ? '<button class="mini-btn red" title="' + Settings.t("friends.cancel_challenge") + '" onclick="cancelChallenge(\'' + wait.matchId + '\', this)">' + Settings.t("friends.cancel_challenge") + '</button>'
         : '<button class="mini-btn" onclick="challengeFriend(\'' + f.id + '\', this)">1v1</button>') +
