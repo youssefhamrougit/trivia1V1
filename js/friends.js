@@ -48,7 +48,7 @@ async function loadFriends() {
   const list = document.getElementById("friends-list");
   const chall = document.getElementById("friends-challenges");
 
-  if (reqs) reqs.innerHTML = "<p class='muted small'>Loading…</p>";
+  if (reqs) reqs.innerHTML = "<p class='muted small'>" + Settings.t("friends.loading") + "</p>";
   if (list) list.innerHTML = "";
   if (chall) chall.innerHTML = "";
 
@@ -57,7 +57,7 @@ async function loadFriends() {
     data = await API.call("/api/friends");
   } catch (err) {
     const msg = /does not exist|PGRST/i.test(err.message || "")
-      ? "Friends isn't set up yet — run database/friends-bots.sql (see README)."
+      ? Settings.t("error.friends_not_setup")
       : err.message;
     if (reqs) reqs.innerHTML = "<p class='muted'>" + esc(msg) + "</p>";
     return;
@@ -78,10 +78,10 @@ async function friendsSearch() {
   const q = (input.value || "").trim();
   const wrap = document.getElementById("friends-search-results");
   if (q.length < 2) {
-    wrap.innerHTML = "<p class='muted small'>Type at least 2 characters.</p>";
+    wrap.innerHTML = "<p class='muted small'>" + Settings.t("friends.type_chars") + "</p>";
     return;
   }
-  wrap.innerHTML = "<p class='muted small'>Searching…</p>";
+  wrap.innerHTML = "<p class='muted small'>" + Settings.t("friends.searching") + "</p>";
 
   let rows = [];
   try {
@@ -93,7 +93,7 @@ async function friendsSearch() {
 
   wrap.innerHTML = "";
   if (!rows.length) {
-    wrap.innerHTML = "<p class='muted'>No players found.</p>";
+    wrap.innerHTML = "<p class='muted'>" + Settings.t("friends.no_players") + "</p>";
     return;
   }
   for (const r of rows) {
@@ -102,10 +102,10 @@ async function friendsSearch() {
     row.innerHTML =
       friendAvatar(r) +
       '<div class="friend-info"><b>' + esc(r.username) + "</b>" +
-      '<span class="muted small">' + (r.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt=""> trophies</span></div>';
+      '<span class="muted small">' + (r.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt=""> ' + Settings.t("friends.trophies_label") + '</span></div>';
     const btn = document.createElement("button");
     btn.className = "mini-btn";
-    btn.textContent = "Add";
+    btn.textContent = Settings.t("friends.add_btn");
     btn.onclick = function () { sendFriendRequest(r.username, btn); };
     row.appendChild(btn);
     wrap.appendChild(row);
@@ -117,16 +117,16 @@ async function sendFriendRequest(username, btn) {
   try {
     const res = await API.call("/api/friends/request", { method: "POST", body: { username: username } });
     const status = res.status;
-    if (status === "pending") { showToast("Friend request sent!", "ok"); if (btn) btn.textContent = "Sent"; }
-    else if (status === "already_friends") { showToast("You're already friends", "gold"); if (btn) btn.textContent = "Friends"; }
-    else if (status === "pending_exists") { showToast("A request already exists", "gold"); if (btn) btn.textContent = "Sent"; }
-    else if (status === "self") { showToast("That's you!", "err"); }
-    else if (status === "bot") { showToast("QuizBot can't be friended", "err"); }
-    else if (status === "not_found") { showToast("No player with that username", "err"); }
-    else { showToast("Something went wrong", "err"); }
+    if (status === "pending") { showToast(Settings.t("toast.request_sent"), "ok"); if (btn) btn.textContent = Settings.t("friends.sent"); }
+    else if (status === "already_friends") { showToast(Settings.t("toast.already_friends"), "gold"); if (btn) btn.textContent = Settings.t("friends.friends_label"); }
+    else if (status === "pending_exists") { showToast(Settings.t("toast.request_exists"), "gold"); if (btn) btn.textContent = Settings.t("friends.sent"); }
+    else if (status === "self") { showToast(Settings.t("toast.thats_you"), "err"); }
+    else if (status === "bot") { showToast(Settings.t("toast.cant_friend_bot"), "err"); }
+    else if (status === "not_found") { showToast(Settings.t("toast.user_not_found"), "err"); }
+    else { showToast(Settings.t("toast.something_wrong"), "err"); }
   } catch (err) {
-    showToast(err.message || "Couldn't send the request.", "err");
-    if (btn) { btn.disabled = false; btn.textContent = "Add"; }
+    showToast(err.message || Settings.t("toast.couldnt_send"), "err");
+    if (btn) { btn.disabled = false; btn.textContent = Settings.t("friends.add_btn"); }
   }
 }
 
@@ -137,14 +137,14 @@ async function sendFriendRequest(username, btn) {
 function renderFriendRequests(wrap, requests) {
   if (!wrap) return;
   if (!requests.length) { wrap.innerHTML = ""; return; }
-  let html = '<div class="friends-section"><h3>Requests <span class="badge">' + requests.length + "</span></h3>";
+  let html = '<div class="friends-section"><h3>' + Settings.tf("friends.requests_heading", {n: requests.length}) + '</h3>';
   for (const r of requests) {
     html +=
       '<div class="friend-row">' +
       friendAvatar(r) +
       '<div class="friend-info"><b>' + esc(r.username) + "</b>" +
-      '<span class="muted small">wants to battle</span></div>' +
-      '<button class="mini-btn green" onclick="acceptFriendRequest(\'' + r.rowId + '\')">Accept</button>' +
+      '<span class="muted small">' + Settings.t("friends.wants_battle") + '</span></div>' +
+      '<button class="mini-btn green" onclick="acceptFriendRequest(\'' + r.rowId + '\')">' + Settings.t("friends.accept") + '</button>' +
       '<button class="mini-btn red" onclick="declineFriendRequest(\'' + r.rowId + '\')">X</button>' +
       "</div>";
   }
@@ -154,21 +154,21 @@ function renderFriendRequests(wrap, requests) {
 function renderFriends(wrap, friends, outgoing) {
   if (!wrap) return;
   if (!friends.length) {
-    wrap.innerHTML = '<div class="friends-section"><h3>Your friends</h3><p class="muted small">No friends yet — search for someone above.</p></div>';
+    wrap.innerHTML = '<div class="friends-section"><h3>' + Settings.t("friends.your_friends").replace("{n}", "") + '</h3><p class="muted small">' + Settings.t("friends.no_friends") + '</p></div>';
     return;
   }
-  let html = '<div class="friends-section"><h3>Your friends <span class="badge">' + friends.length + "</span></h3>";
+  let html = '<div class="friends-section"><h3>' + Settings.tf("friends.your_friends", {n: friends.length}) + '</h3>';
   for (const f of friends) {
     const wait = outgoing.find(function (o) { return o.friendId === f.id; });
     html +=
       '<div class="friend-row">' +
       friendAvatar(f) +
       '<div class="friend-info"><b>' + esc(f.username) + "</b>" +
-      '<span class="muted small">' + (f.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt=""> trophies</span></div>' +
+      '<span class="muted small">' + (f.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt=""> ' + Settings.t("friends.trophies_label") + '</span></div>' +
       (wait
-        ? '<button class="mini-btn red" title="Cancel the challenge you sent" onclick="cancelChallenge(\'' + wait.matchId + '\', this)">Cancel</button>'
+        ? '<button class="mini-btn red" title="' + Settings.t("friends.cancel_challenge") + '" onclick="cancelChallenge(\'' + wait.matchId + '\', this)">' + Settings.t("friends.cancel_challenge") + '</button>'
         : '<button class="mini-btn" onclick="challengeFriend(\'' + f.id + '\', this)">1v1</button>') +
-      '<button class="mini-btn red" title="Remove friend" onclick="removeFriend(\'' + f.rowId + '\')">✕</button>' +
+      '<button class="mini-btn red" title="' + Settings.t("friends.remove_title") + '" onclick="removeFriend(\'' + f.rowId + '\')">✕</button>' +
       "</div>";
   }
   wrap.innerHTML = html + "</div>";
@@ -177,26 +177,26 @@ function renderFriends(wrap, friends, outgoing) {
 async function acceptFriendRequest(rowId) {
   try {
     await API.call("/api/friends/accept", { method: "POST", body: { id: rowId } });
-    showToast("You're now friends!", "ok");
+    showToast(Settings.t("toast.now_friends"), "ok");
     loadFriends();
-  } catch (err) { showToast(err.message || "Couldn't accept.", "err"); }
+  } catch (err) { showToast(err.message || Settings.t("toast.couldnt_accept"), "err"); }
 }
 
 async function declineFriendRequest(rowId) {
   try {
     await API.call("/api/friends/decline", { method: "POST", body: { id: rowId } });
-    showToast("Request declined", "ok");
+    showToast(Settings.t("toast.request_declined"), "ok");
     loadFriends();
-  } catch (err) { showToast(err.message || "Couldn't decline.", "err"); }
+  } catch (err) { showToast(err.message || Settings.t("toast.couldnt_decline"), "err"); }
 }
 
 async function removeFriend(rowId) {
-  if (!window.confirm("Remove this friend?")) return;
+  if (!window.confirm(Settings.t("toast.remove_friend_confirm"))) return;
   try {
     await API.call("/api/friends/remove", { method: "POST", body: { id: rowId } });
-    showToast("Friend removed", "ok");
+    showToast(Settings.t("toast.friend_removed"), "ok");
     loadFriends();
-  } catch (err) { showToast(err.message || "Couldn't remove.", "err"); }
+  } catch (err) { showToast(err.message || Settings.t("toast.couldnt_remove"), "err"); }
 }
 
 // ============================================================================
@@ -211,7 +211,7 @@ async function challengeFriend(friendId, btn) {
   try {
     const res = await API.call("/api/friends/challenge", { method: "POST", body: { friendId: friendId } });
     if (!res.match_id) {
-      showToast("A challenge to that friend is already pending.", "gold");
+      showToast(Settings.t("toast.challenge_pending"), "gold");
       loadFriends(); // re-render so the button isn't left stuck on "…"
       return;
     }
@@ -230,7 +230,7 @@ async function challengeFriend(friendId, btn) {
         triviaState.matchId = null;
         closeStream();
         if (triviaState.mode === "online" && !triviaState.started) triviaState.mode = null;
-        showToast("Your friend declined the challenge", "err");
+        showToast(Settings.t("toast.challenge_declined"), "err");
         loadFriends();
       }
     });
@@ -254,22 +254,22 @@ async function challengeFriend(friendId, btn) {
             triviaState.started = false;
             return triviaStartMatch(r.match_id);
           }
-          showToast("Your friend didn't answer — the challenge expired.", "err");
+          showToast(Settings.t("toast.challenge_expired"), "err");
         })
         .catch(function () {
           // the row is already finished — nothing to clean up, still say so
-          showToast("Your friend didn't answer — the challenge expired.", "err");
+          showToast(Settings.t("toast.challenge_expired"), "err");
         });
       loadFriends();
     });
 
-    showToast("Challenge sent — waiting for your friend", "ok");
+    showToast(Settings.t("toast.challenge_sent"), "ok");
     loadFriends();
   } catch (err) {
     var msg = (err.message || "").indexOf("does not exist") !== -1
-      ? "Friends needs a database update — re-run database/friends-bots.sql (see README)."
+      ? Settings.t("error.friends_not_setup")
       : err.message;
-    showToast(msg || "Couldn't send the challenge.", "err");
+    showToast(msg || Settings.t("toast.couldnt_send"), "err");
     if (btn) { btn.disabled = false; btn.textContent = "1v1"; }
   }
 }
@@ -298,13 +298,13 @@ async function cancelChallenge(matchId, btn) {
     triviaState.matchId = null;
     closeStream();
     if (triviaState.mode === "online" && !triviaState.started) triviaState.mode = null;
-    showToast("Challenge cancelled", "ok");
+    showToast(Settings.t("toast.challenge_cancelled"), "ok");
     loadFriends();
   } catch (err) {
     const msg = /does not exist|PGRST/i.test(err.message || "")
-      ? "Friends needs a database update — re-run database/friends-bots.sql (see README)."
+      ? Settings.t("error.friends_not_setup")
       : err.message;
-    showToast(msg || "Couldn't cancel the challenge.", "err");
+    showToast(msg || Settings.t("toast.challenge_couldnt_cancel"), "err");
     loadFriends();
   }
 }
@@ -325,16 +325,16 @@ async function loadChallenges() {
   }
   if (!rows.length) { wrap.innerHTML = ""; return; }
 
-  let html = '<div class="friends-section"><h3>Challenges</h3>';
+  let html = '<div class="friends-section"><h3>' + Settings.t("friends.challenges_heading") + '</h3>';
   for (const c of rows) {
     html +=
       '<div class="challenge-card">' +
       friendAvatar(c.challenger) +
       '<div class="friend-info"><b>' + esc(c.challenger.username || "Player") + "</b>" +
-      '<span class="muted small">challenged you to a duel!</span></div>' +
+      '<span class="muted small">' + Settings.t("friends.challenged_you") + '</span></div>' +
       '<div class="challenge-actions">' +
-      '<button class="mini-btn green" onclick="acceptFriendChallenge(\'' + c.matchId + '\')">Accept</button>' +
-      '<button class="mini-btn red" onclick="declineFriendChallenge(\'' + c.matchId + '\')">Decline</button>' +
+      '<button class="mini-btn green" onclick="acceptFriendChallenge(\'' + c.matchId + '\')">' + Settings.t("friends.accept") + '</button>' +
+      '<button class="mini-btn red" onclick="declineFriendChallenge(\'' + c.matchId + '\')">' + Settings.t("friends.decline") + '</button>' +
       "</div></div>";
   }
   wrap.innerHTML = html + "</div>";
@@ -343,7 +343,7 @@ async function loadChallenges() {
 async function acceptFriendChallenge(matchId) {
   try {
     await API.call("/api/friends/acceptchallenge", { method: "POST", body: { matchId: matchId } });
-    showToast("Challenge accepted — good luck!", "ok");
+    showToast(Settings.t("toast.challenge_accepted"), "ok");
     triviaState.mode = "online";
     triviaState.casual = true;
     triviaState.started = false;
@@ -351,7 +351,7 @@ async function acceptFriendChallenge(matchId) {
     triviaState.myAnswers = {};
     await triviaStartMatch(matchId);
   } catch (err) {
-    showToast(err.message || "Couldn't accept the challenge.", "err");
+    showToast(err.message || Settings.t("toast.challenge_couldnt_accept"), "err");
     loadFriends();
   }
 }
@@ -359,9 +359,9 @@ async function acceptFriendChallenge(matchId) {
 async function declineFriendChallenge(matchId) {
   try {
     await API.call("/api/friends/declinechallenge", { method: "POST", body: { matchId: matchId } });
-    showToast("Challenge declined", "ok");
+    showToast(Settings.t("toast.challenge_declined_ok"), "ok");
     loadFriends();
-  } catch (err) { showToast(err.message || "Couldn't decline.", "err"); }
+  } catch (err) { showToast(err.message || Settings.t("toast.challenge_couldnt_decline"), "err"); }
 }
 
 // ============================================================================
@@ -383,7 +383,7 @@ function initFriendsListener() {
       },
       function (payload) {
         if (!payload.new || payload.new.status !== "challenged") return;
-        showToast("You've been challenged — check Friends!", "gold");
+        showToast(Settings.t("toast.been_challenged"), "gold");
         const friendsScreen = document.getElementById("screen-friends");
         if (friendsScreen && friendsScreen.classList.contains("active")) loadFriends();
         else refreshFriendsBadge();

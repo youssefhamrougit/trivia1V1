@@ -632,19 +632,19 @@ function _setCurrent(i, trophies) {
   if (name) name.textContent = a.name;
   if (req) {
     req.textContent = mine.id === a.id
-      ? "You're climbing here"
+      ? Settings.t("arena.climbing_here")
       : a.min === 0
-        ? "Everyone starts here"
+        ? Settings.t("arena.everyone_starts")
         : t >= a.min
-          ? "Unlocked at " + a.min + " trophies"
-          : "Reach " + a.min + " trophies to unlock";
+          ? Settings.tf("arena.unlocked_at", {n: a.min})
+          : Settings.tf("arena.reach_unlock", {n: a.min});
   }
   if (badge) {
     const locked = mine.id !== a.id && t < a.min;
     badge.classList.toggle("locked", locked);
     if (locked) badge.style.removeProperty("background");
     else badge.style.background = a.theme.c1;
-    badge.textContent = mine.id === a.id ? "★ Your arena" : t >= a.min ? "Unlocked" : "Locked";
+    badge.textContent = mine.id === a.id ? Settings.t("arena.your_arena") : t >= a.min ? Settings.t("arena.unlocked_badge") : Settings.t("arena.locked_badge");
   }
 
   const prev = document.getElementById("arena3d-prev");

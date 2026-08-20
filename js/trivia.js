@@ -116,13 +116,13 @@ function clearQueueTimers() {
 function startQueueCountdown() {
   clearQueueCountdown();
   let left = HUMAN_SEARCH_SECONDS;
-  setQueueStatus("Searching for a human opponent… (" + left + "s)");
+  setQueueStatus(Settings.tf("match.searching_human", {n: left}));
   triviaState.queueTimer = setInterval(function () {
     left -= 1;
-    if (left > 0) setQueueStatus("Searching for a human opponent… (" + left + "s)");
+    if (left > 0) setQueueStatus(Settings.tf("match.searching_human", {n: left}));
     else {
       clearQueueCountdown();
-      setQueueStatus("Opponent found — starting…");
+      setQueueStatus(Settings.t("match.opponent_starting"));
     }
   }, 1000);
 }
@@ -164,7 +164,7 @@ function triviaFindMatch() {
     })
     .catch(function (err) {
       clearQueueTimers();
-      setError("trivia-error", "Could not join matchmaking: " + err.message);
+      setError("trivia-error", Settings.tf("error.couldnt_join", {msg: err.message}));
       go("screen-trivia-home");
     });
 }
@@ -180,8 +180,8 @@ function triviaPollForOpponent(attempt, onGiveUp) {
     if (typeof onGiveUp === "function") { onGiveUp(); return; }
     // give up quietly: go home and show the message there
     setError("trivia-error", triviaState.casual
-      ? "Your friend didn't accept the challenge. Try again!"
-      : "No opponent found yet. Try again in a moment!");
+      ? Settings.t("error.friend_no_accept")
+      : Settings.t("error.no_opponent"));
     triviaCancelQueue();
     return;
   }
@@ -274,7 +274,7 @@ async function triviaFallbackToBot() {
       go("screen-trivia-match");
       renderQuestion();
     } catch (err) {
-      setError("trivia-error", "Could not load questions: " + err.message);
+      setError("trivia-error", Settings.tf("error.couldnt_load_questions", {msg: err.message}));
       go("screen-trivia-home");
     }
   }
@@ -312,13 +312,13 @@ async function triviaStartMatch(matchId) {
   try {
     data = await API.call("/api/trivia/match/" + matchId);
   } catch (err) {
-    setError("trivia-error", "Could not load the match: " + err.message);
+    setError("trivia-error", Settings.tf("error.couldnt_load_match", {msg: err.message}));
     go("screen-trivia-home");
     triviaState.starting = false;
     return;
   }
 
-  showToast("Opponent found — good luck!", "ok");
+  showToast(Settings.t("toast.opponent_found"), "ok");
   Sound.playMatchFound();
 
   const match = data.match;
@@ -407,7 +407,7 @@ async function triviaStartBot(diff, fromFallback) {
     const allQs = await API.call("/api/questions?limit=1000");
     triviaStartBotGame(pickMatchQuestions(allQs));
   } catch (err) {
-    setError("trivia-error", "Could not load questions: " + err.message);
+    setError("trivia-error", Settings.tf("error.couldnt_load_questions", {msg: err.message}));
     go("screen-trivia-home");
   }
 }
@@ -565,8 +565,8 @@ function updateStreak() {
   const pill = document.getElementById("match-streak");
   const on = triviaState.streak >= 2;
   pill.innerHTML = on
-    ? '<img class="pill-icon" src="assets/icons/flame.svg" alt=""> ' + triviaState.streak + " streak"
-    : "streak: " + triviaState.streak;
+    ? '<img class="pill-icon" src="assets/icons/flame.svg" alt=""> ' + Settings.tf("match.streak", {n: triviaState.streak})
+    : Settings.tf("match.streak_zero", {n: triviaState.streak});
   if (on) {
     pill.classList.remove("flame-on");
     void pill.offsetWidth; // restart the pop animation
@@ -606,7 +606,7 @@ function renderQuestion() {
   document.getElementById("match-question").textContent = q.question;
   document.getElementById("match-category").textContent = q.category;
   document.getElementById("match-status").textContent =
-    "Question " + (triviaState.qIndex + 1) + " of " + QUESTIONS_PER_MATCH + " · " + QUESTION_SECONDS + " seconds each";
+    Settings.tf("match.question_of", {cur: triviaState.qIndex + 1, total: QUESTIONS_PER_MATCH, secs: QUESTION_SECONDS});
   updateStreak();
 
   // progress dots: done / current / upcoming
@@ -863,8 +863,8 @@ function enterWaitingState(wrongMode) {
   const status = document.getElementById("match-status");
   if (status) {
     status.textContent = wrongMode
-      ? "Wrong — waiting for " + triviaState.oppName + "…"
-      : "Waiting for " + triviaState.oppName + "…";
+      ? Settings.tf("match.wrong_waiting", {name: triviaState.oppName})
+      : Settings.tf("match.waiting_for", {name: triviaState.oppName});
     status.classList.add("waiting");
   }
   // lock the buttons too (a reload mid-wait rebuilds them enabled)
@@ -1010,21 +1010,21 @@ async function endMatch() {
 
   document.getElementById("result-emoji").innerHTML =
     '<img src="' + (iWon ? "assets/icons/trophy.svg" : tie ? "assets/icons/tie.svg" : "assets/icons/skull.svg") + '" alt="">';
-  document.getElementById("result-title").textContent = iWon ? "You win!" : tie ? "It's a tie!" : "You lost!";
-  const trophyWord = Math.abs(delta) === 1 ? "trophy" : "trophies";
+  document.getElementById("result-title").textContent = iWon ? Settings.t("result.win") : tie ? Settings.t("result.tie") : Settings.t("result.lost");
+  const trophyWord = Math.abs(delta) === 1 ? Settings.t("result.trophy") : Settings.t("result.trophies");
   const deltaText = delta > 0
     ? "+" + delta + " " + trophyWord
-    : delta < 0 ? delta + " " + trophyWord : "No trophy change";
+    : delta < 0 ? delta + " " + trophyWord : Settings.t("result.no_change");
   const deltaEl = document.getElementById("result-trophy-line");
   deltaEl.textContent = online
     ? ranked
       ? deltaText
       : triviaState.casual
-        ? "Friendly duel — no rank change"
-        : "Couldn't reach the network — no rank change"
+        ? Settings.t("result.friendly_duel")
+        : Settings.t("result.network_error")
     : triviaState.botFallback
-      ? "No humans found — played QuizBot (no rank change)"
-      : "Practice game — no rank change";
+      ? Settings.t("result.quizbot_fallback")
+      : Settings.t("result.practice");
   deltaEl.classList.remove("up", "down", "flat");
   deltaEl.classList.add(delta > 0 ? "up" : delta < 0 ? "down" : "flat");
 
@@ -1044,7 +1044,7 @@ async function endMatch() {
     const before = arenaForTrophies(now - delta);
     const after = arenaForTrophies(now);
     if (delta > 0 && after.id > before.id) {
-      promo.innerHTML = 'Arena unlocked: <img class="inline-icon" src="' + after.icon + '" alt=""> ' + after.name + "!";
+      promo.innerHTML = Settings.tf("result.arena_unlocked", {name: ''}) + '<img class="inline-icon" src="' + after.icon + '" alt=""> ' + after.name + "!";
       promo.classList.add("gold-msg");
       showArenaUnlock(after);
     } else {
@@ -1069,7 +1069,7 @@ async function endMatch() {
 
 // share a bragging scorecard to a friend
 function shareResult() {
-  const text = "I scored " + triviaState.myScore + " in Trivia1v1! Can you beat me?";
+  const text = Settings.tf("share.text", {score: triviaState.myScore});
   if (navigator.share) {
     navigator.share({ text: text }).catch(function () {});
   } else {
@@ -1080,7 +1080,7 @@ function shareResult() {
     ta.select();
     document.execCommand("copy");
     document.body.removeChild(ta);
-    alert("Score copied! Paste it to your friends.");
+    alert(Settings.t("share.copied"));
   }
 }
 
@@ -1126,8 +1126,8 @@ async function loadTriviaHome() {
   document.getElementById("arena-name").textContent = a.name;
   document.getElementById("arena-fill").style.width = prog.pct + "%";
   document.getElementById("arena-next").textContent = prog.next
-    ? prog.needed + " trophies to " + prog.next.name
-    : "Max arena reached — you're a legend!";
+    ? Settings.tf("home.trophies_to", {n: prog.needed, name: prog.next.name})
+    : Settings.t("home.max_arena");
   applyArenaTheme(a);
 
   // keep the Friends chip badge (pending requests + challenges) fresh
@@ -1147,7 +1147,7 @@ async function loadLeaderboard() {
   const wrap = document.getElementById("leaderboard-list");
   const myRow = document.getElementById("lb-my-row");
   const podium = document.getElementById("lb-podium");
-  wrap.innerHTML = "<p class='muted'>Loading…</p>";
+  wrap.innerHTML = "<p class='muted'>" + Settings.t("leaderboard.loading") + "</p>";
   if (myRow) myRow.hidden = true;
   if (podium) podium.hidden = true;
 
@@ -1156,13 +1156,13 @@ async function loadLeaderboard() {
   try {
     data = await API.call("/api/leaderboard");
   } catch (err) {
-    wrap.innerHTML = "<p class='muted'>Couldn't load the leaderboard.</p>";
+    wrap.innerHTML = "<p class='muted'>" + Settings.t("leaderboard.cant_load") + "</p>";
     return;
   }
 
   wrap.innerHTML = "";
   if (!data || data.length === 0) {
-    wrap.innerHTML = "<p class='muted'>No players yet. Be the first!</p>";
+    wrap.innerHTML = "<p class='muted'>" + Settings.t("leaderboard.no_players") + "</p>";
     return;
   }
 
@@ -1205,7 +1205,7 @@ async function loadLeaderboard() {
       var nameEl = document.getElementById("lb-podium-name-" + num);
       var trEl = document.getElementById("lb-podium-trophies-" + num);
       if (avEl) avEl.textContent = (pp.username || "?").charAt(0).toUpperCase();
-      if (nameEl) nameEl.textContent = pp.username + (pp.id === currentUser.id ? " (you)" : "");
+      if (nameEl) nameEl.textContent = pp.username + (pp.id === currentUser.id ? " " + Settings.t("leaderboard.you") : "");
       if (trEl) trEl.innerHTML = (pp.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt="">';
     }
     podium.hidden = false;
@@ -1225,7 +1225,7 @@ async function loadLeaderboard() {
 
     const name = document.createElement("span");
     name.className = "lb-name";
-    name.textContent = p.username + (p.id === currentUser.id ? " (you)" : "");
+    name.textContent = p.username + (p.id === currentUser.id ? " " + Settings.t("leaderboard.you") : "");
 
     const tr = document.createElement("span");
     tr.className = "lb-elo";

@@ -151,7 +151,7 @@ function showArenaUnlock(arena) {
     '<img src="' + arena.icon + '" alt="' + arena.name + '">';
   document.getElementById("arena-modal-name").textContent = arena.name;
   document.getElementById("arena-modal-blurb").textContent = arena.blurb || "";
-  document.getElementById("arena-modal-req").textContent = "Reached " + arena.min + " trophies";
+  document.getElementById("arena-modal-req").textContent = Settings.tf("arena.unlocked_req", {n: arena.min});
 
   // paint the card, icon and button in the arena's colors
   const card = modal.querySelector(".arena-modal-card");
@@ -251,8 +251,8 @@ async function loadProfile() {
   document.getElementById("profile-arena-name").textContent = a.name;
   document.getElementById("profile-arena-fill").style.width = prog.pct + "%";
   document.getElementById("profile-arena-next").textContent = prog.next
-    ? prog.needed + " trophies to " + prog.next.name
-    : "Max arena reached — you're a legend!";
+    ? Settings.tf("home.trophies_to", {n: prog.needed, name: prog.next.name})
+    : Settings.t("home.max_arena");
   applyArenaTheme(a);
 }
 
@@ -261,8 +261,8 @@ async function loadProfile() {
 async function loadStats() {
   const accWrap = document.getElementById("stats-accuracy");
   const histWrap = document.getElementById("stats-history");
-  if (accWrap) accWrap.innerHTML = "<p class='muted small'>Loading…</p>";
-  if (histWrap) histWrap.innerHTML = "<p class='muted small'>Loading…</p>";
+  if (accWrap) accWrap.innerHTML = "<p class='muted small'>" + Settings.t("stats.loading") + "</p>";
+  if (histWrap) histWrap.innerHTML = "<p class='muted small'>" + Settings.t("stats.loading") + "</p>";
 
   // fetch accuracy + history in parallel (they're independent)
   const [s, h] = await Promise.all([
@@ -270,9 +270,9 @@ async function loadStats() {
     API.call("/api/matches/history").catch(function () { return null; }),
   ]);
   if (s) renderStatsAccuracy(accWrap, s);
-  else if (accWrap) accWrap.innerHTML = "<p class='muted'>Couldn't load your stats.</p>";
+  else if (accWrap) accWrap.innerHTML = "<p class='muted'>" + Settings.t("stats.cant_load") + "</p>";
   if (h) renderMatchHistory(histWrap, h);
-  else if (histWrap) histWrap.innerHTML = "<p class='muted'>Couldn't load match history.</p>";
+  else if (histWrap) histWrap.innerHTML = "<p class='muted'>" + Settings.t("stats.cant_load_history") + "</p>";
 }
 
 // NOTE: esc() (used below) is defined in friends.js — fine here because this
@@ -291,13 +291,13 @@ function renderStatsAccuracy(wrap, s) {
   let html =
     '<div class="stats-card stats-overview">' +
       '<div class="accuracy-big">' + pct + "<small>%</small></div>" +
-      "<p>Overall accuracy</p>" +
-      '<p class="stats-total">' + s.correct + " of " + s.total + " answers</p>" +
+      '<p>' + Settings.t("stats.overall_accuracy") + '</p>' +
+      '<p class="stats-total">' + Settings.tf("stats.answers_of", {correct: s.correct, total: s.total}) + '</p>' +
     "</div>";
 
-  html += '<div class="stats-section"><h3>Accuracy by category</h3>';
+  html += '<div class="stats-section"><h3>' + Settings.t("stats.by_category") + '</h3>';
   if (!s.total) {
-    html += "<p class='muted small'>Answer a few questions and your per-category accuracy will appear here.</p>";
+    html += '<p class="muted small">' + Settings.t("stats.no_data") + '</p>';
   } else {
     for (const c of cats) {
       const row = byCat[c] || { total: 0, correct: 0 };
@@ -318,9 +318,9 @@ function renderStatsAccuracy(wrap, s) {
 // the most recent finished matches: result badge, opponent, score, date
 function renderMatchHistory(wrap, history) {
   if (!wrap) return;
-  let html = '<div class="stats-section"><h3>Match history</h3>';
+  let html = '<div class="stats-section"><h3>' + Settings.t("stats.match_history") + '</h3>';
   if (!history || history.length === 0) {
-    html += "<p class='muted small'>No finished matches yet — your ranked &amp; friend duels will show up here once they end (practice matches aren't listed).</p>";
+    html += '<p class="muted small">' + Settings.t("stats.no_history") + '</p>';
     wrap.innerHTML = html + "</div>";
     return;
   }
@@ -347,11 +347,11 @@ function authSignUp() {
   const username = document.getElementById("auth-username").value.trim();
   const password = document.getElementById("auth-password").value;
   if (!USERNAME_RE.test(username)) {
-    setError("auth-error", "Username: 3–20 letters, numbers or underscores.");
+    setError("auth-error", Settings.t("error.username_invalid"));
     return;
   }
   if (password.length < 6) {
-    setError("auth-error", "Password must be at least 6 characters.");
+    setError("auth-error", Settings.t("error.password_short"));
     return;
   }
   setError("auth-error", "");
@@ -364,7 +364,7 @@ function authLogIn() {
   const username = document.getElementById("auth-username").value.trim();
   const password = document.getElementById("auth-password").value;
   if (!username || !password) {
-    setError("auth-error", "Enter your username and password.");
+    setError("auth-error", Settings.t("error.enter_credentials"));
     return;
   }
   setError("auth-error", "");
@@ -384,9 +384,9 @@ function afterAuth(data) {
   const session = data.session || data;
   if (!session || !session.access_token) {
     if (data && data.needsConfirm) {
-      setError("auth-error", "Account created! Confirm your email first, then log in. (Or turn off \"Confirm email\" in Supabase — see README.)");
+      setError("auth-error", Settings.t("error.email_confirm"));
     } else {
-      setError("auth-error", (data && data.message) || "Please check your email or log in.");
+      setError("auth-error", (data && data.message) || Settings.t("error.check_email_login"));
     }
     return;
   }
