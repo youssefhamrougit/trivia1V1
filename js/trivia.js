@@ -268,8 +268,18 @@ async function triviaStartMatch(matchId) {
   triviaState.iAmPlayer1 = match.player1 === currentUser.id;
   triviaState.oppName = opp.username || "Player";
   triviaState.oppAvatar = triviaState.oppName.charAt(0).toUpperCase();
-  triviaState.questions = data.questions || [];
   triviaState.myAnswers = data.myAnswers || {};
+
+  // if the match row has no question_ids (stale / challenge not fully set
+  // up), grab 10 random questions from the bank so the game still starts
+  var questions = data.questions || [];
+  if (!questions.length) {
+    try {
+      var allQs = await API.call("/api/questions?limit=1000");
+      questions = pickMatchQuestions(allQs);
+    } catch (e) { /* last resort — the match will have 0 questions */ }
+  }
+  triviaState.questions = questions;
 
   // open the live feed: Realtime pushes the opponent's scores + round
   // advances to us
@@ -533,10 +543,20 @@ function renderQuestion() {
   });
 
   // build the 4 answer buttons with A/B/C/D badges
+  // shuffle the order so answers are never in the same spot
+  var optionOrder = [0, 1, 2, 3];
+  for (var oi = optionOrder.length - 1; oi > 0; oi--) {
+    var oj = randomInt(oi + 1);
+    var ot = optionOrder[oi]; optionOrder[oi] = optionOrder[oj]; optionOrder[oj] = ot;
+  }
+  triviaState.optionOrder = optionOrder;
+  triviaState.shuffledCorrect = optionOrder.indexOf(q.correct_index);
+
   const wrap = document.getElementById("match-answers");
   wrap.innerHTML = "";
   const letters = ["A", "B", "C", "D"];
   for (let i = 0; i < q.options.length; i++) {
+    const origIdx = optionOrder[i];
     const btn = document.createElement("button");
     btn.className = "answer";
     btn.style.animationDelay = i * 60 + "ms";
@@ -544,10 +564,10 @@ function renderQuestion() {
     badge.className = "answer-letter";
     badge.textContent = letters[i] || String(i + 1);
     const txt = document.createElement("span");
-    txt.textContent = q.options[i];
+    txt.textContent = q.options[origIdx];
     btn.appendChild(badge);
     btn.appendChild(txt);
-    btn.onclick = function () { triviaPick(i, q, btn); };
+    btn.onclick = (function (shuffledIdx) { return function () { triviaPick(shuffledIdx, q, btn); }; })(i);
     wrap.appendChild(btn);
   }
 
@@ -589,7 +609,9 @@ function triviaPick(index, q, btn) {
   if (triviaState.answered) return;
   triviaState.answered = true;
   clearInterval(triviaState.timer);
-  finishQuestion(index === q.correct_index, btn, index);
+  // un-shuffle: index is the button position, optionOrder maps it back to the original
+  var origIdx = triviaState.optionOrder ? triviaState.optionOrder[index] : index;
+  finishQuestion(origIdx === q.correct_index, btn, origIdx);
 }
 
 // finish the current question: score it, tell the opponent, move on.
@@ -605,7 +627,8 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
 
   // highlight the right answer (green) and the wrong pick (red)
   const buttons = document.querySelectorAll("#match-answers .answer");
-  buttons[q.correct_index].classList.add("correct");
+  var corrIdx = triviaState.shuffledCorrect != null ? triviaState.shuffledCorrect : q.correct_index;
+  buttons[corrIdx].classList.add("correct");
   if (chosenBtn && !correct) chosenBtn.classList.add("wrong");
   buttons.forEach(function (b) { b.disabled = true; });
 
@@ -619,6 +642,9 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
   }
   updateScoreboard();
   updateStreak();
+
+  // remember if WE answered correctly — the sync timing differs
+  triviaState._lastCorrect = !!correct;
 
   // stats: log this answer so the Stats screen can show per-category
   // accuracy (fire-and-forget — the game never breaks if it fails)
@@ -647,16 +673,19 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
         if (typeof res.opp_score === "number") triviaState.oppScore = res.opp_score;
         updateScoreboard();
         if (res.done === true) {
-          // both answered — short pause so you can see the result, then the
-          // whole match moves to the next question together
+          // both answered — if WE were correct, advance fast (0.7s);
+          // if we were wrong, slightly longer so the reveal lands (1.0s)
+          var revealMs = triviaState._lastCorrect ? 700 : 1000;
           triviaState.revealTimer = setTimeout(function () {
             triviaState.revealTimer = null;
             syncAdvanceTo(res.current_q);
-          }, 1400);
+          }, revealMs);
         } else if (res.done === false) {
-          // the opponent hasn't answered yet — lock the screen and wait; the
-          // Realtime "round" event (or the poll) advances us when they do
-          enterWaitingState();
+          // the opponent hasn't answered yet — lock the screen and wait;
+          // the Realtime "round" event (or the poll) advances us when they
+          // do.  If WE were correct we still wait (both phones stay in sync)
+          // but the status message is friendlier.
+          enterWaitingState(!triviaState._lastCorrect);
         } else {
           // legacy database without the sync fields — old self-paced flow
           triviaState.revealTimer = setTimeout(function () {
@@ -691,10 +720,11 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
   }
 
   // short pause so you can see the result, then next question
+  var botReveal = triviaState._lastCorrect ? 700 : 1000;
   triviaState.revealTimer = setTimeout(function () {
     triviaState.revealTimer = null;
     triviaNext();
-  }, 1400);
+  }, botReveal);
 }
 
 // score ONE answer for the invisible opponent — 100 points, or 150 on a
@@ -747,7 +777,7 @@ function triviaNext() {
 // Realtime "round" event (see triviaStartMatch); the 1.5s poll below is the
 // safety net (and the nudge that times a disconnected opponent out via the
 // server's sync_tick).
-function enterWaitingState() {
+function enterWaitingState(wrongMode) {
   if (triviaState.ending || triviaState.mode !== "online") return;
   triviaState.waiting = true;
   triviaState.answered = true; // this question is locked — no re-answering
@@ -755,7 +785,9 @@ function enterWaitingState() {
   triviaState.revealTimer = null; // not used while waiting — never leave a stale id behind
   const status = document.getElementById("match-status");
   if (status) {
-    status.textContent = "Waiting for " + triviaState.oppName + "…";
+    status.textContent = wrongMode
+      ? "Wrong — waiting for " + triviaState.oppName + "…"
+      : "Waiting for " + triviaState.oppName + "…";
     status.classList.add("waiting");
   }
   // lock the buttons too (a reload mid-wait rebuilds them enabled)
@@ -766,7 +798,7 @@ function enterWaitingState() {
 
 function startSyncPoll() {
   stopSyncPoll();
-  triviaState.syncPoll = setInterval(function () { syncPollTick(); }, 1500);
+  triviaState.syncPoll = setInterval(function () { syncPollTick(); }, 1000);
 }
 
 function stopSyncPoll() {
@@ -813,6 +845,7 @@ function syncAdvanceTo(q) {
   if (triviaState.ending || triviaState.mode !== "online") return;
   stopSyncPoll();
   triviaState.waiting = false;
+  triviaState._lastCorrect = null;
   if (typeof q !== "number" || q <= triviaState.qIndex) return; // stale/duplicate
   triviaState.qIndex = q;
   if (triviaState.qIndex >= triviaState.questions.length) {

@@ -219,7 +219,9 @@ async function challengeFriend(friendId, btn) {
     triviaState.mode = "online";
     triviaState.casual = true;
     triviaState.started = false;
+    triviaState.ending = false;
     triviaState.matchId = res.match_id;
+    triviaState.myAnswers = {};
 
     closeStream();
     triviaState.stream = API.stream("queue-" + res.match_id, function (ev) {
@@ -264,7 +266,10 @@ async function challengeFriend(friendId, btn) {
     showToast("Challenge sent — waiting for your friend", "ok");
     loadFriends();
   } catch (err) {
-    showToast(err.message || "Couldn't send the challenge.", "err");
+    var msg = (err.message || "").indexOf("does not exist") !== -1
+      ? "Friends needs a database update — re-run database/friends-bots.sql (see README)."
+      : err.message;
+    showToast(msg || "Couldn't send the challenge.", "err");
     if (btn) { btn.disabled = false; btn.textContent = "1v1"; }
   }
 }
@@ -342,6 +347,8 @@ async function acceptFriendChallenge(matchId) {
     triviaState.mode = "online";
     triviaState.casual = true;
     triviaState.started = false;
+    triviaState.ending = false;
+    triviaState.myAnswers = {};
     await triviaStartMatch(matchId);
   } catch (err) {
     showToast(err.message || "Couldn't accept the challenge.", "err");
