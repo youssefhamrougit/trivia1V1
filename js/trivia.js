@@ -254,7 +254,7 @@ async function triviaFallbackToBot() {
     // load questions and start the match
     try {
       var allQs = await API.call("/api/questions?limit=1000");
-      var questions = pickMatchQuestions(allQs);
+      var questions = pickMatchQuestions(allQs).map(translateQuestion);
 
       triviaState.questions = questions;
       triviaState.qIndex = 0;
@@ -334,10 +334,10 @@ async function triviaStartMatch(matchId) {
   if (!questions.length) {
     try {
       var allQs = await API.call("/api/questions?limit=1000");
-      questions = pickMatchQuestions(allQs);
+      questions = pickMatchQuestions(allQs).map(translateQuestion);
     } catch (e) { /* last resort — the match will have 0 questions */ }
   }
-  triviaState.questions = questions;
+  triviaState.questions = questions.map(translateQuestion);
 
   // open the live feed: Realtime pushes the opponent's scores + round
   // advances to us
@@ -428,7 +428,7 @@ function prepareBotGame(diff) {
 
 // shared tail: actually begin a QuizBot game with the given questions
 function triviaStartBotGame(questions) {
-  triviaState.questions = questions || [];
+  triviaState.questions = (questions || []).map(translateQuestion);
   triviaState.qIndex = 0;
   triviaState.myScore = 0;
   triviaState.oppScore = 0;
@@ -530,6 +530,26 @@ function closeStream() {
     triviaState.stream.close();
     triviaState.stream = null;
   }
+}
+
+// translate a question object to the current language if French columns exist
+function translateQuestion(q) {
+  if (!q) return q;
+  if (typeof Settings !== "undefined" && Settings.getLang && Settings.getLang() !== "en") {
+    var translated = Object.assign({}, q);
+    if (q.question_fr) {
+      translated.question = q.question_fr;
+      translated.options = q.options_fr || q.options;
+    }
+    // translate category name using the translation map
+    var catKey = "cat." + q.category;
+    if (typeof Settings.t === "function") {
+      var catTranslated = Settings.t(catKey);
+      if (catTranslated !== catKey) translated.category = catTranslated;
+    }
+    return translated;
+  }
+  return q;
 }
 
 // the 10 little dots that track progress through the match
