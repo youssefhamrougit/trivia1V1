@@ -726,6 +726,7 @@ const Settings = (function () {
       // Set initial RTL and lang
       document.documentElement.lang = lang;
       document.documentElement.dir = (lang === "ar") ? "rtl" : "ltr";
+      applyTranslations();
     },
 
     getLang: function () { return lang; },
@@ -738,8 +739,11 @@ const Settings = (function () {
       save();
       applyTranslations();
       renderSettings();
-      // Re-render leaderboard if visible
+      // Re-render all screens that may have dynamic translated content
+      if (typeof loadTriviaHome === "function") loadTriviaHome();
       if (typeof loadLeaderboard === "function") loadLeaderboard();
+      if (typeof loadFriends === "function") loadFriends();
+      if (typeof loadProfile === "function") loadProfile();
     },
 
     getMusicVol: function () { return musicVol; },

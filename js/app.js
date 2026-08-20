@@ -211,6 +211,9 @@ function go(screenId) {
   if (screenId === "screen-settings") Settings.renderSettings();
   if (screenId === "screen-arenas") openArenaViewer();
   else closeArenaViewer(); // pause the 3D loop whenever we leave the Arenas screen
+
+  // re-apply translations to the newly shown screen
+  if (typeof Settings !== "undefined" && screenId !== "screen-settings") Settings.applyTranslations();
 }
 
 // ---- loading my profile row (from Supabase) -------------------------
