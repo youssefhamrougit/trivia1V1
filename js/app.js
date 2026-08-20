@@ -208,6 +208,7 @@ function go(screenId) {
   if (screenId === "screen-friends") loadFriends();
   if (screenId === "screen-profile") loadProfile();
   if (screenId === "screen-stats") loadStats();
+  if (screenId === "screen-settings") Settings.renderSettings();
   if (screenId === "screen-arenas") openArenaViewer();
   else closeArenaViewer(); // pause the 3D loop whenever we leave the Arenas screen
 }
@@ -399,6 +400,8 @@ async function afterLogin(user) {
   initFriendsListener(); // live incoming-challenge listener (Supabase Realtime)
   if (typeof Music !== "undefined" && !Music.isMuted()) Music.start();
   go("screen-trivia-home");
+  // apply language translations to all screens now that DOM is ready
+  if (typeof Settings !== "undefined") Settings.applyTranslations();
 }
 
 function authSignOut() {
@@ -423,6 +426,9 @@ async function appInit() {
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   }
+
+  // restore language + volume settings early so the UI is correct
+  if (typeof Settings !== "undefined") Settings.init();
 
   // connect to Supabase and restore the saved session (if any)
   try { await API.init(); } catch (e) { console.error("API.init:", e.message); }

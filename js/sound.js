@@ -264,6 +264,26 @@ const Sound = (function () {
     playMatchFound: function () { play("matchFound"); },
     playVictory:    function () { play("victory"); },
     playDefeat:     function () { play("defeat"); },
+
+    setVolume: function (v) {
+      v = Math.max(0, Math.min(1, v));
+      if (v === 0 && !muted) {
+        muted = true;
+        try { localStorage.setItem("df_muted", "1"); } catch (e) {}
+        if (master) master.gain.value = 0;
+        refreshButtons();
+        return;
+      }
+      if (v > 0 && muted) {
+        muted = false;
+        try { localStorage.setItem("df_muted", "0"); } catch (e) {}
+        ensure();
+      }
+      if (master && ctx) {
+        master.gain.value = v * 0.9;
+      }
+      refreshButtons();
+    },
   };
 })();
 

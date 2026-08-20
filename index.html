@@ -59,6 +59,7 @@
           <a class="social-icon" href="https://github.com/youssefhamrougit/trivia1V1" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
           <button class="chip sound-toggle" onclick="Sound.toggle()" aria-label="Toggle sound"></button>
           <button class="chip music-toggle" id="music-toggle" onclick="Music.toggle()" aria-label="Toggle music"></button>
+          <button class="chip settings-chip" onclick="openSettings()" aria-label="Settings">⚙</button>
         </div>
       </header>
 
@@ -301,6 +302,54 @@
     </section>
 
     <!-- ================================================================
+         SCREEN: SETTINGS
+    ================================================================= -->
+    <section id="screen-settings" class="screen">
+      <div class="topbar">
+        <button class="chip" onclick="go('screen-trivia-home')">← Back</button>
+        <h1 class="friends-title" id="settings-title">Settings</h1>
+        <span></span>
+      </div>
+
+      <div class="settings-card">
+        <label class="settings-label" id="settings-lang-label">Language</label>
+        <div class="lang-row" id="settings-lang-btns">
+          <button class="lang-btn active" data-lang="en" onclick="settingsSetLang('en')">English</button>
+          <button class="lang-btn" data-lang="ar" onclick="settingsSetLang('ar')">العربية</button>
+          <button class="lang-btn" data-lang="fr" onclick="settingsSetLang('fr')">Français</button>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <label class="settings-label" id="settings-music-label">
+          <i class="fa-solid fa-music"></i> Music Volume
+        </label>
+        <div class="slider-row">
+          <i class="fa-solid fa-volume-low slider-icon"></i>
+          <input type="range" id="settings-music-slider" class="settings-slider" min="0" max="100" value="75"
+                 oninput="settingsMusicSlider(this.value)" />
+          <i class="fa-solid fa-volume-high slider-icon"></i>
+          <span class="slider-val" id="settings-music-val">75%</span>
+        </div>
+      </div>
+
+      <div class="settings-card">
+        <label class="settings-label" id="settings-sfx-label">
+          <i class="fa-solid fa-droplet"></i> Sound Effects
+        </label>
+        <div class="slider-row">
+          <i class="fa-solid fa-volume-low slider-icon"></i>
+          <input type="range" id="settings-sfx-slider" class="settings-slider" min="0" max="100" value="80"
+                 oninput="settingsSfxSlider(this.value)" />
+          <i class="fa-solid fa-volume-high slider-icon"></i>
+          <span class="slider-val" id="settings-sfx-val">80%</span>
+        </div>
+      </div>
+
+      <button class="btn ghost" onclick="go('screen-trivia-home')" style="margin-top:24px;">Done</button>
+    </section>
+
+    <!-- ================================================================
          SCREEN: ARENAS (indie Undertale-style arena browser)
     ================================================================= -->
     <section id="screen-arenas" class="screen">
@@ -351,6 +400,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
+  <script src="js/settings.js"></script>
   <script src="js/api.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/music.js"></script>

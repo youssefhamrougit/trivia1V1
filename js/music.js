@@ -344,6 +344,29 @@ const Music = (function () {
 
     isPlaying: function () { return running && !paused; },
     isMuted: function () { return muted; },
+
+    setVolume: function (v) {
+      v = Math.max(0, Math.min(1, v));
+      // mute if volume is 0
+      if (v === 0 && !muted) {
+        muted = true;
+        try { localStorage.setItem("df_music_muted", "1"); } catch (e) {}
+        this.stop();
+        refreshMusicButton();
+        return;
+      }
+      // unmute if volume > 0
+      if (v > 0 && muted) {
+        muted = false;
+        try { localStorage.setItem("df_music_muted", "0"); } catch (e) {}
+        this.start();
+      }
+      // adjust master gain
+      if (master && ctx) {
+        master.gain.linearRampToValueAtTime(v * 0.15, ctx.currentTime + 0.1);
+      }
+      refreshMusicButton();
+    },
   };
 })();
 

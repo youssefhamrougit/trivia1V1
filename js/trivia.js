@@ -1025,6 +1025,8 @@ function triviaCleanup() {
 
 async function loadTriviaHome() {
   if (!currentProfile) return;
+  // apply language translations to the home screen
+  if (typeof Settings !== "undefined") Settings.applyTranslations();
   const trophies = currentProfile.trophies || 0;
   animateNumber(document.getElementById("trivia-trophies"), trophies, 500);
   animateNumber(document.getElementById("trivia-wins"), currentProfile.wins || 0, 500);
