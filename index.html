@@ -57,14 +57,12 @@
           <a class="social-icon" href="https://www.tiktok.com/@trivia1v1" target="_blank" rel="noopener noreferrer" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
           <a class="social-icon" href="https://instagram.com/" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
           <a class="social-icon" href="https://github.com/youssefhamrougit/trivia1V1" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
-          <button class="chip sound-toggle" onclick="Sound.toggle()" aria-label="Toggle sound"></button>
-          <button class="chip music-toggle" id="music-toggle" onclick="Music.toggle()" aria-label="Toggle music"></button>
           <button class="chip settings-chip" onclick="openSettings()" aria-label="Settings">⚙</button>
         </div>
       </header>
 
       <h1 class="screen-title">Your <span class="accent">Arena</span></h1>
-      <p class="muted small">Win matches to climb the Knowledge Ladder.</p>
+      <p class="muted small" id="home-subtitle">Win matches to climb the Knowledge Ladder.</p>
 
       <div class="arena-card" role="button" tabindex="0" onclick="go('screen-arenas')"
            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();go('screen-arenas');}"
@@ -72,7 +70,7 @@
         <div class="arena-card-top">
           <div class="arena-emoji" id="arena-emoji"></div>
           <div class="arena-info">
-            <span class="arena-label">Current arena</span>
+            <span class="arena-label" id="arena-label">Current arena</span>
             <b id="arena-name">Training Grounds</b>
           </div>
           <span class="arena-chevron" aria-hidden="true">›</span>
@@ -80,7 +78,7 @@
         <div class="arena-progress"><div id="arena-fill"></div></div>
         <div class="arena-progress-row">
           <span class="muted small" id="arena-next"></span>
-          <span class="muted small arena-hint">All arenas ›</span>
+          <span class="muted small arena-hint" id="arena-hint-home">All arenas ›</span>
         </div>
       </div>
 
@@ -92,7 +90,7 @@
         <button class="btn bot-diff medium" onclick="triviaStartBot('medium')">Medium</button>
         <button class="btn bot-diff hard" onclick="triviaStartBot('hard')">Hard</button>
       </div>
-      <p class="muted small center-text home-note">Practice matches don't change your trophies.</p>
+      <p class="muted small center-text home-note" id="home-note">Practice matches don't change your trophies.</p>
 
       <div class="stats-row">
         <div class="stat"><img class="stat-icon" src="assets/icons/trophy.svg" alt="" /><b id="trivia-trophies">0</b><span>Trophies</span></div>
@@ -101,8 +99,8 @@
       </div>
 
       <div class="chip-row">
-        <button class="chip" onclick="go('screen-friends')"><img class="chip-icon" src="assets/icons/gamepad.svg" alt="" /> Friends <span id="friends-badge" class="badge" hidden></span></button>
-        <button class="chip" onclick="go('screen-leaderboard')"><img class="chip-icon" src="assets/icons/trophy.svg" alt="" /> Leaderboard</button>
+        <button class="chip" id="chip-friends" onclick="go('screen-friends')"><img class="chip-icon" src="assets/icons/gamepad.svg" alt="" /> Friends <span id="friends-badge" class="badge" hidden></span></button>
+        <button class="chip" id="chip-leaderboard" onclick="go('screen-leaderboard')"><img class="chip-icon" src="assets/icons/trophy.svg" alt="" /> Leaderboard</button>
       </div>
       <p id="trivia-error" class="error"></p>
     </section>
@@ -137,7 +135,7 @@
         <div class="arena-progress"><div id="profile-arena-fill"></div></div>
         <div class="arena-progress-row">
           <span class="muted small" id="profile-arena-next"></span>
-          <span class="muted small arena-hint">All arenas ›</span>
+          <span class="muted small arena-hint" id="arena-hint-profile">All arenas ›</span>
         </div>
       </div>
 
@@ -283,7 +281,41 @@
         <button class="chip" onclick="go('screen-trivia-home')">← Back</button>
       </div>
       <h1 class="screen-title"><img class="title-icon" src="assets/icons/trophy.svg" alt="" /> Leaderboard</h1>
-      <p class="muted">Top players by trophies</p>
+
+      <!-- your position at the top -->
+      <div id="lb-my-row" class="lb-my-row" hidden>
+        <span class="lb-my-rank" id="lb-my-rank"></span>
+        <span class="lb-my-name" id="lb-my-name"></span>
+        <span class="lb-my-trophies" id="lb-my-trophies"></span>
+      </div>
+
+      <!-- top 3 podium -->
+      <div id="lb-podium" class="lb-podium" hidden>
+        <div class="lb-podium-slot second" id="lb-podium-2">
+          <div class="lb-podium-avatar" id="lb-podium-av-2"></div>
+          <div class="lb-podium-name" id="lb-podium-name-2"></div>
+          <div class="lb-podium-trophies" id="lb-podium-trophies-2"></div>
+          <div class="lb-podium-bar"></div>
+          <span class="lb-podium-medal">2</span>
+        </div>
+        <div class="lb-podium-slot first" id="lb-podium-1">
+          <div class="lb-podium-crown">👑</div>
+          <div class="lb-podium-avatar" id="lb-podium-av-1"></div>
+          <div class="lb-podium-name" id="lb-podium-name-1"></div>
+          <div class="lb-podium-trophies" id="lb-podium-trophies-1"></div>
+          <div class="lb-podium-bar"></div>
+          <span class="lb-podium-medal">1</span>
+        </div>
+        <div class="lb-podium-slot third" id="lb-podium-3">
+          <div class="lb-podium-avatar" id="lb-podium-av-3"></div>
+          <div class="lb-podium-name" id="lb-podium-name-3"></div>
+          <div class="lb-podium-trophies" id="lb-podium-trophies-3"></div>
+          <div class="lb-podium-bar"></div>
+          <span class="lb-podium-medal">3</span>
+        </div>
+      </div>
+
+      <!-- rest of the list -->
       <div id="leaderboard-list" class="leaderboard"></div>
     </section>
 

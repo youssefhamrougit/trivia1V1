@@ -1,42 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- ============================================================
-       Trivia1v1 — "VS duel shield" logo
-       A tournament badge: warm orange tile, dark shield, two facing
-       chevrons (the duel / "VS") framing a lightning bolt (speed).
-       The mark stays inside the central ~66% so it also works as an
-       Android maskable launcher icon (full-bleed background below).
-  ============================================================ -->
-  <defs>
-    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f5a94f"/>
-      <stop offset="0.55" stop-color="#e07a17"/>
-      <stop offset="1" stop-color="#c75f0e"/>
-    </linearGradient>
-    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#2b2217"/>
-      <stop offset="1" stop-color="#120d08"/>
-    </linearGradient>
-  </defs>
+<svg width="100%" viewBox="0 0 680 400" xmlns="http://www.w3.org/2000/svg">
+<title>Trivia1v1 logo, icon only</title>
+<desc>A pixel-style badge logo for Trivia1v1: two crossed swords over a shield shape in burnt amber on a warm near-black background, no text.</desc>
 
-  <!-- warm app tile -->
-  <rect width="512" height="512" rx="112" fill="url(#tile)"/>
-
-  <!-- the shield badge (the "duel" arena) -->
-  <path d="M256 84 L416 142 V262 C416 348 344 406 256 440 C168 406 96 348 96 262 V142 Z"
-        fill="url(#shield)" stroke="#ffd9a8" stroke-opacity="0.22" stroke-width="10"/>
-  <path d="M256 118 L384 168 V258 C384 330 324 380 256 408 C188 380 128 330 128 258 V168 Z"
-        fill="none" stroke="#f2a254" stroke-opacity="0.28" stroke-width="6"/>
-
-  <!-- two facing chevrons = the "VS" -->
-  <path d="M118 210 L160 256 L118 302" fill="none" stroke="#f2a254" stroke-width="34"
-        stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M394 210 L352 256 L394 302" fill="none" stroke="#f2a254" stroke-width="34"
-        stroke-linecap="round" stroke-linejoin="round"/>
-
-  <!-- the lightning bolt down the middle -->
-  <g transform="translate(256 256) scale(0.6) translate(-256 -256)">
-    <path d="M312 92 L148 300 H236 L196 420 L362 206 H266 Z"
-          fill="#ffffff" stroke="#ffffff" stroke-width="26"
-          stroke-linejoin="round" stroke-linecap="round"/>
-  </g>
+<rect x="0" y="0" width="680" height="400" rx="0" style="fill:rgb(14, 13, 11);"/>
+<g transform="translate(340,200)">
+<polygon points="-140,-160 140,-160 160,-40 140,120 0,190 -140,120 -160,-40" rx="4" style="fill:rgb(30, 26, 21);stroke:rgb(223, 125, 31);stroke-width:6px;"/>
+<g transform="rotate(-42)">
+<rect x="-8" y="-140" width="16" height="150" rx="2" style="fill:rgb(242, 162, 84);stroke:rgb(14, 13, 11);stroke-width:3px;"/>
+<rect x="-30" y="0" width="60" height="14" rx="2" style="fill:rgb(223, 125, 31);stroke:rgb(14, 13, 11);stroke-width:3px;"/>
+<rect x="-8" y="10" width="16" height="50" rx="2" style="fill:rgb(223, 125, 31);stroke:rgb(14, 13, 11);stroke-width:3px;"/>
+</g>
+<g transform="rotate(42)">
+<rect x="-8" y="-140" width="16" height="150" rx="2" style="fill:rgb(242, 162, 84);stroke:rgb(14, 13, 11);stroke-width:3px;"/>
+<rect x="-30" y="0" width="60" height="14" rx="2" style="fill:rgb(223, 125, 31);stroke:rgb(14, 13, 11);stroke-width:3px;"/>
+<rect x="-8" y="10" width="16" height="50" rx="2" style="fill:rgb(223, 125, 31);stroke:rgb(14, 13, 11);stroke-width:3px;"/>
+</g>
+<circle cx="0" cy="-15" r="7" style="fill:rgb(224, 169, 62);"/>
+<rect x="-3" y="-40" width="6" height="6" style="fill:rgb(224, 169, 62);"/>
+<rect x="14" y="-8" width="6" height="6" style="fill:rgb(224, 169, 62);"/>
+<rect x="-20" y="-8" width="6" height="6" style="fill:rgb(224, 169, 62);"/>
+</g>
 </svg>

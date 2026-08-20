@@ -26,6 +26,20 @@ const MEDAL_ICONS = ["assets/icons/medal-1.svg", "assets/icons/medal-2.svg", "as
 // how long we wait for a human opponent before switching to QuizBot
 const HUMAN_SEARCH_SECONDS = 7;
 
+// ---- stealth-bot name generator ------------------------------------------
+// Generates human-looking names like "SwiftFox_namer427834" so the disguised bot
+// is indistinguishable from a real player in the UI.
+const _botAdjectives = ["Swift","Clever","Brave","Lucky","Quick","Sharp","Bold","Cool","Epic","Wild","Calm","Keen","Sly","Ace","Pro","Top","Max","Zen","Star","Nova","Pixel","Turbo","Frost","Blaze","Shadow","Ghost","Phantom","Cosmic","Lunar","Solar"];
+const _botNouns = ["Fox","Wolf","Bear","Hawk","Lynx","Tiger","Eagle","Shark","Panther","Viper","Cobra","Raven","Storm","Phoenix","Titan","Ninja","Dragon","Wizard","Hunter","Rider","Pilot","Runner","Diver","Climber","Maverick","Rebel","Legend","King","Queen","Knight"];
+
+function generateBotName() {
+  const adj = _botAdjectives[randomInt(_botAdjectives.length)];
+  const noun = _botNouns[randomInt(_botNouns.length)];
+  const n1 = randomInt(900) + 100;  // 100-999
+  const n2 = randomInt(9000) + 1000; // 1000-9999
+  return adj + noun + "_namer" + n1 + n2;
+}
+
 // all of the game's variables live in one object (like a struct)
 let triviaState = {
   mode: null,        // 'online' = real match | 'bot' = practice
@@ -216,9 +230,53 @@ async function triviaFallbackToBot() {
     closeStream();
     await triviaStartMatch(res.match_id); // applies the trophy-matched skill
   } catch (e) {
-    // start_bot_match isn't deployed yet (run database/stealth-bots.sql) —
-    // fall back to the old VISIBLE QuizBot practice game so the app still works
-    triviaStartBot("medium", true);
+    // Server-side botmatch isn't available — create a seamless local match
+    // that looks exactly like a real online game: human name, stealth
+    // answering, normal result screen. The player never sees "QuizBot".
+    if (triviaState.mode !== "online" || triviaState.started || triviaState.opponentFound) return;
+
+    var botName = generateBotName();
+    triviaState.stealthBot = true;
+    triviaState.opponentFound = true;
+    triviaState.botFallback = false; // don't show "played QuizBot" in result
+    clearQueueTimers();
+    closeStream();
+
+    // apply trophy-matched skill (same as server-side stealth bot)
+    applyStealthBotSkill();
+
+    // set up as an "online" match so the UI behaves normally
+    triviaState.mode = "online";
+    triviaState.matchId = null; // no server match — answers handled locally
+    triviaState.oppName = botName;
+    triviaState.oppAvatar = botName.charAt(0).toUpperCase();
+
+    // load questions and start the match
+    try {
+      var allQs = await API.call("/api/questions?limit=1000");
+      var questions = pickMatchQuestions(allQs);
+
+      triviaState.questions = questions;
+      triviaState.qIndex = 0;
+      triviaState.myScore = 0;
+      triviaState.oppScore = 0;
+      triviaState.streak = 0;
+      triviaState.waiting = false;
+      triviaState.starting = false;
+      triviaState.started = true;
+      triviaState.ending = false;
+      triviaState.myAnswers = {};
+
+      buildProgressDots();
+      setScoreboard();
+      showArenaInMatch();
+      if (typeof Music !== "undefined") Music.pause();
+      go("screen-trivia-match");
+      renderQuestion();
+    } catch (err) {
+      setError("trivia-error", "Could not load questions: " + err.message);
+      go("screen-trivia-home");
+    }
   }
 }
 
@@ -441,14 +499,29 @@ async function applyBotDifficulty(diff) {
   triviaState.botDelay = row ? Number(row.answer_ms) : fb.answer_ms;
 }
 
-// the disguised bot's skill follows the PLAYER's trophies (the higher you
-// climb, the tougher the "opponent") — a continuous version of the
-// easy/medium/hard spread (0.35/0.55/0.85 accuracy, 1100/800/550 ms), tuned
-// slightly forgiving so players still climb while it feels like a fair fight.
+// the disguised bot's skill follows the PLAYER's arena (the higher you
+// climb, the tougher the "opponent").  Each arena tier raises the bot's
+// accuracy and speed — e.g. Training Grounds = easy, Hall of Legends =
+// near-grandmaster.  Tuned slightly forgiving so players still climb
+// while it feels like a real, increasingly-skilled opponent.
+//
+// Arena 1 (0 trophies):    0.30 accuracy, 1100 ms
+// Arena 2 (120 trophies):  0.38 accuracy, 1000 ms
+// Arena 3 (260 trophies):  0.46 accuracy,  900 ms
+// Arena 4 (400 trophies):  0.54 accuracy,  800 ms
+// Arena 5 (540 trophies):  0.62 accuracy,  700 ms
+// Arena 6 (680 trophies):  0.72 accuracy,  600 ms
+// Arena 7 (840 trophies):  0.82 accuracy,  500 ms
 function applyStealthBotSkill() {
-  const t = Math.min(1, Math.max(0, ((currentProfile && currentProfile.trophies) || 0) / 900));
-  triviaState.botChance = 0.28 + t * 0.50; // 0.28 → 0.78 answer accuracy
-  triviaState.botDelay  = 1150 - t * 600;  // 1150ms → 550ms "thinking"
+  const trophies = (currentProfile && currentProfile.trophies) || 0;
+  const arena = arenaForTrophies(trophies);
+  const tier = Math.min(ARENAS.length - 1, Math.max(0, arena.id - 1)); // 0-6
+  const norm = tier / (ARENAS.length - 1); // 0 → 1 across the ladder
+
+  // accuracy: 0.30 (arena 1) → 0.82 (arena 7)
+  triviaState.botChance = 0.30 + norm * 0.52;
+  // thinking delay: 1100ms (arena 1) → 500ms (arena 7)
+  triviaState.botDelay  = 1100 - norm * 600;
   triviaState.botStreak = 0;
 }
 
@@ -573,7 +646,7 @@ function renderQuestion() {
 
   triviaState.answered = false;
   triviaState.botAnsweredThisQ = false;
-  if (triviaState.mode === "bot") scheduleBotAnswer(); // QuizBot starts "thinking"
+  if (triviaState.mode === "bot" || (triviaState.mode === "online" && triviaState.stealthBot && !triviaState.matchId)) scheduleBotAnswer(); // QuizBot / stealth bot starts "thinking"
   startQuestionTimer();
 }
 
@@ -707,11 +780,12 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
     return;
   }
 
-  // practice (visible QuizBot): the bot "answers" after a think delay, then
-  // we move on on our own — no sync machinery, no match row. (Disguised
-  // stealth bots go through the online sync path above; the SERVER rolls
-  // their answer inside submit_answer.)
-  if (triviaState.mode === "bot" && !triviaState.botAnsweredThisQ) {
+  // practice (visible QuizBot) or local stealth bot: the bot "answers"
+  // after a think delay, then we move on on our own — no sync machinery,
+  // no match row. (Server-backed stealth bots go through the online sync
+  // path above; the SERVER rolls their answer inside submit_answer.)
+  var isLocalBot = triviaState.mode === "bot" || (triviaState.mode === "online" && triviaState.stealthBot && !triviaState.matchId);
+  if (isLocalBot && !triviaState.botAnsweredThisQ) {
     clearTimeout(triviaState.botTimer);
     const jitter = randomInt(550) - 225; // -225..+325 ms of "thinking"
     setTimeout(function () {
@@ -732,7 +806,9 @@ function finishQuestion(correct, chosenBtn, pickIndex) {
 // (e.g. the reveal-path answer firing after sign-out or a finished match)
 // can never mutate a scoreboard that is no longer on screen.
 function botAnswer() {
-  if (triviaState.ending || triviaState.mode !== "bot") return;
+  if (triviaState.ending) return;
+  // only run for practice bots OR stealth bots in online mode
+  if (triviaState.mode !== "bot" && !(triviaState.mode === "online" && triviaState.stealthBot)) return;
   triviaState.botAnsweredThisQ = true;
   if (Math.random() < triviaState.botChance) {
     triviaState.botStreak++;
@@ -749,7 +825,8 @@ function botAnswer() {
 // the player answers first, this pending timer is cancelled and the answer
 // happens during the reveal instead (see finishQuestion).
 function scheduleBotAnswer() {
-  if (triviaState.mode !== "bot") return;
+  // run for practice bots OR stealth bots in online mode (local match)
+  if (triviaState.mode !== "bot" && !(triviaState.mode === "online" && triviaState.stealthBot && !triviaState.matchId)) return;
   clearTimeout(triviaState.botTimer);
   const thinkMs = triviaState.botDelay + randomInt(600) - 100; // -100..+500 ms
   triviaState.botTimer = setTimeout(function () {
@@ -874,7 +951,7 @@ async function endMatch() {
   let delta = 0;
   let ranked = false; // did the database actually move trophies this time?
 
-  if (online) {
+  if (online && triviaState.matchId) {
     // give the last answer relay a moment to land before finishing — the
     // server's finish_match scores from match_answers, so it must see the
     // final answer or the recorded score would come up one question short.
@@ -908,6 +985,12 @@ async function endMatch() {
         ? currentUser.id
         : triviaState.myScore < triviaState.oppScore ? "opponent" : null;
     }
+  } else if (online && triviaState.stealthBot && !triviaState.matchId) {
+    // local stealth bot match (no server) — decide locally, no rank change
+    winner = triviaState.myScore > triviaState.oppScore
+      ? currentUser.id
+      : triviaState.myScore < triviaState.oppScore ? "opponent" : null;
+    delta = 0;
   } else {
     // bot practice: decided locally, no rank change
     winner = triviaState.myScore > triviaState.oppScore
@@ -1062,7 +1145,11 @@ function showArenaInMatch() {
 
 async function loadLeaderboard() {
   const wrap = document.getElementById("leaderboard-list");
+  const myRow = document.getElementById("lb-my-row");
+  const podium = document.getElementById("lb-podium");
   wrap.innerHTML = "<p class='muted'>Loading…</p>";
+  if (myRow) myRow.hidden = true;
+  if (podium) podium.hidden = true;
 
   // top 50 players by trophies (the bot is excluded via BOT_ID)
   let data = [];
@@ -1079,14 +1166,62 @@ async function loadLeaderboard() {
     return;
   }
 
+  // find the current user's rank
+  let myRank = -1;
   for (let i = 0; i < data.length; i++) {
+    if (data[i].id === currentUser.id) { myRank = i + 1; break; }
+  }
+
+  // populate the "your position" banner
+  if (myRow && myRank > 0) {
+    const me = data[myRank - 1];
+    document.getElementById("lb-my-rank").textContent = "#" + myRank;
+    document.getElementById("lb-my-name").textContent = me.username;
+    document.getElementById("lb-my-trophies").innerHTML = (me.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt="">';
+    myRow.hidden = false;
+  } else if (myRow && currentProfile) {
+    // user isn't in the top 50 — show their stats anyway
+    document.getElementById("lb-my-rank").textContent = ">50";
+    document.getElementById("lb-my-name").textContent = currentProfile.username;
+    document.getElementById("lb-my-trophies").innerHTML = (currentProfile.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt="">';
+    myRow.hidden = false;
+  }
+
+  // populate the podium (top 3)
+  if (podium && data.length >= 1) {
+    var slots = [
+      { idx: 1, el: "1" }, // first
+      { idx: 0, el: "2" }, // second
+      { idx: 2, el: "3" }, // third
+    ];
+    // place 1st in center, 2nd on left, 3rd on right
+    var podiumOrder = [1, 0, 2]; // indices into data
+    for (var pi = 0; pi < 3 && pi < data.length; pi++) {
+      var di = podiumOrder[pi];
+      if (di >= data.length) continue;
+      var pp = data[di];
+      var num = pi + 1;
+      var avEl = document.getElementById("lb-podium-av-" + num);
+      var nameEl = document.getElementById("lb-podium-name-" + num);
+      var trEl = document.getElementById("lb-podium-trophies-" + num);
+      if (avEl) avEl.textContent = (pp.username || "?").charAt(0).toUpperCase();
+      if (nameEl) nameEl.textContent = pp.username + (pp.id === currentUser.id ? " (you)" : "");
+      if (trEl) trEl.innerHTML = (pp.trophies || 0) + ' <img class="pill-icon" src="assets/icons/trophy.svg" alt="">';
+    }
+    podium.hidden = false;
+  }
+
+  // rows 4+ go into the list (skip the top 3 shown on the podium)
+  var startIdx = Math.min(data.length, 3);
+  for (let i = startIdx; i < data.length; i++) {
     const p = data[i];
     const row = document.createElement("div");
     row.className = "lb-row" + (p.id === currentUser.id ? " me" : "");
+    row.style.animationDelay = (i - startIdx) * 40 + "ms";
 
     const rank = document.createElement("span");
-    rank.className = "lb-rank" + (i < 3 ? " top" : "");
-    rank.innerHTML = i < 3 ? '<img class="lb-medal" src="' + MEDAL_ICONS[i] + '" alt="">' : "#" + (i + 1);
+    rank.className = "lb-rank";
+    rank.textContent = "#" + (i + 1);
 
     const name = document.createElement("span");
     name.className = "lb-name";

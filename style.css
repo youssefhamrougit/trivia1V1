@@ -956,6 +956,69 @@ p code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; col
 .lb-elo { font-weight: 700; color: var(--accent-bright); font-family: var(--font-retro); font-size: 17px; white-space: nowrap; }
 .lb-row.me { border-color: rgba(var(--accent-rgb), 0.55); background: rgba(var(--accent-rgb), 0.1); }
 
+/* -- your position banner -- */
+.lb-my-row {
+  display: flex; align-items: center; gap: 12px;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.15), rgba(var(--accent-rgb), 0.05));
+  border: 1px solid rgba(var(--accent-rgb), 0.35);
+  border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 12px;
+}
+.lb-my-rank {
+  width: 36px; text-align: center; font-weight: 700;
+  color: var(--accent-bright); font-family: var(--font-retro); font-size: 18px;
+}
+.lb-my-name {
+  flex: 1; font-weight: 600; color: var(--text);
+}
+.lb-my-trophies {
+  font-weight: 700; color: var(--accent-bright); font-family: var(--font-retro); font-size: 17px;
+}
+
+/* -- podium (top 3) -- */
+.lb-podium {
+  display: flex; align-items: flex-end; justify-content: center; gap: 10px;
+  margin: 10px 0 20px; padding: 0 8px;
+}
+.lb-podium-slot {
+  display: flex; flex-direction: column; align-items: center; flex: 1; max-width: 120px;
+}
+.lb-podium-crown { font-size: 22px; margin-bottom: 2px; animation: float 2s ease-in-out infinite; }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.lb-podium-avatar {
+  width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 20px; color: var(--bg);
+  border: 2px solid var(--line-2);
+}
+.lb-podium-slot.first .lb-podium-avatar {
+  width: 56px; height: 56px; font-size: 24px;
+  border-color: var(--gold); background: linear-gradient(135deg, var(--gold), #c98b1a);
+}
+.lb-podium-slot.second .lb-podium-avatar {
+  border-color: #b0b0b0; background: linear-gradient(135deg, #c0c0c0, #8a8a8a);
+}
+.lb-podium-slot.third .lb-podium-avatar {
+  border-color: #cd7f32; background: linear-gradient(135deg, #cd7f32, #a0622e);
+}
+.lb-podium-name {
+  font-weight: 600; font-size: 13px; margin-top: 6px; text-align: center;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+}
+.lb-podium-trophies {
+  font-family: var(--font-retro); font-size: 15px; color: var(--accent-bright); margin-top: 2px;
+}
+.lb-podium-bar {
+  width: 100%; border-radius: var(--radius-sm) var(--radius-sm) 0 0; margin-top: 6px;
+}
+.lb-podium-slot.first .lb-podium-bar { height: 48px; background: linear-gradient(180deg, rgba(250,204,21,0.25), rgba(250,204,21,0.05)); }
+.lb-podium-slot.second .lb-podium-bar { height: 36px; background: linear-gradient(180deg, rgba(192,192,192,0.2), rgba(192,192,192,0.03)); }
+.lb-podium-slot.third .lb-podium-bar { height: 24px; background: linear-gradient(180deg, rgba(205,127,50,0.2), rgba(205,127,50,0.03)); }
+.lb-podium-medal {
+  font-family: var(--font-retro); font-size: 13px; font-weight: 700; margin-top: 4px;
+}
+.lb-podium-slot.first .lb-podium-medal { color: var(--gold); }
+.lb-podium-slot.second .lb-podium-medal { color: #c0c0c0; }
+.lb-podium-slot.third .lb-podium-medal { color: #cd7f32; }
+
 .title-icon { width: 26px; height: 26px; vertical-align: -5px; margin-right: 4px; }
 
 /* ---------- home: friends + leaderboard chips ---------- */

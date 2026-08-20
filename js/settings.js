@@ -29,6 +29,7 @@ const Settings = (function () {
       "home.arena_title": "Your <span class=\"accent\">Arena</span>",
       "home.arena_subtitle": "Win matches to climb the Knowledge Ladder.",
       "home.current_arena": "Current arena",
+      "home.arena_hint": "All arenas ›",
       "home.find_match": "Find a match",
       "home.practice": "Practice vs. QuizBot",
       "home.practice_note": "Practice matches don't change your trophies.",
@@ -62,6 +63,11 @@ const Settings = (function () {
       "settings.music_volume": "Music Volume",
       "settings.sfx_volume": "Sound Effects",
       "settings.back": "Back",
+      // profile screen
+      "profile.title": "Profile",
+      // arena modal
+      "arena.unlocked": "Arena unlocked",
+      "arena.continue": "Continue",
       // other
       "other.stats_history": "Stats & history",
       "other.sign_out": "Sign out",
@@ -79,6 +85,7 @@ const Settings = (function () {
       "home.arena_title": "<span class=\"accent\">ساحتك</span>",
       "home.arena_subtitle": "اربح المباريات لتسلّم سلّم المعرفة.",
       "home.current_arena": "الساحة الحالية",
+      "home.arena_hint": "جميع الساحات ›",
       "home.find_match": "ابحث عن مباراة",
       "home.practice": "تمارين ضد بوت المسابقة",
       "home.practice_note": "مباريات التمارين لا تغيّر كؤوسك.",
@@ -108,6 +115,9 @@ const Settings = (function () {
       "settings.music_volume": "صوت الموسيقى",
       "settings.sfx_volume": "المؤثرات الصوتية",
       "settings.back": "رجوع",
+      "profile.title": "الملف الشخصي",
+      "arena.unlocked": "تم فتح الساحة",
+      "arena.continue": "متابعة",
       "other.stats_history": "الإحصائيات والتاريخ",
       "other.sign_out": "تسجيل الخروج",
       "other.back": "← رجوع",
@@ -124,6 +134,7 @@ const Settings = (function () {
       "home.arena_title": "Votre <span class=\"accent\">Arène</span>",
       "home.arena_subtitle": "Gagnez des matchs pour gravir l'Échelle du Savoir.",
       "home.current_arena": "Arène actuelle",
+      "home.arena_hint": "Toutes les arènes ›",
       "home.find_match": "Trouver un match",
       "home.practice": "Entraînement vs. QuizBot",
       "home.practice_note": "Les matchs d'entraînement ne changent pas vos trophées.",
@@ -153,6 +164,9 @@ const Settings = (function () {
       "settings.music_volume": "Volume de la musique",
       "settings.sfx_volume": "Effets sonores",
       "settings.back": "Retour",
+      "profile.title": "Profil",
+      "arena.unlocked": "Arène débloquée",
+      "arena.continue": "Continuer",
       "other.stats_history": "Statistiques & historique",
       "other.sign_out": "Se déconnecter",
       "other.back": "← Retour",
@@ -196,22 +210,33 @@ const Settings = (function () {
     setDivText("#screen-auth .divider", t("auth.or"));
     setBtnText("#screen-auth .btn.subtle.guest", t("auth.guest"));
 
-    // Home screen
-    setInner(".topbar .chip:first-child", t("home.profile"));
+    // Home screen — translate the Profile chip (preserve the avatar span)
+    translateChip("screen-trivia-home", t("home.profile"));
     setHTML("screen-trivia-home .screen-title", t("home.arena_title"));
-    setNextText("arena-name", t("home.current_arena"));
+    setTextById("home-subtitle", t("home.arena_subtitle"));
+    setTextById("arena-label", t("home.current_arena"));
     setBtnInner("screen-trivia-home .btn.big", t("home.find_match"), "assets/icons/bolt.svg");
     setBtnInner("screen-trivia-home .btn.ghost.bot-launch", t("home.practice"), "assets/icons/robot.svg");
-    setSpanText("arena-next", t("home.practice_note"), true);
+    setTextById("home-note", t("home.practice_note"));
+    setTextById("arena-hint-home", t("home.arena_hint"));
+    setTextById("arena-hint-profile", t("home.arena_hint"));
 
     // Stats row labels on home
     setStatLabel("trivia-trophies", t("home.trophies"));
     setStatLabel("trivia-wins", t("home.wins"));
     setStatLabel("trivia-losses", t("home.losses"));
 
-    // Chip row
-    setChipText("screen-friends", t("home.friends"), "assets/icons/gamepad.svg");
-    setChipText("screen-leaderboard", t("home.leaderboard"), "assets/icons/trophy.svg");
+    // Stats row labels on profile
+    setStatLabel("profile-trophies", t("home.trophies"));
+    setStatLabel("profile-wins", t("home.wins"));
+    setStatLabel("profile-losses", t("home.losses"));
+
+    // Chip row — translate the text inside each chip (preserve the icon)
+    translateChip("screen-friends", t("home.friends"));
+    translateChip("screen-leaderboard", t("home.leaderboard"));
+    // Home chip-row buttons (Friends / Leaderboard on home screen)
+    translateChipBtn("chip-friends", t("home.friends"));
+    translateChipBtn("chip-leaderboard", t("home.leaderboard"));
 
     // Friends
     setInner("screen-friends .friends-title", t("friends.title"));
@@ -222,9 +247,17 @@ const Settings = (function () {
     setPH("friends-search", t("friends.search_placeholder"));
     setMiniBtn("friends-pane-add .mini-btn.primary", t("friends.search"));
 
-    // Stats & signout
+    // Profile
+    setInner("screen-profile .friends-title", t("profile.title"));
     setBtnInner("#screen-profile .btn.ghost", t("other.stats_history"), "assets/icons/trophy.svg");
     setBtnInner(".profile-signout", t("other.sign_out"), "assets/icons/gamepad.svg");
+
+    // Leaderboard
+    setHTML("screen-leaderboard .screen-title", "<img class=\"title-icon\" src=\"assets/icons/trophy.svg\" alt=\"\"> " + t("home.leaderboard"));
+
+    // Arena modal
+    setModalText(".arena-modal-kicker", "⭐ " + t("arena.unlocked") + " ⭐");
+    setModalBtn(".arena-modal-btn", t("arena.continue"));
 
     // Back buttons
     setBackButtons(t("other.back"));
@@ -232,8 +265,8 @@ const Settings = (function () {
     // Settings
     setInner("settings-title", t("settings.title"));
     setLabel("settings-lang-label", t("settings.language"));
-    setLabel("settings-music-label", t("settings.music_volume"));
-    setLabel("settings-sfx-label", t("settings.sfx_volume"));
+    setLabelHTML("settings-music-label", '<i class="fa-solid fa-music"></i> ' + t("settings.music_volume"));
+    setLabelHTML("settings-sfx-label", '<i class="fa-solid fa-droplet"></i> ' + t("settings.sfx_volume"));
   }
 
   // ---- small DOM helpers ---------------------------------------------------
@@ -265,11 +298,7 @@ const Settings = (function () {
     if (img) el.appendChild(img.cloneNode(true));
     el.appendChild(document.createTextNode(text));
   }
-  function setNextText(id, text) {
-    const el = document.getElementById(id);
-    if (el && el.nextElementSibling) el.nextElementSibling.textContent = text;
-  }
-  function setSpanText(id, text) {
+  function setTextById(id, text) {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
   }
@@ -277,10 +306,38 @@ const Settings = (function () {
     const el = document.getElementById(id);
     if (el && el.nextElementSibling) el.nextElementSibling.textContent = label;
   }
-  function setChipText(screenId, text, icon) {
+  function translateChip(screenId, text) {
+    // Find the first <button class="chip"> inside the given screen's topbar and replace its text
+    // while preserving the icon (<img> or <span class="chip-avatar">)
     const screen = document.getElementById(screenId);
     if (!screen) return;
-    const chip = screen.closest ? screen : null;
+    const chip = screen.querySelector(".topbar .chip");
+    if (!chip) return;
+    chip.childNodes.forEach(function (node) {
+      if (node.nodeType === Node.TEXT_NODE) node.textContent = "";
+    });
+    chip.appendChild(document.createTextNode(" " + text));
+  }
+  function translateChipBtn(btnId, text) {
+    // Translate a standalone chip button by its ID, preserving icons and badges
+    const chip = document.getElementById(btnId);
+    if (!chip) return;
+    chip.childNodes.forEach(function (node) {
+      if (node.nodeType === Node.TEXT_NODE) node.textContent = "";
+    });
+    chip.appendChild(document.createTextNode(" " + text));
+  }
+  function setModalText(sel, text) {
+    const el = document.querySelector(sel);
+    if (el) {
+      el.textContent = "";
+      // parse the stars as text nodes, keep as-is
+      el.textContent = text;
+    }
+  }
+  function setModalBtn(sel, text) {
+    const el = document.querySelector(sel);
+    if (el) el.textContent = text;
   }
   function setH3(sel, text) {
     const el = document.querySelector(sel);
@@ -297,6 +354,10 @@ const Settings = (function () {
   function setLabel(id, text) {
     const el = document.getElementById(id) || document.querySelector(id);
     if (el) el.textContent = text;
+  }
+  function setLabelHTML(id, html) {
+    const el = document.getElementById(id) || document.querySelector(id);
+    if (el) el.innerHTML = html;
   }
   function setBackButtons(text) {
     document.querySelectorAll(".topbar .chip:first-child").forEach(function (btn) {
