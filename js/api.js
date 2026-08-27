@@ -73,6 +73,18 @@ const API = {
   token: null, // the JWT of the current session (null = logged out)
   user: null,  // the supabase user object of the current session
 
+  // ---- rate limiter ---------------------------------------------------------
+  // Prevents matchmaking spam: no more than one join/botmatch call every
+  // RATE_LIMIT_MS. Other API paths are unaffected.
+  RATE_LIMIT_MS: 5000,
+  _lastMatchCall: 0,
+  _checkRateLimit: function () {
+    const now = Date.now();
+    if (now - this._lastMatchCall < this.RATE_LIMIT_MS) {
+      throw new Error("Please wait a moment before trying again.");
+    }
+    this._lastMatchCall = now;
+  },
   // build the supabase client + restore the saved session (if any)
   async init() {
     if (this._supabase) return false;
@@ -181,6 +193,7 @@ const API = {
 
     // ---- matchmaking: the Postgres function pairs us ------------------------
     if (path === "/api/trivia/join") {
+      this._checkRateLimit();
       const uid = await this._uid();
       if (!uid) throw new Error("Not logged in");
       // arena signature discipline (mirrors the original backend logic): the RPC tilts
@@ -207,6 +220,7 @@ const API = {
     // a REAL, human-looking match against a skill-matched bot (see
     // database/stealth-bots.sql). The client simulates the bot's answers.
     if (path === "/api/trivia/botmatch") {
+      this._checkRateLimit();
       const uid = await this._uid();
       if (!uid) throw new Error("Not logged in");
       const sig = await _arenaSignature(uid);
