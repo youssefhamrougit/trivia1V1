@@ -19,6 +19,7 @@ files + the dashboard settings below.
 | `match-stats.sql` | **Optional**: `answer_log` table → per-category accuracy on the Stats screen | Yes |
 | `easy-history.sql` | **Existing projects only**: wipes ALL History questions and inserts 120 easy, well-known ones (clears `match_answers` rows first so the FK doesn't block it) | Yes |
 | `setup-demo.sql` | **Existing projects only**: idempotent bring-up to the same state as schema + seed + the security upgrade | Yes |
+| `username-validation.sql` | **Server-side username validation**: trigger on `profiles` that enforces 3–20 alphanumeric/underscore usernames on INSERT and UPDATE — blocks malformed or injected names even when the anon key is used directly | Yes (idempotent) |
 
 ## Install order
 
@@ -29,7 +30,8 @@ files + the dashboard settings below.
 3. questions-bank.sql
 4. friends-bots.sql      ← REQUIRED
 5. stealth-bots.sql
-6. match-stats.sql       ← optional (Stats accuracy)
+6. username-validation.sql ← server-side username validation
+7. match-stats.sql       ← optional (Stats accuracy)
 ```
 
 **Existing project** (tables already exist — running `schema.sql` would fail):
@@ -37,8 +39,9 @@ files + the dashboard settings below.
 1. setup-demo.sql        ← creates everything idempotently + the security upgrade
 2. friends-bots.sql
 3. stealth-bots.sql
-4. match-stats.sql       ← optional (Stats accuracy)
-5. easy-history.sql      ← optional: replaces the History questions with 120 easy ones
+4. username-validation.sql ← server-side username validation
+5. match-stats.sql       ← optional (Stats accuracy)
+6. easy-history.sql      ← optional: replaces the History questions with 120 easy ones
 ```
 
 > ⚠️ **Deploy the app and the SQL together.** The client (`js/api.js`) prefers
