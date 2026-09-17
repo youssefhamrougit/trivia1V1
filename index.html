@@ -54,7 +54,7 @@
         <button class="btn ghost" onclick="authLogIn()">Log in</button>
 
         <div class="divider">or</div>
-        <button class="btn subtle guest" onclick="authGuest()"><img class="btn-icon" src="assets/icon.svg" alt="" /> Continue as guest</button>
+        <button class="btn subtle guest" onclick="authGuest()"> Continue as guest</button>
 
         <p id="auth-error" class="error"></p>
       </div>
@@ -97,9 +97,9 @@
         </div>
       </div>
 
-      <button class="btn big" onclick="triviaFindMatch()"><img class="btn-icon" src="assets/icon.svg" alt="" /> Find a match</button>
+      <button class="btn big" onclick="triviaFindMatch()"> Find a match</button>
 
-      <button class="btn ghost bot-launch" onclick="toggleBotDiff()"><img class="btn-icon" src="assets/icon.svg" alt="" /> Practice vs. QuizBot</button>
+      <button class="btn ghost bot-launch" onclick="toggleBotDiff()"> Practice vs. QuizBot</button>
       <div class="bot-diff-row" id="bot-diff-row" hidden>
         <button class="btn bot-diff easy" onclick="triviaStartBot('easy')">Easy</button>
         <button class="btn bot-diff medium" onclick="triviaStartBot('medium')">Medium</button>
@@ -108,14 +108,14 @@
       <p class="muted small center-text home-note" id="home-note">Practice matches don't change your trophies.</p>
 
       <div class="stats-row">
-        <div class="stat"><img class="stat-icon" src="assets/icon.svg" alt="" /><b id="trivia-trophies">0</b><span>Trophies</span></div>
-        <div class="stat"><img class="stat-icon" src="assets/icon.svg" alt="" /><b id="trivia-wins">0</b><span>Wins</span></div>
-        <div class="stat"><img class="stat-icon" src="assets/icon.svg" alt="" /><b id="trivia-losses">0</b><span>Losses</span></div>
+        <div class="stat"><b id="trivia-trophies">0</b><span>Trophies</span></div>
+        <div class="stat"><b id="trivia-wins">0</b><span>Wins</span></div>
+        <div class="stat"><b id="trivia-losses">0</b><span>Losses</span></div>
       </div>
 
       <div class="chip-row">
-        <button class="chip" id="chip-friends" onclick="go('screen-friends')"><img class="chip-icon" src="assets/icon.svg" alt="" /> Friends <span id="friends-badge" class="badge" hidden></span></button>
-        <button class="chip" id="chip-leaderboard" onclick="go('screen-leaderboard')"><img class="chip-icon" src="assets/icon.svg" alt="" /> Leaderboard</button>
+        <button class="chip" id="chip-friends" onclick="go('screen-friends')"> Friends <span id="friends-badge" class="badge" hidden></span></button>
+        <button class="chip" id="chip-leaderboard" onclick="go('screen-leaderboard')"> Leaderboard</button>
       </div>
       <p id="trivia-error" class="error"></p>
     </section>
@@ -155,14 +155,14 @@
       </div>
 
       <div class="stats-row">
-        <div class="stat"><img class="stat-icon" src="assets/icon.svg" alt="" /><b id="profile-trophies">0</b><span>Trophies</span></div>
-        <div class="stat"><img class="stat-icon" src="assets/icon.svg" alt="" /><b id="profile-wins">0</b><span>Wins</span></div>
-        <div class="stat"><img class="stat-icon" src="assets/icon.svg" alt="" /><b id="profile-losses">0</b><span>Losses</span></div>
+        <div class="stat"><b id="profile-trophies">0</b><span>Trophies</span></div>
+        <div class="stat"><b id="profile-wins">0</b><span>Wins</span></div>
+        <div class="stat"><b id="profile-losses">0</b><span>Losses</span></div>
       </div>
 
-      <button class="btn ghost" onclick="go('screen-stats')"><img class="btn-icon" src="assets/icon.svg" alt="" /> Stats &amp; history</button>
+      <button class="btn ghost" onclick="go('screen-stats')"> Stats &amp; history</button>
 
-      <button class="btn ghost profile-signout" onclick="authSignOut()"><img class="btn-icon" src="assets/icon.svg" alt="" /> Sign out</button>
+      <button class="btn ghost profile-signout" onclick="authSignOut()"> Sign out</button>
     </section>
 
     <!-- ================================================================
@@ -243,8 +243,8 @@
           </div>
         </div>
 
-        <button class="btn" onclick="shareResult()"><img class="btn-icon" src="assets/icon.svg" alt="" /> Challenge a friend</button>
-        <button class="btn ghost" onclick="triviaRematch()"><img class="btn-icon" src="assets/icon.svg" alt="" /> Rematch</button>
+        <button class="btn" onclick="shareResult()"> Challenge a friend</button>
+        <button class="btn ghost" onclick="triviaRematch()"> Rematch</button>
         <button class="btn subtle" onclick="go('screen-trivia-home')">Home</button>
       </div>
     </section>
@@ -295,7 +295,7 @@
       <div class="topbar">
         <button class="chip" onclick="go('screen-trivia-home')">← Back</button>
       </div>
-      <h1 class="screen-title"><img class="title-icon" src="assets/icon.svg" alt="" /> Leaderboard</h1>
+      <h1 class="screen-title"> Leaderboard</h1>
 
       <!-- your position at the top -->
       <div id="lb-my-row" class="lb-my-row" hidden>
